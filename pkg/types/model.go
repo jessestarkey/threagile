@@ -228,6 +228,15 @@ func (model *Model) CheckNestedTrustBoundariesExisting() error {
 	return nil
 }
 
+// Thresholds recalibrated for Weight()'s Fibonacci spacing (1,2,3,5 on
+// each axis, max product 25, not the linear scheme's max 16). Chosen to
+// preserve the same shape the original linear thresholds had rather than
+// an arbitrary rescale: Low and Critical each stay a single-cell minority
+// (product 1, and product 25 respectively -- VeryLikely x VeryHighImpact,
+// the one cell at both axes' true maximum), with Medium/Elevated/High
+// banding the 8 distinct product values in between in the same relative
+// order. Verified against the real 16-cell grid before landing: 1->Low,
+// {2,3}->Medium, {4,5,6}->Elevated, {9,10,15}->High, 25->Critical.
 func CalculateSeverity(likelihood RiskExploitationLikelihood, impact RiskExploitationImpact) RiskSeverity {
 	result := likelihood.Weight() * impact.Weight()
 	if result <= 1 {
@@ -236,10 +245,10 @@ func CalculateSeverity(likelihood RiskExploitationLikelihood, impact RiskExploit
 	if result <= 3 {
 		return MediumSeverity
 	}
-	if result <= 8 {
+	if result <= 6 {
 		return ElevatedSeverity
 	}
-	if result <= 12 {
+	if result <= 15 {
 		return HighSeverity
 	}
 	return CriticalSeverity

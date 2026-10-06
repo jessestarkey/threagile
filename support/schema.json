@@ -1097,9 +1097,9 @@
                   "type": "string",
                   "enum": [
                     "unlikely",
+                    "possible",
                     "likely",
-                    "very-likely",
-                    "frequent"
+                    "very-likely"
                   ]
                 },
                 "exploitation_impact": {
