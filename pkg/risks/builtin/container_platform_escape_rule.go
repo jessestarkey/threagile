@@ -82,10 +82,11 @@ func (r *ContainerPlatformEscapeRule) createRisk(parsedModel *types.Model, techn
 		}
 	}
 	// create risk
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

@@ -131,6 +131,7 @@ func TestSqlNoSqlInjectionRuleCreateRisks(t *testing.T) {
 						Id:         "ta1",
 						Title:      "Test Technical Asset",
 						OutOfScope: false,
+						RAA:        20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 						Type:       testCase.assetType,
 						Technologies: types.TechnologyList{
 							{
@@ -311,6 +312,7 @@ func TestSqlNoSqlInjectionRuleGenerateRisksLaxDatabaseProtocolNotVulnerableAttri
 				Id:         "ta1",
 				Title:      "NoSQL Database",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the protocol-based likelihood, not the RAA delta
 				Type:       types.Datastore,
 				Technologies: types.TechnologyList{
 					{
@@ -354,6 +356,7 @@ func TestSqlNoSqlInjectionRuleGenerateRisksNonDevOpsUsageVeryLikelyLikelihood(t 
 				Id:         "ta1",
 				Title:      "Database",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 				Type:       types.Datastore,
 				Technologies: types.TechnologyList{
 					{
@@ -396,6 +399,7 @@ func TestSqlNoSqlInjectionRuleGenerateRisksDevOpsUsageLikelyLikelihood(t *testin
 				Id:         "ta1",
 				Title:      "Database",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 				Type:       types.Datastore,
 				Technologies: types.TechnologyList{
 					{

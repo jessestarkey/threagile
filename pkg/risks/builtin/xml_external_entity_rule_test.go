@@ -70,21 +70,25 @@ func TestXmlExternalEntityRuleSendDataAssetRisksCreated(t *testing.T) {
 			riskCreated:     true,
 			expImpact:       types.HighImpact,
 		},
-		"mission critical integrity": {
+		"mission critical integrity no longer bumps impact": {
+			// Impact narrowed to Confidentiality alone (matching this category's STRIDE value,
+			// InformationDisclosure) -- see the comment in xml_external_entity_rule.go's
+			// createRisk(). A MissionCritical Integrity rating no longer bumps Impact on its own
+			// without also a StrictlyConfidential Confidentiality rating.
 			acceptedFormat:  types.XML,
 			confidentiality: types.Confidential,
 			integrity:       types.MissionCritical,
 			availability:    types.Critical,
 			riskCreated:     true,
-			expImpact:       types.HighImpact,
+			expImpact:       types.MediumImpact,
 		},
-		"mission critical availability": {
+		"mission critical availability no longer bumps impact": {
 			acceptedFormat:  types.XML,
 			confidentiality: types.Confidential,
 			integrity:       types.Critical,
 			availability:    types.MissionCritical,
 			riskCreated:     true,
-			expImpact:       types.HighImpact,
+			expImpact:       types.MediumImpact,
 		},
 	}
 	for name, testCase := range testCases {

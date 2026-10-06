@@ -90,10 +90,15 @@ func (r *UnencryptedAssetRule) createRisk(technicalAsset *types.TechnicalAsset, 
 	if requiresEndUserKey {
 		title += " missing end user individual encryption with " + types.DataWithEndUserIndividualKey.String()
 	}
+	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
+	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
+	// own detection/assessment logic already deliberately considers both (see the "NOTE" comment
+	// above in GenerateRisks), not just the stored data's confidentiality.
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

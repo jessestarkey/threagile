@@ -59,14 +59,19 @@ func (asl CrossSiteScriptingRule) skipAsset(technicalAsset *types.TechnicalAsset
 
 func (r *CrossSiteScriptingRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Cross-Site Scripting (XSS)</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
+	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
+	// Impact text, a successful XSS lets an attacker "steal or modify" victim data -- both a
+	// confidentiality and an integrity consequence, not just the latter.
 	impact := types.MediumImpact
 	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
 		impact = types.HighImpact
 	}
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Likely, impact),
-		ExploitationLikelihood:       types.Likely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

@@ -104,10 +104,11 @@ func (r *MissingIdentityPropagationRule) createRisk(input *types.Model, technica
 	if moreRisky {
 		impact = types.MediumImpact
 	}
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
-		Severity:               types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood: types.Unlikely,
+		Severity:               types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood: likelihood,
 		ExploitationImpact:     impact,
 		Title: "<b>Missing End User Identity Propagation</b> over communication link <b>" + incomingAccess.Title + "</b> " +
 			"from <b>" + input.TechnicalAssets[incomingAccess.SourceId].Title + "</b> " +

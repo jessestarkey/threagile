@@ -84,7 +84,8 @@ func appendRisk(
 		input.HighestCommunicationLinkConfidentiality(callersCommLink) >= types.Confidential ||
 			input.HighestCommunicationLinkIntegrity(callersCommLink) >= types.Critical
 	if moreRisky && callersCommLink.Authentication != types.TwoFactor {
-		risks = append(risks, r.missingAuthenticationRule.createRisk(input, technicalAsset, commLink, callersCommLink, title, types.MediumImpact, types.Unlikely, true, r.Category()))
+		likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+		risks = append(risks, r.missingAuthenticationRule.createRisk(input, technicalAsset, commLink, callersCommLink, title, types.MediumImpact, likelihood, true, r.Category()))
 	}
 
 	return risks

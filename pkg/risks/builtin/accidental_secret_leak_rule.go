@@ -75,6 +75,11 @@ func (r *AccidentalSecretLeakRule) createRisk(parsedModel *types.Model, technica
 	if len(details) > 0 {
 		title += ": <u>" + details + "</u>"
 	}
+	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
+	// just Confidentiality (this category's own STRIDE value): what a leaked secret actually
+	// threatens is bounded by what an attacker could do with it -- read, modify, or deny the
+	// data it unlocks -- not just disclose it, so a credential guarding Critical/Mission-Critical
+	// integrity or availability data deserves the same bump as one guarding Confidential data.
 	impact := types.LowImpact
 	highestProcessedConfidentiality := parsedModel.HighestProcessedConfidentiality(technicalAsset)
 	highestProcessedIntegrity := parsedModel.HighestProcessedIntegrity(technicalAsset)
@@ -90,10 +95,11 @@ func (r *AccidentalSecretLeakRule) createRisk(parsedModel *types.Model, technica
 		impact = types.HighImpact
 	}
 	// create risk
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

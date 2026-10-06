@@ -505,3 +505,69 @@ func Test_containsCaseInsensitiveAny(t *testing.T) {
 		})
 	}
 }
+
+func Test_computeLikelihood(t *testing.T) {
+	tests := []struct {
+		name     string
+		baseline types.RiskExploitationLikelihood
+		raa      float64
+		internet bool
+		tags     []string
+		expected types.RiskExploitationLikelihood
+	}{
+		{"mid RAA, not reachable, no change", types.Likely, 20, false, nil, types.Likely},
+		{"low RAA pulls down a notch", types.Likely, 14.9, false, nil, types.PossibleLikelihood},
+		{"mid RAA, no change", types.Likely, 15, false, nil, types.Likely},
+		{"mid RAA, no change at upper edge", types.Likely, 39.9, false, nil, types.Likely},
+		{"high RAA pushes up a notch", types.Likely, 40, false, nil, types.VeryLikely},
+		{"internet field pushes up a notch", types.Likely, 20, true, nil, types.VeryLikely},
+		{"net:internet-reachable tag pushes up a notch", types.Likely, 20, false, []string{"net:internet-reachable"}, types.VeryLikely},
+		{"high RAA and internet together still clamp at VeryLikely", types.Likely, 50, true, nil, types.VeryLikely},
+		{"low RAA and internet cancel out", types.Likely, 10, true, nil, types.Likely},
+		{"clamps at Unlikely floor", types.Unlikely, 10, false, nil, types.Unlikely},
+		{"clamps at VeryLikely ceiling", types.VeryLikely, 50, true, nil, types.VeryLikely},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ta := &types.TechnicalAsset{RAA: test.raa, Internet: test.internet, Tags: test.tags}
+			result := computeLikelihood(test.baseline, ta)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func Test_computeImpact(t *testing.T) {
+	tests := []struct {
+		name         string
+		baseline     types.RiskExploitationImpact
+		stride       types.STRIDE
+		confidential types.Confidentiality
+		integrity    types.Criticality
+		availability types.Criticality
+		criticality  types.Criticality
+		expected     types.RiskExploitationImpact
+	}{
+		{"mid rank, no change", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.Important, types.Archive, types.MediumImpact},
+		{"low availability rank pulls DoS down despite high confidentiality", types.MediumImpact, types.DenialOfService, types.StrictlyConfidential, types.MissionCritical, types.Archive, types.Archive, types.LowImpact},
+		{"high confidentiality rank pushes information-disclosure up", types.MediumImpact, types.InformationDisclosure, types.Confidential, types.Archive, types.Archive, types.Archive, types.HighImpact},
+		{"elevation-of-privilege falls back to max(C,I,A)", types.MediumImpact, types.ElevationOfPrivilege, types.Public, types.MissionCritical, types.Archive, types.Archive, types.HighImpact},
+		{"gated criticality bump fills the gap when CIA delta didn't earn it", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.Important, types.MissionCritical, types.HighImpact},
+		{"gated criticality bump withheld when CIA delta already earned it", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.MissionCritical, types.MissionCritical, types.HighImpact},
+		{"clamps at LowImpact floor", types.LowImpact, types.DenialOfService, types.Public, types.Archive, types.Archive, types.Archive, types.LowImpact},
+		{"clamps at VeryHighImpact ceiling", types.VeryHighImpact, types.InformationDisclosure, types.StrictlyConfidential, types.Archive, types.Archive, types.MissionCritical, types.VeryHighImpact},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ta := &types.TechnicalAsset{
+				Confidentiality: test.confidential,
+				Integrity:       test.integrity,
+				Availability:    test.availability,
+			}
+			model := &types.Model{BusinessCriticality: test.criticality}
+			result := computeImpact(test.baseline, test.stride, ta, model)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}

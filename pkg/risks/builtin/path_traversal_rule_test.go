@@ -146,11 +146,16 @@ func TestPathTraversalRuleGenerateRisksRiskCreated(t *testing.T) {
 			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
-		"mission critical integrity high impact": {
+		"mission critical integrity alone no longer bumps impact": {
+			// Impact narrowed to Confidentiality alone (matching this category's STRIDE value,
+			// InformationDisclosure) now that it's wired through computeImpact()-equivalent
+			// narrowing logic: a MissionCritical Integrity rating no longer bumps Impact on its
+			// own without also a StrictlyConfidential Confidentiality rating -- see the comment
+			// in path_traversal_rule.go's createRisk().
 			confidentiality:    types.Confidential,
 			integrity:          types.MissionCritical,
 			communicationUsage: types.Business,
-			expectedImpact:     types.HighImpact,
+			expectedImpact:     types.MediumImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 		"devops usage likelihood likely": {
@@ -172,6 +177,7 @@ func TestPathTraversalRuleGenerateRisksRiskCreated(t *testing.T) {
 						Id:         "ta1",
 						Title:      "Test Technical Asset",
 						OutOfScope: false,
+						RAA:        20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 						Technologies: types.TechnologyList{
 							{
 								Name: "file-storage",

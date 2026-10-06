@@ -104,10 +104,17 @@ func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAs
 	if moreRisky {
 		impact = types.MediumImpact
 	}
+	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit gate,
+	// 50% -- already at or above raaLikelihoodThreshold's 40%) -- that detection-logic role is
+	// kept as-is. computeLikelihood() is still applied on top of the flat baseline for
+	// consistency with every other rule's scoring: every asset that reaches this point already
+	// earns the RAA Likelihood delta too, so Unlikely becomes Possible here consistently -- the
+	// reachability delta can still vary per asset even though the RAA delta cannot.
+	likelihood := computeLikelihood(types.Unlikely, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
-		Severity:               types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood: types.Unlikely,
+		Severity:               types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood: likelihood,
 		ExploitationImpact:     impact,
 		Title: "<b>Missing Network Segmentation</b> to further encapsulate and protect <b>" + techAsset.Title + "</b> against unrelated " +
 			"lower protected assets in the same network segment, which might be easier to compromise by attackers",

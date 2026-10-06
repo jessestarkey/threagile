@@ -52,6 +52,11 @@ func (r *ServiceRegistryPoisoningRule) GenerateRisks(input *types.Model) ([]*typ
 
 func (r *ServiceRegistryPoisoningRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingFlows []*types.CommunicationLink) *types.Risk {
 	title := "<b>Service Registry Poisoning</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Impact intentionally stays keyed off all three CIA dimensions, across the registry, its
+	// callers, and the link between them, rather than narrowing to just Integrity (this
+	// category's own STRIDE value): per this category's own Impact text, poisoned lookup data
+	// can lead to "breach of sensitive data" downstream just as much as a direct tampering
+	// consequence at the registry itself.
 	impact := types.LowImpact
 
 	for _, incomingFlow := range incomingFlows {
@@ -64,10 +69,11 @@ func (r *ServiceRegistryPoisoningRule) createRisk(input *types.Model, technicalA
 		}
 	}
 
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

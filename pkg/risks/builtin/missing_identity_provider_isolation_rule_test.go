@@ -246,6 +246,7 @@ func TestMissingIdentityProviderIsolationRule(t *testing.T) {
 						Id:              "ta1",
 						Title:           "Test Technical Asset",
 						OutOfScope:      false,
+						RAA:             20, // neutral RAA so this test exercises only the isolation-based likelihood, not the RAA delta
 						Confidentiality: testCase.confidentiality,
 						Integrity:       testCase.integrity,
 						Availability:    testCase.availability,

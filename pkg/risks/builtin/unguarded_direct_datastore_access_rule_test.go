@@ -170,7 +170,11 @@ func TestUnguardedDirectDatastoreAccessRuleRuleGenerateRisks(t *testing.T) {
 			riskCreated:    true,
 			expectedImpact: types.LowImpact,
 		},
-		"high raa medium impact": {
+		"high raa no longer bumps impact": {
+			// RAA was moved from an Impact bump to a Likelihood delta (see the comment in
+			// unguarded_direct_datastore_access_rule.go's createRisk()) -- see
+			// TestUnguardedDirectDatastoreAccessRuleRaaAffectsLikelihoodNotImpact below for the
+			// Likelihood-side effect.
 			outOfScope: false,
 			assetType:  types.Datastore,
 
@@ -185,7 +189,7 @@ func TestUnguardedDirectDatastoreAccessRuleRuleGenerateRisks(t *testing.T) {
 			integrity:       types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.MediumImpact,
+			expectedImpact: types.LowImpact,
 		},
 		"strict confidentiality medium impact": {
 			outOfScope: false,
@@ -325,6 +329,68 @@ func TestUnguardedDirectDatastoreAccessRuleRuleGenerateRisks(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnguardedDirectDatastoreAccessRuleRaaAffectsLikelihoodNotImpact(t *testing.T) {
+	newModel := func(raa float64) *types.Model {
+		return &types.Model{
+			TechnicalAssets: map[string]*types.TechnicalAsset{
+				"source": {
+					Id:    "source",
+					Title: "Source Technical Asset",
+				},
+				"target": {
+					Id:              "target",
+					Title:           "Target Technical Asset",
+					Type:            types.Datastore,
+					RAA:             raa,
+					Confidentiality: types.Confidential,
+					Integrity:       types.Critical,
+					CommunicationLinks: []*types.CommunicationLink{
+						{
+							Title:    "Test Communication Link",
+							SourceId: "source",
+							TargetId: "target",
+							Protocol: types.HTTP,
+							Usage:    types.Business,
+						},
+					},
+				},
+			},
+			IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{
+				"target": {
+					{
+						Title:    "Test Communication Link",
+						SourceId: "source",
+						TargetId: "target",
+						Protocol: types.HTTP,
+						Usage:    types.Business,
+					},
+				},
+			},
+			TrustBoundaries: map[string]*types.TrustBoundary{
+				"tb1": {Id: "tb1", TechnicalAssetsInside: []string{"source"}, Type: types.NetworkCloudProvider},
+				"tb2": {Id: "tb2", TechnicalAssetsInside: []string{"target"}, Type: types.NetworkCloudProvider},
+			},
+			DirectContainingTrustBoundaryMappedByTechnicalAssetId: map[string]*types.TrustBoundary{
+				"source": {Id: "tb1", TechnicalAssetsInside: []string{"source"}, Type: types.NetworkCloudProvider},
+				"target": {Id: "tb2", TechnicalAssetsInside: []string{"target"}, Type: types.NetworkCloudProvider},
+			},
+		}
+	}
+	rule := NewUnguardedDirectDatastoreAccessRule()
+
+	lowRaaRisks, err := rule.GenerateRisks(newModel(10)) // below raaLikelihoodLowThreshold (15)
+	assert.Nil(t, err)
+	assert.Len(t, lowRaaRisks, 1)
+	assert.Equal(t, types.PossibleLikelihood, lowRaaRisks[0].ExploitationLikelihood)
+	assert.Equal(t, types.LowImpact, lowRaaRisks[0].ExploitationImpact)
+
+	highRaaRisks, err := rule.GenerateRisks(newModel(50)) // at or above raaLikelihoodThreshold (40)
+	assert.Nil(t, err)
+	assert.Len(t, highRaaRisks, 1)
+	assert.Equal(t, types.VeryLikely, highRaaRisks[0].ExploitationLikelihood)
+	assert.Equal(t, types.LowImpact, highRaaRisks[0].ExploitationImpact) // unchanged by RAA, unlike before this redesign
 }
 
 func TestIsSharingSameParentTrustBoundaryBothOutOfTrustBoundaryExpectTrue(t *testing.T) {

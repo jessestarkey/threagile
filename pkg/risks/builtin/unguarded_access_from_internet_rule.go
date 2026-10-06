@@ -89,14 +89,23 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 
 func (r *UnguardedAccessFromInternetRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink,
 	clientFromInternet *types.TechnicalAsset, moreRisky bool) *types.Risk {
+	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
+	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
+	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
 	impact := types.LowImpact
-	if moreRisky || dataStore.RAA > 40 {
+	if moreRisky {
 		impact = types.MediumImpact
 	}
+	// The GenerateRisks() check that the caller (clientFromInternet) itself carries
+	// Internet: true is kept as-is -- that's the detection-logic question of whether this risk
+	// applies at all (is this genuinely internet-originated traffic), separate from the
+	// Likelihood/Impact scoring below. computeLikelihood() separately checks dataStore's own
+	// reachability signals, which can differ from the caller's.
+	likelihood := computeLikelihood(types.VeryLikely, dataStore)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
-		Severity:               types.CalculateSeverity(types.VeryLikely, impact),
-		ExploitationLikelihood: types.VeryLikely,
+		Severity:               types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood: likelihood,
 		ExploitationImpact:     impact,
 		Title: "<b>Unguarded Access from Internet</b> of <b>" + dataStore.Title + "</b> by <b>" +
 			clientFromInternet.Title + "</b>" + " via <b>" + dataFlow.Title + "</b>",

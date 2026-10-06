@@ -520,6 +520,7 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 						Id:         "source",
 						Title:      "Source Technical Asset",
 						OutOfScope: testCase.sourceOutOfScope,
+						RAA:        20, // neutral RAA so this test exercises only the trust-boundary-based likelihood, not the RAA delta
 						CommunicationLinks: []*types.CommunicationLink{
 							{
 								Title:              "Test Communication Link",

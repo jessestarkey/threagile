@@ -79,6 +79,10 @@ func (r *UntrustedDeserializationRule) GenerateRisks(input *types.Model) ([]*typ
 
 func (r *UntrustedDeserializationRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset, acrossTrustBoundary bool, commLinkTitle string) *types.Risk {
 	title := "<b>Untrusted Deserialization</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
+	// just Integrity (this category's own STRIDE value): per this category's own Impact text,
+	// untrusted deserialization lets an attacker "execute code on target systems" -- full
+	// remote code execution threatens any of the three dimensions, not just tampering.
 	impact := types.HighImpact
 	likelihood := types.Likely
 	if acrossTrustBoundary {
@@ -90,6 +94,7 @@ func (r *UntrustedDeserializationRule) createRisk(parsedModel *types.Model, tech
 		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
 		impact = types.VeryHighImpact
 	}
+	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

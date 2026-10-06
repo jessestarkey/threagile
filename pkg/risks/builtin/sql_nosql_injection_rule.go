@@ -64,6 +64,12 @@ func (r *SqlNoSqlInjectionRule) createRisk(input *types.Model, technicalAsset *t
 	caller := input.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>SQL/NoSQL-Injection</b> risk at <b>" + caller.Title + "</b> against database <b>" + technicalAsset.Title + "</b>" +
 		" via <b>" + incomingFlow.Title + "</b>"
+	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
+	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
+	// Impact text, SQL/NoSQL injection lets an attacker "steal and modify data" -- both a
+	// confidentiality and an integrity consequence, not just the latter (see
+	// docs/risk-methodology.md's discussion of this exact category as a known multi-dimensional
+	// case in the custom engine).
 	impact := types.MediumImpact
 	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
 		impact = types.HighImpact
@@ -72,6 +78,7 @@ func (r *SqlNoSqlInjectionRule) createRisk(input *types.Model, technicalAsset *t
 	if incomingFlow.Usage == types.DevOps {
 		likelihood = types.Likely
 	}
+	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

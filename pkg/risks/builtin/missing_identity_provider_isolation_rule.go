@@ -80,15 +80,16 @@ func (r *MissingIdentityProviderIsolationRule) GenerateRisks(input *types.Model)
 
 func (r *MissingIdentityProviderIsolationRule) createRisk(techAsset *types.TechnicalAsset, moreImpact bool, sameExecutionEnv bool) *types.Risk {
 	impact := types.HighImpact
-	likelihood := types.Unlikely
+	baselineLikelihood := types.Unlikely
 	others := "<b>in the same network segment</b>"
 	if moreImpact {
 		impact = types.VeryHighImpact
 	}
 	if sameExecutionEnv {
-		likelihood = types.Likely
+		baselineLikelihood = types.Likely
 		others = "<b>in the same execution environment</b>"
 	}
+	likelihood := computeLikelihood(baselineLikelihood, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

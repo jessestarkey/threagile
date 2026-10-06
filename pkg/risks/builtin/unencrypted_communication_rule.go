@@ -92,10 +92,15 @@ func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalA
 		title += " (even VPN-protected connections need to encrypt their data in-transit when confidentiality is " +
 			"rated " + types.StrictlyConfidential.String() + " or integrity is rated " + types.MissionCritical.String() + ")"
 	}
+	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
+	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
+	// own Description already explicitly says "confidentiality and/or integrity rating," not
+	// just the former.
 	likelihood := types.Unlikely
 	if isAcrossTrustBoundaryNetworkOnly(input, dataFlow) {
 		likelihood = types.Likely
 	}
+	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

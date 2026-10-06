@@ -63,13 +63,18 @@ func (r *MissingAuthenticationRule) GenerateRisks(input *types.Model) ([]*types.
 			}
 			impact := r.calculateImpact(commLink, input)
 			if commLink.Authentication == types.NoneAuthentication && !commLink.Protocol.IsProcessLocal() {
-				risks = append(risks, r.createRisk(input, technicalAsset, commLink, commLink, "", impact, types.Likely, false, r.Category()))
+				likelihood := computeLikelihood(types.Likely, technicalAsset)
+				risks = append(risks, r.createRisk(input, technicalAsset, commLink, commLink, "", impact, likelihood, false, r.Category()))
 			}
 		}
 	}
 	return risks, nil
 }
 
+// Already effectively keyed off the max of multiple dimensions (this category's STRIDE value,
+// ElevationOfPrivilege, is exactly the case computeImpact() itself falls back to max(C,I,A) for),
+// scoped to the comm link's own ratings rather than the target asset's -- not reused via the
+// shared computeImpact() helper, which operates on the asset's own CIA fields, not a link's.
 func (r *MissingAuthenticationRule) calculateImpact(commLink *types.CommunicationLink, input *types.Model) types.RiskExploitationImpact {
 	if input.HighestCommunicationLinkConfidentiality(commLink) == types.StrictlyConfidential || input.HighestCommunicationLinkIntegrity(commLink) == types.MissionCritical {
 		return types.HighImpact

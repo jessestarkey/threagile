@@ -122,6 +122,7 @@ func TestCrossSiteRequestForgeryRuleGenerateRisksTechAssetWebApplicationIncoming
 			"web-app": {
 				Id:    "web-app",
 				Title: "Web Application",
+				RAA:   20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "web-app",
@@ -167,6 +168,7 @@ func TestCrossSiteRequestForgeryRuleGenerateRisksTechAssetWebApplicationIncoming
 			"web-app": {
 				Id:    "web-app",
 				Title: "Web Application",
+				RAA:   20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "web-app",
@@ -213,6 +215,7 @@ func TestCrossSiteRequestForgeryRuleGenerateRisksTechAssetWebApplicationIncoming
 			"web-app": {
 				Id:    "web-app",
 				Title: "Web Application",
+				RAA:   20, // neutral RAA so this test exercises only the comm-link-integrity-based impact, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "web-app",

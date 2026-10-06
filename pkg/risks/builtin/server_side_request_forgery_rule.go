@@ -96,6 +96,7 @@ func (r *ServerSideRequestForgeryRule) createRisk(input *types.Model, technicalA
 	if outgoingFlow.Usage == types.DevOps {
 		likelihood = types.Unlikely
 	}
+	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

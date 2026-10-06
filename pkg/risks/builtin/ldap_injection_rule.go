@@ -70,10 +70,15 @@ func (r *LdapInjectionRule) createRisk(input *types.Model, technicalAsset *types
 	caller := input.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>LDAP-Injection</b> risk at <b>" + caller.Title + "</b> against LDAP server <b>" + technicalAsset.Title + "</b>" +
 		" via <b>" + incomingFlow.Title + "</b>"
+	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
+	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
+	// Impact text, LDAP injection lets an attacker "modify LDAP queries and access more data" --
+	// both a tampering and an information-disclosure consequence.
 	impact := types.MediumImpact
 	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
 		impact = types.HighImpact
 	}
+	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

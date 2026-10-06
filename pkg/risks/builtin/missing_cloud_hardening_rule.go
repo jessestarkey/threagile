@@ -341,7 +341,7 @@ func findMostSensitiveTechnicalAsset(input *types.Model, techAssets map[string]s
 	})
 }
 
-func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, details string, confidentiality types.Confidentiality, integrity types.Criticality, availability types.Criticality, relatedAssets []string) *types.Risk {
+func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, details string, confidentiality types.Confidentiality, integrity types.Criticality, availability types.Criticality, relatedAssets []string, likelihood types.RiskExploitationLikelihood) *types.Risk {
 	suffix := ""
 	if len(prefix) > 0 {
 		suffix = "@" + strings.ToLower(prefix)
@@ -353,6 +353,10 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 		fullTitle += ": <u>" + details + "</u>"
 	}
 
+	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
+	// just Integrity (this category's own STRIDE value): missing cloud hardening is a broad
+	// misconfiguration risk ("attackers might access cloud components in an unintended way")
+	// that can just as easily expose or disrupt a resource as corrupt it.
 	impact := types.MediumImpact
 	if confidentiality >= types.Confidential || integrity >= types.Critical || availability >= types.Critical {
 		impact = types.HighImpact
@@ -363,8 +367,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 
 	risk := &types.Risk{
 		CategoryId:                  r.Category().ID,
-		Severity:                    types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:      types.Unlikely,
+		Severity:                    types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:      likelihood,
 		ExploitationImpact:          impact,
 		Title:                       fullTitle,
 		DataBreachProbability:       types.Probable,
@@ -376,6 +380,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 
 func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 	input *types.Model, sharedRuntime *types.SharedRuntime, prefix, details string) *types.Risk {
+	// No single technical asset to anchor an RAA/reachability delta on -- a shared runtime is an
+	// aggregate of many assets -- so this stays the flat baseline, unlike createRiskForTechnicalAsset.
 	return r.createCloudHardeningRisk(
 		sharedRuntime.Id,
 		sharedRuntime.Title,
@@ -385,11 +391,14 @@ func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 		input.FindSharedRuntimeHighestIntegrity(sharedRuntime),
 		input.FindSharedRuntimeHighestAvailability(sharedRuntime),
 		sharedRuntime.TechnicalAssetsRunning,
+		types.Unlikely,
 	)
 }
 
 func (r *MissingCloudHardeningRule) createRiskForTrustBoundary(
 	input *types.Model, trustBoundary *types.TrustBoundary, prefix, details string) *types.Risk {
+	// No single technical asset to anchor an RAA/reachability delta on -- a trust boundary is an
+	// aggregate of many assets -- so this stays the flat baseline, unlike createRiskForTechnicalAsset.
 	return r.createCloudHardeningRisk(
 		trustBoundary.Id,
 		trustBoundary.Title,
@@ -399,6 +408,7 @@ func (r *MissingCloudHardeningRule) createRiskForTrustBoundary(
 		input.FindTrustBoundaryHighestIntegrity(trustBoundary),
 		input.FindTrustBoundaryHighestAvailability(trustBoundary),
 		input.RecursivelyAllTechnicalAssetIDsInside(trustBoundary),
+		types.Unlikely,
 	)
 }
 
@@ -413,5 +423,6 @@ func (r *MissingCloudHardeningRule) createRiskForTechnicalAsset(
 		input.HighestProcessedIntegrity(technicalAsset),
 		input.HighestProcessedAvailability(technicalAsset),
 		[]string{technicalAsset.Id},
+		computeLikelihood(types.Unlikely, technicalAsset),
 	)
 }

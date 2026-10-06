@@ -72,6 +72,10 @@ func (r *CodeBackdooringRule) GenerateRisks(parsedModel *types.Model) ([]*types.
 
 func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Code Backdooring</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
+	// narrowing to just Integrity (this category's own STRIDE value): backdoored code shipped
+	// into production can just as easily exfiltrate data as corrupt it, so a deployment target
+	// with high Confidentiality data deserves the same bump as one with high Integrity data.
 	impact := types.LowImpact
 	if !technicalAsset.Technologies.GetAttribute(types.CodeInspectionPlatform) {
 		impact = types.MediumImpact
@@ -100,10 +104,11 @@ func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *typ
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

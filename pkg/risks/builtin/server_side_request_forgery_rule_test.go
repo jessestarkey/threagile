@@ -130,6 +130,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksLowImpactRisksCreated(t *testi
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",
@@ -170,6 +171,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialMediumImpa
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",
@@ -221,6 +223,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksTrustBoundaryWithinCloudMedium
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",
@@ -275,6 +278,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialTrustBound
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",
@@ -335,6 +339,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialDifferentT
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",
@@ -381,6 +386,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksWithinDevopsUnlikelyLikelihood
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",
@@ -442,6 +448,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialNotHttpAcc
 				Id:         "ta1",
 				Title:      "Test Technical Asset",
 				OutOfScope: false,
+				RAA:        20, // neutral RAA so this test exercises only the usage/target-based likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Name: "service-registry",

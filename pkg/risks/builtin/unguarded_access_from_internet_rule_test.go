@@ -140,7 +140,12 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			riskCreated:    true,
 			expectedImpact: types.LowImpact,
 		},
-		"raa high impact risk created": {
+		"high raa no longer bumps impact": {
+			// RAA was moved from an Impact bump to a Likelihood delta (see the comment in
+			// unguarded_access_from_internet_rule.go's createRisk()) -- see
+			// TestUnguardedAccessFromInternetRuleHighRaaBumpsLikelihoodNotImpact below for the
+			// Likelihood-side effect this case can't show on its own (VeryLikely is already the
+			// baseline, so the RAA delta clamps rather than visibly changing anything here).
 			outOfScope:           false,
 			isLoadBalancer:       false,
 			isVPN:                false,
@@ -150,7 +155,7 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			integrity:            types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.MediumImpact,
+			expectedImpact: types.LowImpact,
 		},
 		"strictly confidential medium impact risk created": {
 			outOfScope:           false,
@@ -245,4 +250,51 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) {
+	rule := NewUnguardedAccessFromInternetRule()
+	model := &types.Model{
+		TechnicalAssets: map[string]*types.TechnicalAsset{
+			"source": {
+				Id:       "source",
+				Title:    "Source Technical Asset",
+				Internet: true,
+			},
+			"target": {
+				Id:              "target",
+				Title:           "Target Technical Asset",
+				RAA:             10, // below raaLikelihoodLowThreshold (15)
+				Confidentiality: types.Confidential,
+				Integrity:       types.Critical,
+				CommunicationLinks: []*types.CommunicationLink{
+					{
+						Title:    "Test Communication Link",
+						SourceId: "source",
+						TargetId: "target",
+						Protocol: types.HTTPS,
+					},
+				},
+			},
+		},
+		IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{
+			"target": {
+				{
+					Title:    "Test Communication Link",
+					SourceId: "source",
+					TargetId: "target",
+					Protocol: types.HTTPS,
+				},
+			},
+		},
+	}
+
+	risks, err := rule.GenerateRisks(model)
+
+	assert.Nil(t, err)
+	assert.Len(t, risks, 1)
+	// Baseline is VeryLikely; a genuinely low-RAA target now pulls Likelihood down a notch via
+	// computeLikelihood(), which this rule didn't react to at all before this RAA/Likelihood
+	// redesign (see the comment in createRisk()).
+	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
 }

@@ -62,16 +62,21 @@ func (r *MissingFileValidationRule) skipAsset(technicalAsset *types.TechnicalAss
 
 func (r *MissingFileValidationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Missing File Validation</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
+	// just Integrity (this category's own STRIDE value): a malicious uploaded file can carry
+	// malware (an availability/integrity threat) or be crafted to exfiltrate data via a
+	// processing vulnerability (a confidentiality threat), not just one.
 	impact := types.LowImpact
 	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
 		input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
 		input.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
 		impact = types.MediumImpact
 	}
+	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.VeryLikely, impact),
-		ExploitationLikelihood:       types.VeryLikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

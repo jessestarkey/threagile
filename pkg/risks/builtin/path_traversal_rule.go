@@ -67,10 +67,15 @@ func (r *PathTraversalRule) createRisk(input *types.Model, technicalAsset *types
 	caller := input.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>Path-Traversal</b> risk at <b>" + caller.Title + "</b> against filesystem <b>" + technicalAsset.Title + "</b>" +
 		" via <b>" + incomingFlow.Title + "</b>"
+	// Narrowed to Confidentiality alone, matching this category's STRIDE value
+	// (InformationDisclosure): this category's own Impact text is purely about reading sensitive
+	// files, not modifying them, so the Integrity check an earlier version of this rule also had
+	// no longer applies -- unlike categories whose own Impact text genuinely spans both.
 	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
+	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
 		impact = types.HighImpact
 	}
+	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

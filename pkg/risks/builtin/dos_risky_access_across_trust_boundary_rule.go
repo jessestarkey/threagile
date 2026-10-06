@@ -95,6 +95,10 @@ func (r *DosRiskyAccessAcrossTrustBoundaryRule) potentiallyAddRisk(
 
 func (r *DosRiskyAccessAcrossTrustBoundaryRule) createRisk(techAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, linkId string, hopBetween string,
 	clientOutsideTrustBoundary *types.TechnicalAsset, moreRisky bool) *types.Risk {
+	// Already single-dimension (Availability, matching this category's STRIDE value) and
+	// asset-scoped, but not reused via the shared computeImpact() helper: moreRisky folds in
+	// rule-specific mitigating factors (VPN, IP filtering, redundancy) the generic helper has no
+	// way to know about, not just the asset's own Availability rank.
 	impact := types.LowImpact
 	if moreRisky {
 		impact = types.MediumImpact
@@ -102,10 +106,11 @@ func (r *DosRiskyAccessAcrossTrustBoundaryRule) createRisk(techAsset *types.Tech
 	if len(hopBetween) > 0 {
 		hopBetween = " forwarded via <b>" + hopBetween + "</b>"
 	}
+	likelihood := computeLikelihood(types.Unlikely, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
-		Severity:               types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood: types.Unlikely,
+		Severity:               types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood: likelihood,
 		ExploitationImpact:     impact,
 		Title: "<b>Denial-of-Service</b> risky access of <b>" + techAsset.Title + "</b> by <b>" + clientOutsideTrustBoundary.Title +
 			"</b> via <b>" + dataFlow.Title + "</b>" + hopBetween,

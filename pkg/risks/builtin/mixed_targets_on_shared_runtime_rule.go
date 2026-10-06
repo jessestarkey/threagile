@@ -80,6 +80,9 @@ func (r *MixedTargetsOnSharedRuntimeRule) GenerateRisks(input *types.Model) ([]*
 }
 
 func (r *MixedTargetsOnSharedRuntimeRule) createRisk(input *types.Model, sharedRuntime *types.SharedRuntime) *types.Risk {
+	// Likelihood stays the flat baseline rather than going through computeLikelihood(): a shared
+	// runtime is an aggregate of many assets, so there's no single asset's RAA/reachability to
+	// anchor a delta on (same reasoning as missing_cloud_hardening_rule.go's shared-runtime path).
 	impact := types.LowImpact
 	if isMoreRisky(input, sharedRuntime) {
 		impact = types.MediumImpact

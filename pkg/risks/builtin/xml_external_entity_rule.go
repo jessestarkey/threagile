@@ -58,16 +58,20 @@ func (r *XmlExternalEntityRule) GenerateRisks(input *types.Model) ([]*types.Risk
 
 func (r *XmlExternalEntityRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>XML External Entity (XXE)</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Narrowed to Confidentiality alone, matching this category's STRIDE value
+	// (InformationDisclosure): this category's own Impact text is purely about reading files or
+	// accessing services of other components, not modifying them -- the Integrity/Availability
+	// checks an earlier version of this rule also had no longer apply, the same reasoning as
+	// path_traversal_rule.go's createRisk().
 	impact := types.MediumImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
+	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
 		impact = types.HighImpact
 	}
+	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.VeryLikely, impact),
-		ExploitationLikelihood:       types.VeryLikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

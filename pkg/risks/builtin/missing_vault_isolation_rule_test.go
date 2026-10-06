@@ -270,6 +270,7 @@ func TestMissingVaultIsolationRuleGenerateRisksRiskCreated(t *testing.T) {
 						Id:         "ta1",
 						Title:      "Vault",
 						OutOfScope: false,
+						RAA:        20, // neutral RAA so this test exercises only the isolation-based likelihood, not the RAA delta
 						Technologies: types.TechnologyList{
 							{
 								Name: "service-registry",

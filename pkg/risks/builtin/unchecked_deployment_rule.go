@@ -53,6 +53,9 @@ func (r *UncheckedDeploymentRule) GenerateRisks(input *types.Model) ([]*types.Ri
 
 func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Unchecked Deployment</b> risk at <b>" + technicalAsset.Title + "</b>"
+	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
+	// just Integrity (this category's own STRIDE value): an unscanned vulnerability shipped to a
+	// deployment target can threaten any of its CIA dimensions, not just integrity.
 	// impact is depending on highest rating
 	impact := types.LowImpact
 	// data breach at all deployment targets
@@ -82,10 +85,11 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: technicalAsset.Id,

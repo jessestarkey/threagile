@@ -84,6 +84,7 @@ func TestLdapInjectionRuleIncomingLdapFlowRisksCreated(t *testing.T) {
 			"ta1": {
 				Id:    "ta1",
 				Title: "Test Technical Asset",
+				RAA:   20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 			},
 			"ta2": {
 				Id:    "ta2",
@@ -151,6 +152,7 @@ func TestLdapInjectionRuleIncomingLdapFlowProcessStrictlyConfidentialDataAssetsR
 			"ta1": {
 				Id:                  "ta1",
 				Title:               "Test Technical Asset",
+				RAA:                 20, // neutral RAA so this test exercises only the usage-based likelihood, not the RAA delta
 				DataAssetsProcessed: []string{"da1"},
 			},
 			"ta2": {

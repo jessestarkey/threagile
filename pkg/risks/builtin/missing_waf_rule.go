@@ -63,7 +63,11 @@ func (r *MissingWafRule) GenerateRisks(input *types.Model) ([]*types.Risk, error
 
 func (r *MissingWafRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Missing Web Application Firewall (WAF)</b> risk at <b>" + technicalAsset.Title + "</b>"
-	likelihood := types.Unlikely
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
+	// just Integrity (this category's own STRIDE value): a missing WAF removes a general
+	// filtering layer against "standard attack pattern tests," not a dimension-specific one --
+	// it's as relevant to a confidentiality- or availability-driven attack as a tampering one.
 	impact := types.LowImpact
 	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
 		input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||

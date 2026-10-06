@@ -55,6 +55,7 @@ func TestUntrustedDeserializationRuleGenerateRiskAcceptSerializationRisksCreated
 			"ta1": {
 				Id:                  "ta1",
 				Title:               "Test Technical Asset",
+				RAA:                 20, // neutral RAA so this test exercises only the rule's own baseline likelihood, not the RAA delta
 				DataFormatsAccepted: []types.DataFormat{types.Serialization},
 			},
 		},
@@ -74,6 +75,7 @@ func TestUntrustedDeserializationRuleGenerateRiskEJBRisksCreated(t *testing.T) {
 			"ta1": {
 				Id:    "ta1",
 				Title: "Test Technical Asset",
+				RAA:   20, // neutral RAA so this test exercises only the rule's own baseline likelihood, not the RAA delta
 				Technologies: types.TechnologyList{
 					{
 						Attributes: map[string]bool{
@@ -233,6 +235,7 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 					"target": {
 						Id:              "target",
 						Title:           "Target Technical Asset",
+						RAA:             20, // neutral RAA so this test exercises only the rule's own baseline likelihood, not the RAA delta
 						Confidentiality: testCase.confidentiality,
 						Integrity:       testCase.integrity,
 						Availability:    testCase.availability,
