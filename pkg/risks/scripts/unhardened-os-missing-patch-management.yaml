@@ -1,0 +1,155 @@
+id: unhardened-os-missing-patch-management
+title: "Unhardened OS / Missing Patch Management"
+function: operations
+stride: elevation-of-privilege
+cwe: 1104
+description: >
+  The virtual machine is not deployed from a STIG-compliant baseline image and has no automated
+  patch management in place.
+impact: >
+  If this risk remains unmitigated, the OS accumulates known, unpatched CVEs and configuration
+  drift that make privilege escalation substantially easier.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: "Enforce STIG baselines and automated patching."
+mitigation: >
+  Provision VMs exclusively from DoD-approved, STIG-compliant marketplace images and enroll them
+  in strict automated update schedules to meet SLA patching requirements. Reference: DISA OS
+  STIGs.
+check: "Is this VM provisioned from a STIG-compliant baseline image and enrolled in automated patching?"
+detection_logic: >
+  Audit the platform's patch-management compliance logs and run automated STIG compliance scans
+  (e.g., ACAS/Nessus) against the host.
+risk_assessment: >
+  High risk of compromise via known vulnerabilities.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope virtual-machine
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once the VM is confirmed provisioned from a STIG-compliant baseline image and
+  enrolled in automated patching.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: virtual
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unhardened OS / Missing Patch Management</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable -- see untrusted-container-image.yaml for the general pattern.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

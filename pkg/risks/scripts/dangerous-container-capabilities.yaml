@@ -1,0 +1,164 @@
+id: dangerous-container-capabilities
+title: Dangerous Container Linux Capabilities
+function: operations
+stride: elevation-of-privilege
+cwe: 250
+description: >
+  The container is granted Linux capabilities beyond what its function requires, such as
+  CAP_SYS_ADMIN, CAP_NET_ADMIN, or CAP_SYS_PTRACE.
+impact: >
+  If this risk remains unmitigated, these capabilities can be used to escape the container,
+  manipulate network traffic, or extract credentials from other processes sharing the node.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+action: "Drop all capabilities and add back only the specific capabilities required for the workload function."
+mitigation: >
+  Set securityContext.capabilities.drop: [ALL] in the container spec and add back only the
+  specific capabilities required. Enforce this via a Kubernetes admission controller that blocks
+  deployment of containers with disallowed capabilities. Apply AppArmor or seccomp profiles to
+  further restrict system call surface. References: DISA Kubernetes STIG (K8S-00-000150); NIST SP
+  800-53 CM-7 (Least Functionality); CIS Kubernetes Benchmark.
+check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+detection_logic: >
+  Integrate Kubernetes capability audit into the CI/CD pipeline. Run Trivy or Kubescape against
+  all running workloads and alert on capability violations. Monitor kernel audit logs for
+  cap_effective flags on container processes that exceed the expected set.
+risk_assessment: >
+  High for containers with CAP_SYS_ADMIN or CAP_SYS_PTRACE. Medium for CAP_NET_ADMIN or
+  CAP_NET_RAW. All are CAT II STIG findings.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once all capabilities have been dropped and only explicitly required capabilities are
+  re-granted, enforced by admission controller policy.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: container
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Dangerous Container Linux Capabilities</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions (a privileged attacker can read, alter, or deny at will regardless of which
+    # single dimension is highest-rated) -- see any() across the three fields instead of a
+    # single dimension.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

@@ -1,0 +1,147 @@
+id: mutable-container-filesystem
+title: Mutable Container Filesystem
+function: operations
+stride: tampering
+cwe: 732
+description: >
+  The container's root filesystem is writable, allowing an attacker who gains code execution to
+  modify binaries or persist inside the container.
+impact: >
+  If this risk remains unmitigated, a compromised container provides an attacker a durable
+  foothold for lateral movement rather than resetting on restart.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
+action: "Enforce readOnlyRootFilesystem."
+mitigation: >
+  Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext. Mount
+  ephemeral emptyDir volumes for any directory the workload genuinely needs to write to at runtime
+  (e.g. /tmp). Enforce this cluster-wide via an OPA Gatekeeper or Kyverno admission policy that
+  rejects deployments without it set, rather than relying on manifest review alone. References:
+  DISA Kubernetes STIG; NIST SP 800-53 CM-6 (Configuration Settings); NIST SP 800-53 SC-39
+  (Process Isolation).
+check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+detection_logic: >
+  Query the cluster (kubectl get pods -o json) or the admission controller's policy audit log for
+  containers whose securityContext omits readOnlyRootFilesystem: true. Run Kubescape or a similar
+  CIS Kubernetes Benchmark scanner against running workloads.
+risk_assessment: >
+  Medium risk to node integrity in isolation, but compounding with any code-execution finding on
+  the same container that would otherwise reset on restart instead of persisting.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once the pod's securityContext already sets readOnlyRootFilesystem to true.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: container
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Mutable Container Filesystem</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (not a tier edge), so both the upward (RAA >= 40) and downward
+    # (RAA < 15) deltas are reachable -- see untrusted-container-image.yaml for the general
+    # pattern and the omitempty caveat this mirrors.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium" (a middle tier), so all three
+    # outcomes (low/medium/high) are reachable depending on the asset's own Integrity rank and
+    # the gated Business-Criticality bump.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

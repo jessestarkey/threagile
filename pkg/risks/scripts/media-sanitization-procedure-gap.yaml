@@ -1,0 +1,143 @@
+id: media-sanitization-procedure-gap
+title: Media Sanitization Procedure Gap
+function: operations
+stride: information-disclosure
+cwe: 212
+description: >
+  This virtual machine's persistent storage has no documented, NIST SP 800-88-aligned
+  sanitization procedure for end-of-life, decommissioning, or repurposing.
+impact: >
+  If this risk remains unmitigated, CUI persists recoverable on a disk that is decommissioned,
+  repurposed, or returned to a cloud provider or hardware vendor without verified sanitization.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html"
+action: "Adopt and document a NIST SP 800-88-aligned sanitization procedure for this asset's storage, exercised at decommissioning, repurposing, or hardware return."
+mitigation: >
+  Adopt a documented sanitization procedure aligned to NIST SP 800-88 for this asset's persistent
+  storage before decommissioning, repurposing, or returning hardware to a vendor -- cryptographic
+  erase where the disk supports it, otherwise a verified multi-pass wipe. Log every sanitization
+  event with the method used and who verified it. References: NIST SP 800-53 MP-6 (Media
+  Sanitization); NIST SP 800-88 (Guidelines for Media Sanitization); DoD 5200.01.
+check: "Is a documented, NIST SP 800-88-aligned sanitization procedure in place for this asset's storage?"
+detection_logic: >
+  Confirm a documented sanitization procedure exists and request evidence it was exercised for
+  the most recent decommissioning, repurposing, or hardware-return event involving this asset's
+  storage.
+risk_assessment: >
+  Medium where the disk is already encrypted with organization-controlled keys, since key
+  destruction alone is an effective sanitization. High where the disk is unencrypted or the
+  encryption key isn't organization-controlled.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope virtual-machine
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once a documented, NIST SP 800-88-aligned sanitization procedure is in place and
+  evidenced for this asset's storage.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: virtual
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Media Sanitization Procedure Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

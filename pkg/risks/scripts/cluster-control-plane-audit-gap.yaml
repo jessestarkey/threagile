@@ -1,0 +1,142 @@
+id: cluster-control-plane-audit-gap
+title: Container Orchestrator Control-Plane Audit Logging Gap
+function: operations
+stride: information-disclosure
+cwe: 778
+description: >
+  The cluster's audit policy is left at its default, which does not capture pod exec,
+  port-forward, secret access, or admission-controller decisions.
+impact: >
+  If this risk remains unmitigated, post-compromise lateral movement inside the cluster produces
+  no audit trail for an incident responder to reconstruct.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html"
+action: "Deploy an explicit Kubernetes audit policy capturing exec/attach/port-forward, secret access, and admission-controller decisions at Request or RequestResponse level, forwarded to the SIEM."
+mitigation: >
+  Configure the API server audit policy to capture, at minimum, RequestResponse-level logging for
+  pods/exec, pods/attach, pods/portforward subresources; secrets get/list/watch operations; and
+  all admission webhook decisions. Forward the audit log to the central SIEM with retention
+  matching the platform's incident-response window. References: NIST SP 800-53 AU-2 (Event
+  Logging); NIST SP 800-53 AU-12 (Audit Record Generation); CIS Kubernetes Benchmark (Control
+  Plane Logging).
+check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+detection_logic: >
+  Review the API server's configured audit policy for coverage of exec/attach/port-forward,
+  secret access, and admission decisions, and confirm the audit log is forwarding to the SIEM.
+risk_assessment: >
+  High for any cluster running the API server's default audit policy (or no audit policy) rather
+  than one explicitly scoped to security-relevant subresources and admission decisions.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once an explicit audit policy covering exec/attach/port-forward, secret access, and
+  admission decisions is deployed and forwarding to the SIEM.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: container
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Container Orchestrator Control-Plane Audit Logging Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

@@ -1,0 +1,142 @@
+id: missing-network-micro-segmentation
+title: Missing Network Micro-Segmentation
+function: architecture
+stride: information-disclosure
+cwe: 1008
+description: >
+  The workload lacks an explicit, default-deny network policy, allowing unrestricted East-West
+  traffic within the cluster.
+impact: >
+  If this risk remains unmitigated, compromise of a single pod gives an attacker unrestricted
+  network reach to every other workload in the cluster.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html"
+action: "Implement strict K8s NetworkPolicies."
+mitigation: >
+  Apply a default-deny NetworkPolicy to the namespace first, then add explicit allow rules scoped
+  to only the specific source/destination pods and ports the workload genuinely requires
+  (label-selector based, not namespace-wide allows). Enforce this via policy-as-code rather than
+  relying on manual application per namespace. References: NIST SP 800-53 SC-7 (Boundary
+  Protection); NIST SP 800-207 (Zero Trust Architecture); CIS Kubernetes Benchmark.
+check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+detection_logic: >
+  Run kubectl get networkpolicy --all-namespaces and flag any namespace with zero NetworkPolicy
+  objects, or one that lacks a default-deny baseline. Cross-reference against the cluster's
+  policy-as-code bundle for a cluster-wide enforcement policy.
+risk_assessment: >
+  Medium in isolation, but compounds sharply with any single-pod compromise elsewhere in the
+  cluster -- the absence of segmentation is what turns one compromised pod into unrestricted
+  reach across every other workload sharing the cluster.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once a default-deny NetworkPolicy is already enforced at the namespace level.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: container
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Network Micro-Segmentation</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

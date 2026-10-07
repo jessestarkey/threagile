@@ -1,0 +1,145 @@
+id: untrusted-container-image
+title: Untrusted Container Image Supply Chain
+function: architecture
+stride: tampering
+cwe: 1357
+description: >
+  The container image's provenance is not explicitly verified as coming from a trusted, scanned
+  registry.
+impact: >
+  If this risk remains unmitigated, the image may introduce known CVEs or supply-chain malware
+  into the ATO boundary -- the same attacker-controlled-artifact-runs-with-the-workload's-own-
+  privilege consequence as a compromised CI/CD dependency, rated the same here rather than a
+  lesser tier just because the artifact is a container image instead of a package.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: "Migrate image sourcing to a trusted, DoD-approved registry and enforce cryptographic verification at deploy time."
+mitigation: >
+  Source all base and application images exclusively from a DoD-approved, continuously-scanned
+  registry (e.g., Iron Bank). Enforce SHA-256 digest pinning in every manifest -- prohibit mutable
+  tags like :latest. Require Sigstore/Cosign signature verification via an admission controller
+  (Kyverno or OPA Gatekeeper's image-verification policy) before any pod is scheduled. Run Trivy or
+  Grype against every image in the CI/CD pipeline and fail the build on Critical/High CVEs above
+  the org's accepted threshold. References: DISA Kubernetes STIG; NIST SP 800-53 SA-12 (Supply
+  Chain Protection); NIST SP 800-53 SR-3 (Supply Chain Controls and Processes); SLSA (Supply-chain
+  Levels for Software Artifacts).
+check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+detection_logic: >
+  Audit the admission controller's image-verification policy (Kyverno ClusterPolicy / Gatekeeper
+  ConstraintTemplate) to confirm it rejects unsigned or non-digest-pinned images. Cross-reference
+  the registry's own pull audit log for images sourced outside the approved-registry allowlist.
+risk_assessment: >
+  High for images pulled from an unvetted public registry into an ATO boundary. Even a
+  DoD-approved registry doesn't fully close this without digest pinning and signature
+  verification enforced at deploy time -- an approved image can still be silently swapped after
+  approval.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
+  design -- see the fork's risk-methodology notes). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once the image is confirmed sourced exclusively from
+  a DoD-approved, scanned registry with digest pinning and admission-controller signature
+  verification enforced.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: container
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Untrusted Container Image Supply Chain</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Mirrors compute_likelihood()'s RAA delta in threat-modeling-2's inject_risks.py (and the
+    # equivalent computeLikelihood() helper in pkg/risks/builtin/helpers.go): baseline is already
+    # the top tier (very-likely), so a +1/0 delta clamps at the ceiling and only a genuinely
+    # low-RAA asset (RAA < 15) visibly pulls Likelihood down a notch.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # Mirrors compute_impact()'s CIA-rank delta on the single STRIDE-mapped dimension (Tampering
+    # -> Integrity) plus the gated Business-Criticality bump. Baseline is already the top tier
+    # (very-high), so the only visible movement is a drop to "high" when Integrity is low AND the
+    # model-level criticality bump doesn't offset it back up.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        # NOTE on the pattern below: Threagile's own yaml marshaling (used internally to feed
+        # the model to this script engine) tags every enum field `omitempty`, which drops the
+        # key ENTIRELY whenever the field holds its zero-value tier (Confidentiality's lowest
+        # tier is "public", Criticality's is "archive") -- so `{tech_asset.integrity}` never
+        # resolves at all for an archive-rated asset, it stays literal unresolved text. Checking
+        # equality against a SPECIFIC LOW tier ("archive"/"operational") is therefore unreliable
+        # (always false, whether the real value is a genuine mid/high tier OR an unresolved
+        # archive-tier placeholder). Checking equality against a specific HIGH tier instead is
+        # safe either way: an unresolved placeholder or a genuine non-matching tier both
+        # correctly evaluate to "not equal". So this defaults to the "low" conclusion and only
+        # flips it when a known NON-ZERO tier explicitly matches, rather than the other way
+        # around.
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

@@ -1,0 +1,137 @@
+id: missing-endpoint-security-agents
+title: Missing Endpoint Security Agents
+function: operations
+stride: information-disclosure
+cwe: 778
+description: >
+  The virtual machine lacks mandatory endpoint security agents such as EDR or a centralized log
+  forwarder.
+impact: >
+  If this risk remains unmitigated, an attacker can establish persistence and move laterally
+  from this host without triggering any host-level SOC alert.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
+action: "Deploy EDR and centralized logging agents."
+mitigation: >
+  Ensure platform policy enforces the automated deployment of an EDR agent and a centralized log
+  forwarder (e.g., Microsoft Defender for Endpoint and Azure Monitor Agent, or the equivalent for
+  the hosting platform) on all VMs. Reference: DoD Zero Trust Reference Architecture.
+check: "Are EDR and centralized logging agents deployed and reporting on this host?"
+detection_logic: >
+  Query the cloud platform's resource inventory for missing endpoint-security VM extensions, or
+  check the EDR console for an active host heartbeat.
+risk_assessment: >
+  High risk of undetected post-exploitation activity.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope virtual-machine
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once EDR and log-forwarding agents are confirmed deployed with an active heartbeat.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.machine}"
+                second: virtual
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Endpoint Security Agents</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
