@@ -12,6 +12,7 @@ agent-orchestrator:
         less_protected_type: true
         backend_related: true
         request_serving_api: true
+        application_logic: true
 ai:
     aliases:
         - artificial-intelligence
@@ -36,6 +37,7 @@ application-server:
         propagate_identity_to_outgoing_targets: true
         request_serving_api: true
         web_application: true
+        application_logic: true
 artifact-registry:
     description: A registry to store build artifacts
     attributes:
@@ -48,6 +50,7 @@ batch-processing:
     attributes:
         batch-processing: true
         backend_related: true
+        application_logic: true
 big-data-platform:
     aliases:
         - big-data
@@ -112,6 +115,7 @@ cms:
         propagate_identity_to_outgoing_targets: true
         web_application: true
         request_serving_api: true
+        application_logic: true
 code-inspection-platform:
     aliases:
         - code-inspection
@@ -175,6 +179,7 @@ ejb:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         request_serving_api: true
+        application_logic: true
 erp:
     aliases:
         - enterprise-resource-planning
@@ -188,11 +193,13 @@ erp:
         request_serving_api: true
         storing_end_user_data: true
         web_application: true
+        application_logic: true
 event-listener:
     description: An event listener waiting to be triggered and spring to action
     attributes:
         event-listener: true
         backend_related: true
+        application_logic: true
 file-server:
     aliases:
         - file-storage
@@ -236,6 +243,7 @@ identity-provider:
         propagate_identity_to_outgoing_targets: true
         web_application: true
         request_serving_api: true
+        application_logic: true
 identity-store-database:
     aliases:
         - identity-store
@@ -309,6 +317,7 @@ llm-endpoint:
         ai: true
         less_protected_type: true
         request_serving_api: true
+        application_logic: true
 library:
     description: A software library
     attributes:
@@ -358,6 +367,7 @@ message-queue:
         backend_related: true
         propagate_identity_to_outgoing_targets: true
         storing_end_user_data: true
+        application_logic: true
 mobile-app:
     description: A mobile app (smartphone, tablet)
     attributes:
@@ -393,6 +403,7 @@ model-serving:
         ai: true
         less_protected_type: true
         backend_related: true
+        application_logic: true
 monitoring:
     aliases:
         - siem
@@ -414,6 +425,7 @@ rag-pipeline:
         less_protected_type: true
         backend_related: true
         request_serving_api: true
+        application_logic: true
 report-engine:
     aliases:
         - reporting
@@ -424,6 +436,7 @@ report-engine:
         propagate_identity_to_outgoing_targets: true
         web_application: true
         request_serving_api: true
+        application_logic: true
 reverse-proxy:
     description: A proxy hiding internal infrastructure from caller making requests. Can also reduce load
     attributes:
@@ -444,6 +457,7 @@ scheduler:
         scheduler: true
         backend_related: true
         less_protected_type: true
+        application_logic: true
 search-engine:
     description: A search engine
     attributes:
@@ -486,6 +500,7 @@ stream-processing:
         stream-processing: true
         backend_related: true
         storing_end_user_data: true
+        application_logic: true
 task:
     aliases:
         - job
@@ -539,6 +554,7 @@ web-application:
         web_application: true
         frontend_related: true
         request_serving_api: true
+        application_logic: true
 web-server:
     description: A web server
     attributes:
@@ -549,6 +565,7 @@ web-server:
         propagate_identity_to_outgoing_targets: true
         web_application: true
         request_serving_api: true
+        application_logic: true
 web-service-rest:
     aliases:
         - rest-api
@@ -561,6 +578,7 @@ web-service-rest:
         propagate_identity_to_outgoing_targets: true
         web_service: true
         request_serving_api: true
+        application_logic: true
 web-service-soap:
     aliases:
         - soap-api
@@ -573,3 +591,4 @@ web-service-soap:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_service: true
+        application_logic: true

@@ -50,6 +50,13 @@ risk:
     parameter: tech_asset
     id: "{$risk.id}@{tech_asset.id}"
 
+  # Narrower than frontend_related/backend_related (used by the sibling CUI Telemetry
+  # Spillage/AU-2/Baseline Security Event Logging checks): this category's whole premise is an
+  # authorization/validation check in this asset's OWN code falling through to an allowed state
+  # on an unhandled exception, which requires the asset to actually own request/job-processing
+  # logic. A managed datastore (database, vault) or pure network/traffic plumbing (reverse-proxy,
+  # load-balancer, WAF) has no such code of its own, so application_logic -- granted only to
+  # technologies that genuinely process requests or jobs -- excludes them deliberately.
   match:
     parameter: tech_asset
     do:
@@ -58,9 +65,7 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                or:
-                  - true: "{.attributes.frontend_related}"
-                  - true: "{.attributes.backend_related}"
+                true: "{.attributes.application_logic}"
           then:
             return: true
 

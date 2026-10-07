@@ -36,6 +36,7 @@ const (
 	IsRAGPipeline                                     = "rag-pipeline"
 	IsAgentOrchestrator                               = "agent-orchestrator"
 	IsModelRegistry                                   = "model-registry"
+	IsApplicationLogic                                = "application_logic"
 )
 
 type TechnologyList []*Technology

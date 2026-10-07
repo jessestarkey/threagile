@@ -38,6 +38,10 @@ risk:
     parameter: tech_asset
     id: "{$risk.id}@{tech_asset.id}"
 
+  # application_logic is OR'd in alongside frontend_related/backend_related to also catch
+  # technologies (application-server, report-engine, web-server, llm-endpoint) that carry
+  # neither of those two but genuinely have their own audit-relevant request/job-processing
+  # surface.
   match:
     parameter: tech_asset
     do:
@@ -49,6 +53,7 @@ risk:
                 or:
                   - true: "{.attributes.frontend_related}"
                   - true: "{.attributes.backend_related}"
+                  - true: "{.attributes.application_logic}"
           then:
             return: true
 
