@@ -1,0 +1,154 @@
+id: atlas-agent-orchestration-hijack
+title: "ATLAS: AI Agent Orchestration Hijack and Persistence"
+function: architecture
+stride: elevation-of-privilege
+cwe: 269
+description: >
+  The AI agent orchestration layer that plans tasks and dispatches tool calls is the
+  highest-value target in an agentic system, and can be poisoned, reconfigured, or hijacked to
+  invoke tools or deploy rogue sub-agents.
+impact: >
+  If this risk remains unmitigated, a compromised orchestrator gives an adversary persistent,
+  automated access to every tool and data source the agent can reach.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Apply strict least-privilege scoping to all agent capabilities and enforce human-in-the-loop for consequential actions."
+mitigation: >
+  Enforce a mandatory human confirmation gate before any agent-initiated action that writes data,
+  sends communications, or invokes external systems. Scope tool permissions to the minimum
+  required. Establish an explicit, immutable allowlist of callable tools and block dynamic tool
+  registration. Implement agent execution sandboxing to prevent container/host escape. Set hard
+  resource budgets on agent compute loops. Log all tool invocations and context mutations with
+  the originating prompt for SOC review. Isolate agent memory stores and restrict write access.
+  References: MITRE ATLAS AML.T0053 (AI Agent Tool Invocation), AML.T0080 (AI Agent Context
+  Poisoning), AML.T0081 (Modify AI Agent Configuration), AML.T0103 (Deploy AI Agent), AML.T0105
+  (Escape to Host), AML.T0108 (AI Agent C2); OWASP LLM07:2025.
+check: "Is a human confirmation gate enforced before any agent-initiated write/communication/external-system action, with tool permissions scoped to the minimum required and an immutable tool allowlist?"
+detection_logic: >
+  Audit all agent tool invocation logs for calls not traceable to an explicit human user turn.
+  Alert on configuration modifications to agent persisted state. Monitor compute usage metrics
+  for runaway agent loops. Alert on any outbound network call from the agent runtime to an
+  endpoint not in the pre-approved allowlist.
+risk_assessment: >
+  Critical for any agentic deployment with write-capable tools or multi-agent coordination.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope agent-orchestrator
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once the orchestrator is confirmed to have zero write-capable tool access,
+  operates in a strictly isolated sandbox, and processes only pre-validated, fully trusted
+  internal instructions.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.agent-orchestrator}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: AI Agent Orchestration Hijack and Persistence</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions. Baseline is "very-high" (the ceiling), so only the downward delta (every
+    # dimension at or below rank 1 -- i.e. none reaching "restricted"/"important" or higher) is
+    # reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - any_dimension_at_least_mid: false
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  any_dimension_at_least_mid: true
+        - if:
+            and:
+              - false: "{any_dimension_at_least_mid}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

@@ -1,0 +1,143 @@
+id: atlas-inference-api-abuse
+title: "ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  The asset exposes an LLM or model inference API that can be systematically queried to extract a
+  functional copy of the model, infer training data membership, or harvest disproportionate
+  compute.
+impact: >
+  If this risk remains unmitigated, model extraction undermines IP protection, membership
+  inference can constitute a data breach, and cost harvesting drives unauthorized cloud spend.
+asvs: "V11 - Business Logic"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Apply output perturbation, query rate limiting, and anomalous query pattern detection on all inference endpoints."
+mitigation: >
+  Enforce strict per-user and per-token query rate limits and hard compute budgets. Add
+  calibrated output perturbation (top-k sampling noise, confidence score truncation) to degrade
+  model extraction signal. Monitor for systematic grid-search query patterns characteristic of
+  model extraction. Require authenticated access with short-lived tokens. Log all inference
+  requests with user identity for audit and anomaly detection. References: MITRE ATLAS AML.T0005
+  (Create Proxy AI Model), AML.T0024 (Exfiltration via AI Inference API), AML.T0029 (Denial of AI
+  Service), AML.T0034 (Cost Harvesting), AML.T0040 (AI Model Inference API Access); NIST AI RMF
+  GOVERN 6.2.
+check: "Are per-user query rate limits, output perturbation, and anomalous query pattern detection all applied to this inference endpoint?"
+detection_logic: >
+  Monitor inference logs for statistical patterns consistent with extraction (systematic input
+  sweeps, near-boundary probing, anomalously high per-user query volume). Alert on resource
+  consumption spikes. Track per-session query diversity and flag low-entropy repetitive probing.
+risk_assessment: >
+  High for externally accessible endpoints serving proprietary models trained on CUI. Medium for
+  internal-only endpoints.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope LLM-endpoint asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once rate limiting, output perturbation, and anomaly detection are all confirmed in
+  place.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm-endpoint}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: LLM Inference API Abuse, Cost Harvesting, and Model Extraction</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

@@ -1,0 +1,124 @@
+id: atlas-model-supply-chain
+title: "ATLAS: AI Model Supply Chain Compromise and Model Manipulation"
+function: architecture
+stride: tampering
+cwe: 1357
+description: >
+  The asset loads or serves trained model artifacts from external or shared registries, which
+  can be compromised at the weights, container, or dependency level.
+impact: >
+  If this risk remains unmitigated, a backdoored model artifact can achieve remote code execution
+  on the serving host or produce systematically manipulated outputs that pass standard
+  evaluation.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: "Establish model artifact provenance verification as a mandatory CI/CD gate and ban Pickle-based model formats."
+mitigation: >
+  Source all model artifacts exclusively from a private, access-controlled registry. Enforce
+  cryptographic digest pinning (SHA-256) for all model files. Use safetensors format instead of
+  Pickle-based formats (.pt, .pkl) to eliminate deserialization RCE surface. Scan all model
+  archives for embedded executable code using tools such as picklescan. Run behavioral diff
+  against a known-good checkpoint before promoting to production. Restrict write access to model
+  serving directories. References: MITRE ATLAS AML.T0010 (AI Supply Chain Compromise), AML.T0011
+  (Unsafe AI Artifacts), AML.T0018 (Manipulate AI Model), AML.T0043.004 (Insert Backdoor
+  Trigger); NIST AI RMF GOVERN 1.6.
+check: "Are model artifacts sourced exclusively from a private registry with digest pinning, safetensors format, and a behavioral diff before promotion to production?"
+detection_logic: >
+  Verify SHA-256 digest of each model file in the CI/CD pipeline against a pinned manifest. Run
+  picklescan on all model archives before any deserialization. Monitor model serving process for
+  anomalous network egress on startup.
+risk_assessment: >
+  Critical if loading Pickle-format weights from public registries or shared internal registries
+  without digest pinning.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope model-serving asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once the model artifact is confirmed fully internally trained, stored in a private
+  registry with strict access control, uses safetensors format, and is digest-pinned.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.model-serving}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: AI Model Supply Chain Compromise and Model Manipulation</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

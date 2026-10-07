@@ -31,6 +31,11 @@ const (
 	IsDevelopmentRelevant                             = "development_relevant"
 	IsTrafficForwarding                               = "traffic_forwarding"
 	IsEmbeddedComponent                               = "embedded_component"
+	IsLLMEndpoint                                     = "llm-endpoint"
+	IsModelServing                                    = "model-serving"
+	IsRAGPipeline                                     = "rag-pipeline"
+	IsAgentOrchestrator                               = "agent-orchestrator"
+	IsModelRegistry                                   = "model-registry"
 )
 
 type TechnologyList []*Technology

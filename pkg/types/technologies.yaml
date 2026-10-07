@@ -1,3 +1,17 @@
+agent-orchestrator:
+    aliases:
+        - ai-agent-orchestrator
+        - langchain
+        - autogen
+        - crewai
+        - react-agent-loop
+    description: An AI agent orchestration layer that plans, decomposes tasks, and dispatches tool calls
+    attributes:
+        agent-orchestrator: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        request_serving_api: true
 ai:
     aliases:
         - artificial-intelligence
@@ -279,6 +293,17 @@ ldap-server:
         backend_related: true
         identity_related: true
         identity_store: true
+llm-endpoint:
+    aliases:
+        - llm-inference-api
+        - llm-inference
+        - model-inference-api
+    description: An LLM or ML model inference API endpoint
+    attributes:
+        llm-endpoint: true
+        ai: true
+        less_protected_type: true
+        request_serving_api: true
 library:
     description: A software library
     attributes:
@@ -336,6 +361,33 @@ mobile-app:
         frontend_related: true
         less_protected_type: true
         propagate_identity_to_outgoing_targets: true
+model-registry:
+    aliases:
+        - ai-model-registry
+        - mlflow
+        - huggingface-hub
+        - model-artifact-store
+    description: A registry or artifact store for AI model weights and configuration
+    attributes:
+        model-registry: true
+        ai: true
+        less_protected_type: true
+        development_relevant: true
+        may_contain_secrets: true
+model-serving:
+    aliases:
+        - model-server
+        - inference-server
+        - vllm
+        - triton
+        - torchserve
+        - ollama
+    description: A model-serving host that loads and runs a trained model artifact
+    attributes:
+        model-serving: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
 monitoring:
     aliases:
         - siem
@@ -346,6 +398,17 @@ monitoring:
         less_protected_type: true
         unnecessary_data_tolerated: true
         unprotected_communications_tolerated: true
+rag-pipeline:
+    aliases:
+        - retrieval-augmented-generation
+        - vector-search-pipeline
+    description: A Retrieval-Augmented Generation pipeline combining vector retrieval with LLM grounding
+    attributes:
+        rag-pipeline: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        request_serving_api: true
 report-engine:
     aliases:
         - reporting

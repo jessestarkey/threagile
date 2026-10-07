@@ -1,0 +1,151 @@
+id: atlas-rag-poisoning-exfil
+title: "ATLAS: RAG Pipeline Poisoning and Data Exfiltration"
+function: architecture
+stride: tampering
+cwe: 349
+description: >
+  The RAG pipeline retrieves documents from a vector store to ground LLM responses, and an
+  adversary who can influence the indexed content can poison what gets retrieved.
+impact: >
+  If this risk remains unmitigated, poisoned knowledge-base content can persistently redirect
+  model behavior for every user querying related topics, or exfiltrate queries to an
+  attacker-controlled destination.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Enforce strict ingestion access controls and content integrity validation on all documents entering the vector store."
+mitigation: >
+  Gate knowledge base ingestion behind an authenticated, audited pipeline -- prohibit direct
+  writes from user-facing interfaces. Apply a content safety classifier to all documents prior to
+  embedding. Implement document provenance tracking (source, ingest timestamp, author identity)
+  stored alongside vector embeddings. Periodically audit high-retrieval-frequency documents for
+  adversarial content. Segment the vector store by trust level and enforce retrieval
+  authorization aligned to the querying user's clearance. References: MITRE ATLAS AML.T0070 (RAG
+  Poisoning), AML.T0071 (False RAG Entry Injection), AML.T0064 (Gather RAG-Indexed Targets),
+  AML.T0066 (Retrieval Content Crafting), AML.T0082 (RAG Credential Harvesting), AML.T0085.000
+  (Data from RAG Databases); OWASP LLM02:2025.
+check: "Is knowledge base ingestion gated behind an authenticated, audited pipeline with content safety validation and retrieval authorization aligned to the querying user's clearance?"
+detection_logic: >
+  Audit vector store write access logs. Alert on ingestion events outside the approved pipeline.
+  Periodically retrieve and review top-ranked documents for high-frequency query terms to
+  identify anomalous content. Monitor retrieval API query patterns for systematic scraping.
+risk_assessment: >
+  High if the knowledge base accepts documents from user-controlled or third-party sources.
+  Medium for fully controlled, internally authored corpora.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope RAG-pipeline asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once the vector store is confirmed populated exclusively by a controlled, automated
+  ingest pipeline from an authenticated internal source with no external or user-write access.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.rag-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: RAG Pipeline Poisoning and Data Exfiltration</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
