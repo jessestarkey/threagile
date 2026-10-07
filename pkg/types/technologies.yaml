@@ -34,6 +34,7 @@ application-server:
         less_protected_type: true
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
+        request_serving_api: true
         web_application: true
 artifact-registry:
     description: A registry to store build artifacts
@@ -110,6 +111,7 @@ cms:
         less_protected_type: true
         propagate_identity_to_outgoing_targets: true
         web_application: true
+        request_serving_api: true
 code-inspection-platform:
     aliases:
         - code-inspection
@@ -172,6 +174,7 @@ ejb:
         less_protected_type: true
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
+        request_serving_api: true
 erp:
     aliases:
         - enterprise-resource-planning
@@ -182,6 +185,7 @@ erp:
         high_value_target: true
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
+        request_serving_api: true
         storing_end_user_data: true
         web_application: true
 event-listener:
@@ -231,6 +235,7 @@ identity-provider:
         identity_related: true
         propagate_identity_to_outgoing_targets: true
         web_application: true
+        request_serving_api: true
 identity-store-database:
     aliases:
         - identity-store
@@ -418,6 +423,7 @@ report-engine:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_application: true
+        request_serving_api: true
 reverse-proxy:
     description: A proxy hiding internal infrastructure from caller making requests. Can also reduce load
     attributes:
@@ -542,6 +548,7 @@ web-server:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_application: true
+        request_serving_api: true
 web-service-rest:
     aliases:
         - rest-api
