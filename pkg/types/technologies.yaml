@@ -414,6 +414,7 @@ monitoring:
         less_protected_type: true
         unnecessary_data_tolerated: true
         unprotected_communications_tolerated: true
+        security_control_related: true
 rag-pipeline:
     aliases:
         - retrieval-augmented-generation

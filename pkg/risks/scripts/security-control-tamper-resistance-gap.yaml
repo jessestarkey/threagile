@@ -1,0 +1,129 @@
+id: security-control-tamper-resistance-gap
+title: "Security Control Tamper Resistance Gap"
+function: operations
+stride: information-disclosure
+cwe: 778
+description: >
+  This security control (WAF, IDS/IPS, HSM, vault, or SIEM/monitoring platform) has no
+  tamper-evident configuration or independently-stored audit trail of its own, letting an
+  adversary who gains a foothold disable, reconfigure, or evade it -- or erase evidence that they
+  did -- without that action being independently detectable outside the control itself.
+impact: >
+  If this risk remains unmitigated, an adversary with a foothold can blind or disable the exact
+  control that would otherwise detect or block their next step, and nothing outside that control
+  notices it happened.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+action: "Forward this control's own configuration-change and administrative-access events to a destination it cannot itself modify or delete, and alert on any change to its own protective configuration."
+mitigation: >
+  Forward this security control's own administrative/configuration-change audit log to a SIEM
+  destination or write-once store that this control's own administrators cannot modify or
+  delete -- the same principle MITRE ATT&CK's Defense Evasion tactic (Indicator Removal,
+  Impair Defenses) assumes an adversary will attempt. Alert on any change to the control's own
+  protective configuration (rule sets, blocking mode toggled to monitor-only, log forwarding
+  disabled) as a high-priority event in its own right, independent of whatever the control is
+  itself monitoring for. Where the platform supports it, require a second approver for any change
+  that weakens the control's own protective posture. Periodically verify the control is still
+  actively enforcing (not silently failed open) via a synthetic test rather than assuming
+  uptime implies correct operation.
+check: "Is this control's own configuration-change and administrative-access audit trail forwarded to a destination it cannot itself modify, with alerting on any change to its own protective posture?"
+detection_logic: >
+  Monitor for configuration changes to this control (rule/policy edits, mode changes, log
+  forwarding toggles) and alert on any such change not traceable to an approved change record.
+  Run periodic synthetic tests confirming the control is still actively enforcing rather than
+  silently disabled or running in monitor-only mode.
+risk_assessment: >
+  High for any security control whose own administrative/configuration-change events are not
+  independently logged outside the control itself.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope security-control
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once this control's own configuration-change audit trail is confirmed forwarded to
+  a destination its own administrators cannot modify, with alerting on protective-posture changes.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.security_control_related}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Security Control Tamper Resistance Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
+    # ceiling), so only the downward (Confidentiality low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - confidentiality_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  confidentiality_low: false
+        - if:
+            and:
+              - true: "{confidentiality_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high
