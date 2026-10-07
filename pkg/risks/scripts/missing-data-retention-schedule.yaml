@@ -1,0 +1,130 @@
+id: missing-data-retention-schedule
+title: Missing Data Retention and Disposition Schedule
+function: operations
+stride: information-disclosure
+cwe: 200
+description: >
+  The asset holds data with no documented retention period or disposition action tied to its
+  classification type.
+impact: >
+  If this risk remains unmitigated, sensitive holdings can be retained indefinitely with no owner
+  for disposal, while records needed for a later investigation can be lost prematurely.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html"
+action: "Document a retention period and a specific disposition action (not merely 'delete') for each data/classification type this asset holds, and implement automated enforcement where the platform supports it."
+mitigation: >
+  Define a retention schedule per data classification/record type, sourced from the applicable
+  NARA General Records Schedule or program-specific records disposition schedule, specifying both
+  a minimum retention period and a required disposition action at expiry. Automate enforcement
+  (lifecycle policies on the storage layer) wherever possible rather than relying on manual
+  review. Ensure the schedule explicitly protects audit and provenance records for at least the
+  minimum period required to support an incident investigation opened near the end of the
+  retention window. References: NIST SP 800-53 SI-12 (Information Management and Retention); NIST
+  SP 800-53 AU-11 (Audit Record Retention); NARA General Records Schedules.
+check: "Does a documented retention and disposition schedule exist for every data/classification type this asset holds, enforced automatically or verified on a recurring audit cadence?"
+detection_logic: >
+  Audit the storage layer's lifecycle policy configuration against the documented retention
+  schedule for this asset's data/classification types, and confirm disposition actions are
+  enforced rather than merely documented.
+risk_assessment: >
+  Medium, escalating to High where the unretained/over-retained data is CUI or where audit
+  records needed for a pending investigation have already been disposed of.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope datastore asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once a documented retention and disposition schedule is confirmed in place and
+  enforced for every data/classification type this asset holds.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.type}"
+                second: datastore
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Data Retention and Disposition Schedule</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "low" (the floor), so
+    # only the upward delta (Confidentiality high, or the gated Business-Criticality bump) is
+    # reachable -- "restricted" maps to a zero CIA delta from this floor, so only confidential/
+    # strictly-confidential visibly moves it.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - confidentiality_high: false
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  confidentiality_high: true
+        - if:
+            or:
+              - true: "{confidentiality_high}"
+              - true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

@@ -1,0 +1,150 @@
+id: data-store-audit-detection-gap
+title: Data Store Audit Logging and Anomalous Access Detection Gap
+function: operations
+stride: information-disclosure
+cwe: 778
+description: >
+  A data store has no operation-level audit logging and no detection tuned to abnormal access
+  patterns such as bulk reads or connections from an unexpected principal.
+impact: >
+  If this risk remains unmitigated, bulk exfiltration by a compromised or malicious authorized
+  identity produces no anomalous signal and no forensic record.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
+action: "Enable operation-level (read/write/delete/list) audit logging on the data store with the requesting identity attached, and apply anomaly detection tuned to bulk-read and abnormal-export patterns."
+mitigation: >
+  Enable data-plane audit logging on the store (e.g., Azure SQL Auditing, Storage Analytics
+  logging, Key Vault diagnostic logs) capturing the operation, the requesting identity, and the
+  object/record affected, forwarded to the central SIEM. Layer native or platform-provided
+  anomaly detection (e.g., Microsoft Defender for Storage/SQL) tuned to flag bulk-read volume,
+  access from a principal or location outside the established baseline, and access rate spikes.
+  Treat detection tooling that only covers control-plane (management API) operations, not
+  data-plane operations, as not meeting this control. References: NIST SP 800-53 AU-2 (Event
+  Logging); NIST SP 800-53 AU-6 (Audit Record Review, Analysis, and Reporting); NIST SP 800-53
+  SI-4 (System Monitoring).
+check: "Is operation-level data-plane audit logging enabled and forwarded to the SIEM, with anomaly detection tuned to bulk access patterns confirmed active for this asset?"
+detection_logic: >
+  Alert on read/export volume from a single identity exceeding a rolling baseline by a defined
+  multiple within a 1-hour window, and on any data-plane access from a principal or network
+  location not previously observed for this asset.
+risk_assessment: >
+  High for any data store holding CUI where data-plane operations are not logged at the
+  record/object level or where no anomaly detection is applied to access patterns.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope datastore asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once operation-level data-plane audit logging and tuned anomaly detection are
+  confirmed active for this asset.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - equal:
+                first: "{tech_asset.type}"
+                second: datastore
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Data Store Audit Logging and Anomalous Access Detection Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
