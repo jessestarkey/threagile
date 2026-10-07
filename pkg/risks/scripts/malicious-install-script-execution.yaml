@@ -1,0 +1,123 @@
+id: malicious-install-script-execution
+title: Malicious Package Install-Script Execution on CI Runner
+function: operations
+stride: tampering
+cwe: 1357
+description: >
+  This build pipeline allows dependency install scripts to run automatically during resolution,
+  before any malware or vulnerability scan examines the package.
+impact: >
+  If this risk remains unmitigated, a malicious dependency's install script executes arbitrary
+  code on the CI runner before any downstream scan has a chance to catch it.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: "Suppress automatic execution of dependency install/post-install scripts in the CI environment, and apply a publish-to-adoption cooldown before newly published dependency versions are eligible for use."
+mitigation: >
+  Configure the package manager to suppress automatic install-script execution during CI
+  dependency resolution (e.g., npm install --ignore-scripts, pip's build isolation with no
+  arbitrary setup.py execution where avoidable) and only allow specific, reviewed exceptions for
+  packages that genuinely require a build step. Apply a minimum cooldown period (e.g., 3-7 days)
+  between a dependency version's publication and its eligibility for use in this pipeline, since
+  malicious package versions are frequently identified and pulled within days of publication.
+  References: NIST SP 800-218 (Secure Software Development Framework, PW.4, PO.5); NIST SP 800-53
+  SI-3 (Malicious Code Protection); OWASP Software Component Verification Standard.
+check: "Is automatic dependency install-script execution suppressed in CI, and is a publish-to-adoption cooldown enforced?"
+detection_logic: >
+  Audit the package manager's CI configuration for install-script suppression flags and for an
+  enforced cooldown period on newly published dependency versions.
+risk_assessment: >
+  Critical for any build pipeline that executes dependency install scripts automatically with no
+  cooldown period on newly published versions.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope build-pipeline asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once install-script execution is confirmed suppressed by default and a publish-to-
+  adoption cooldown is enforced.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.build-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Malicious Package Install-Script Execution on CI Runner</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

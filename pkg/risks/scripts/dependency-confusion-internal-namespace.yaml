@@ -1,0 +1,124 @@
+id: dependency-confusion-internal-namespace
+title: Dependency Confusion via Unclaimed Internal Package Namespace
+function: architecture
+stride: tampering
+cwe: 1357
+description: >
+  This build pipeline's dependency resolver falls back to a public package index when a package
+  is not found in the internal feed, rather than restricting internally-named packages to that
+  feed.
+impact: >
+  If this risk remains unmitigated, an attacker who publishes a higher-versioned package under
+  the internal name on the public index causes the build to pull and execute their code instead.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: "Configure the dependency resolver to treat the internal package namespace as authoritative, refusing fallback to a public index for internally-named packages."
+mitigation: >
+  Configure the package manager's scoped registry / upstream source settings so internally-named
+  packages resolve only from the internal feed, with no fallback to a public index for that
+  namespace (npm scoped packages, a private PyPI index with --index-url pinned rather than
+  --extra-index-url, NuGet package source mapping, or equivalent). Where a dependency proxy/
+  artifact repository manager is used, configure it to reserve the internal namespace and block
+  public-index publication under names matching it. References: NIST SP 800-53 SR-4 (Provenance);
+  NIST SP 800-218 (Secure Software Development Framework, PW.4); OWASP Dependency Confusion
+  guidance.
+check: "Does the dependency resolver's configuration restrict internally-named packages to the internal feed with no public-index fallback?"
+detection_logic: >
+  Audit the package manager's scoped registry / upstream source configuration for any
+  internally-named package namespace, confirming no fallback to a public index is configured.
+risk_assessment: >
+  Critical for any build pipeline resolving internally-named packages through a resolver
+  configuration that permits public-index fallback.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope build-pipeline asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once the resolver is confirmed to restrict internally-named packages to the internal
+  feed with no public-index fallback.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.build-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Dependency Confusion via Unclaimed Internal Package Namespace</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

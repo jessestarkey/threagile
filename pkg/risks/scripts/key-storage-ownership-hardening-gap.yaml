@@ -1,0 +1,144 @@
+id: key-storage-ownership-hardening-gap
+title: Key Storage and Ownership Hardening Gap
+function: architecture
+stride: information-disclosure
+cwe: 320
+description: >
+  This secrets or key management asset holds consequential key material either generated only in
+  software rather than a hardware-backed root of trust, or encrypted under a platform-managed key
+  when policy requires a customer-managed one.
+impact: >
+  If this risk remains unmitigated, a compromised host that generated a software-only key yields
+  the key material directly, with no hardware boundary to cross.
+asvs: "V6 - Cryptography"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html"
+action: "Generate and store consequential keys in an HSM-backed service (not software), and confirm the key ownership tier (customer-managed vs. platform-managed) matches this asset's data classification requirement."
+mitigation: >
+  Generate and store keys protecting CUI or signing/root credentials in a hardware-backed key
+  vault (e.g., a Premium/Managed HSM tier, or equivalent) rather than in application memory or a
+  software keystore. Where policy requires customer control over key material for a given
+  classification tier, provision the resource with a customer-managed key (CMK) in that
+  hardware-backed vault rather than accepting the platform's default platform-managed key (PMK) --
+  verify this per resource, since PMK is frequently the default and satisfies "encrypted at rest"
+  scans without satisfying the ownership requirement. References: NIST SP 800-53 SC-12
+  (Cryptographic Key Establishment and Management); NIST SP 800-57 (Recommendation for Key
+  Management); FIPS 140-3.
+check: "Are consequential keys generated and held in a hardware-backed vault, with the key ownership tier (CMK vs. PMK) matching this asset's data classification requirement?"
+detection_logic: >
+  Audit the key vault's resource configuration for HSM-backed key generation and for whether keys
+  are customer-managed or platform-managed, cross-referenced against this asset's data
+  classification requirement.
+risk_assessment: >
+  High for any asset generating or holding keys protecting CUI in software rather than a
+  hardware-backed vault, or where a classification tier requiring CMK is provisioned with a
+  platform-managed key instead.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope vault asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once consequential keys are confirmed generated and held in a hardware-backed vault
+  with the key ownership tier verified against this asset's data classification requirement.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.vault}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Key Storage and Ownership Hardening Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

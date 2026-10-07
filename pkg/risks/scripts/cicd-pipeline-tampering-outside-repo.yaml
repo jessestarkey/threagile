@@ -1,0 +1,141 @@
+id: cicd-pipeline-tampering-outside-repo
+title: CI/CD Pipeline and Admission-Policy Tampering Outside Repository Trail
+function: operations
+stride: tampering
+cwe: 1357
+description: >
+  An identity with access to the CI/CD platform's own console can modify the pipeline definition
+  or its gate policies directly, bypassing the source-controlled pipeline file and leaving no
+  pull-request trail.
+impact: >
+  If this risk remains unmitigated, a security gate can be silently disabled outside code review,
+  so the gate a reviewer approved is no longer the one that actually runs.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
+action: "Restrict who can modify this pipeline's definition or admission/gate policies directly through the CI/CD platform's console or API, and log every such change even when it does not originate from a repository commit."
+mitigation: >
+  Where the CI/CD platform allows pipeline or policy edits outside the repository (console UI,
+  direct API calls), restrict that capability to a minimal administrative group distinct from
+  ordinary contributors, and forward every such change to the SIEM regardless of whether it
+  originated from a commit. Prefer a platform configuration that sources the pipeline definition
+  exclusively from the repository (true pipeline-as-code with no console override capability)
+  where the platform supports it. References: NIST SP 800-218 (Secure Software Development
+  Framework, PO.3, PS.1); NIST SP 800-53 CM-3 (Configuration Change Control).
+check: "Are pipeline/policy edits made outside the repository restricted to a minimal administrative group and logged to the SIEM?"
+detection_logic: >
+  Audit the CI/CD platform's access-control configuration for who can edit pipeline definitions or
+  gate policies outside a repository commit, and confirm such changes are forwarded to the SIEM.
+risk_assessment: >
+  High for any pipeline where a non-administrative identity can alter the pipeline definition or
+  gate policies outside the repository's PR trail.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope build-pipeline asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once pipeline/policy edits outside the repository are confirmed restricted to a
+  minimal administrative group and logged to the SIEM.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.build-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>CI/CD Pipeline and Admission-Policy Tampering Outside Repository Trail</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "high" (not an edge tier), so all 3 outcomes
+    # (medium/high/very-high) are reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: very-high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: very-high
+                  else:
+                    - return: high
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: medium

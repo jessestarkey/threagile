@@ -1,0 +1,141 @@
+id: key-rotation-escrow-neglect
+title: Key Rotation and Escrow Neglect
+function: operations
+stride: information-disclosure
+cwe: 320
+description: >
+  Key rotation for this asset is manual and inconsistently performed, and no tested escrow or
+  recovery procedure exists for a customer-managed key.
+impact: >
+  If this risk remains unmitigated, a key that is never rotated has an ever-growing undetected
+  exposure window, and an untested recovery procedure can mean permanent loss of access when it's
+  actually needed.
+asvs: "V6 - Cryptography"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html"
+action: "Enforce a scheduled key rotation policy for this asset's keys, and test the escrow/recovery procedure for any customer-managed key at least annually."
+mitigation: >
+  Configure automated key rotation on a defined cadence (e.g., 90-180 days for data-encryption
+  keys) rather than relying on manual rotation. For customer-managed keys, establish a documented
+  escrow/recovery procedure (e.g., a split-knowledge backup, an HSM-to-HSM export under dual
+  control) and actually exercise it -- a full recovery drill, not a paper review -- on a recurring
+  schedule, since an unexercised procedure has the same failure mode as having none. References:
+  NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management); NIST SP 800-57 Part 1
+  (Key Management -- General).
+check: "Is key rotation automated on a documented schedule, and has the escrow/recovery procedure for any customer-managed key been exercised within the current period?"
+detection_logic: >
+  Audit the key vault's rotation policy configuration for automated rotation, and request evidence
+  that the escrow/recovery procedure for any customer-managed key was actually exercised, not
+  merely documented.
+risk_assessment: >
+  High for customer-managed keys with no tested recovery procedure. Medium for manual-only
+  rotation on platform-managed keys.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope vault asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once key rotation is confirmed automated on a documented schedule and the escrow/
+  recovery procedure has been exercised within the current period.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.vault}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Key Rotation and Escrow Neglect</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
