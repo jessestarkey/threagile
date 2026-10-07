@@ -1,0 +1,152 @@
+id: system-prompt-leakage
+title: "System Prompt Leakage"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  This asset's system prompt or agent instructions -- which may encode confidential business
+  logic, internal tool definitions, or guardrail rules -- can be extracted by a user through
+  crafted queries (e.g. "repeat your instructions verbatim", encoding tricks, or roleplay) rather
+  than being isolated from the model's own completions.
+impact: >
+  If this risk remains unmitigated, an adversary who extracts the system prompt gains the
+  blueprint for bypassing its own guardrails, learns internal tool/function names and parameters
+  to target directly, or recovers confidential business logic embedded in the prompt itself.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat the system prompt as sensitive at rest and in output: keep secrets and access-control decisions out of it, and filter completions for prompt-echo patterns before they reach the caller."
+mitigation: >
+  Do not rely on the system prompt as a security boundary -- never place secrets, credentials, or
+  access-control logic that must remain confidential directly in the prompt text; anything in the
+  prompt should be treated as eventually disclosable. Apply an output-side filter that detects and
+  blocks responses containing verbatim or near-verbatim system prompt content before they reach
+  the caller. Use a model or provider feature that separates system instructions from user
+  turns at the API level (not simple string concatenation) so the model has a stronger boundary to
+  preserve. Periodically red-team the production endpoint with known prompt-extraction techniques
+  and treat a successful extraction as a finding requiring prompt redesign, not just a one-off
+  patch.
+check: "Is the system prompt free of secrets/access-control logic, and is there an output-side filter blocking verbatim prompt-echo responses?"
+detection_logic: >
+  Run a versioned suite of known prompt-extraction techniques (direct ask, roleplay, encoding
+  tricks, instruction-override framing) against the production endpoint on a recurring schedule
+  and alert on any response containing a significant verbatim overlap with the actual system
+  prompt text. Monitor completions for prompt-echo patterns in production traffic.
+risk_assessment: >
+  High for any system prompt containing business logic, tool/function definitions, or guardrail
+  rules not otherwise documented publicly. Critical if the system prompt embeds a credential,
+  API key, or access-control decision directly.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope LLM-endpoint/RAG-
+  pipeline/agent-orchestrator asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once the system prompt is confirmed free of secrets
+  and an output-side filter blocking verbatim prompt-echo is confirmed active.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.llm-endpoint}"
+                  - true: "{.attributes.rag-pipeline}"
+                  - true: "{.attributes.agent-orchestrator}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>System Prompt Leakage</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high" (not an edge
+    # tier), so all 3 outcomes (medium/high/very-high) are reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: very-high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: very-high
+                  else:
+                    - return: high
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: medium

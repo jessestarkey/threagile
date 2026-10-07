@@ -1,0 +1,151 @@
+id: os-command-injection
+title: "OS Command Injection"
+function: architecture
+stride: elevation-of-privilege
+cwe: 78
+description: >
+  This asset owns custom-developed request or job-processing code that may construct an OS shell
+  command using unsanitized input, allowing an adversary to inject arbitrary operating system
+  commands.
+impact: >
+  If this risk remains unmitigated, an adversary can execute arbitrary commands with the
+  privileges of the hosting process, typically leading to full compromise of the host.
+asvs: "V5 - Validation, Sanitization and Encoding"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
+action: "Eliminate direct OS shell invocation built from unsanitized input; use safe, parameterized APIs instead."
+mitigation: >
+  Avoid invoking a system shell with user- or caller-influenced input entirely where possible --
+  use a language-native API or library function instead of shelling out. Where shelling out is
+  unavoidable, use an API that passes arguments as a list/array (never string concatenation or
+  interpolation into a single command line), and apply a strict allow-list to any argument that
+  influences which binary or flags are invoked. Run the invoking process with the minimum OS
+  privileges it needs. Apply a seccomp/AppArmor profile or equivalent to narrow the syscall
+  surface available even if an injection succeeds.
+check: "Does this asset avoid building shell commands from unsanitized input, using parameterized process-invocation APIs and a minimum-privilege execution context instead?"
+detection_logic: >
+  Run SAST rules flagging shell/exec invocations built via string concatenation or interpolation
+  from caller-influenced input. Run DAST payloads containing shell metacharacters (;, |, &&, $(),
+  backticks) against every input field and monitor for command execution side effects (timing,
+  DNS/network callbacks, unexpected process spawns).
+risk_assessment: >
+  Critical for any custom-developed component that shells out using input influenced by an
+  external caller or upstream system.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope asset that owns
+  custom-developed request/job-processing logic, by design). Dispose of a confirmed-compliant
+  asset through risk_tracking instead: log it as mitigated once confirmed that no OS shell
+  invocation is built from unsanitized input anywhere in this asset's own code.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  # Threagile's own SQL/NoSQL and LDAP injection built-ins trigger off a technology-level
+  # attribute (vulnerable_to_query_injection) naming specific datastore products -- there's no
+  # equivalent single technology for "shells out to the OS," since that's a code-level pattern
+  # any custom backend could contain. application_logic (owns request/job-processing logic) AND
+  # custom_developed_parts (the app team wrote that logic, not a vendor) together approximate
+  # the same idea: this is the asset's own code, where this bug class is actually introduced.
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.custom_developed_parts}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.application_logic}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>OS Command Injection</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions. Baseline is "very-high" (the ceiling), so only the downward delta (every
+    # dimension at or below rank 1) is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - any_dimension_at_least_mid: false
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  any_dimension_at_least_mid: true
+        - if:
+            and:
+              - false: "{any_dimension_at_least_mid}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high
