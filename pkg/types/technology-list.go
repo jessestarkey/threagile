@@ -27,6 +27,7 @@ const (
 	IsUsuallyStoringEndUserData                       = "storing_end_user_data"
 	IsExclusivelyFrontendRelated                      = "frontend_related"
 	IsExclusivelyBackendRelated                       = "backend_related"
+	IsRequestServingAPI                               = "request_serving_api"
 	IsDevelopmentRelevant                             = "development_relevant"
 	IsTrafficForwarding                               = "traffic_forwarding"
 	IsEmbeddedComponent                               = "embedded_component"

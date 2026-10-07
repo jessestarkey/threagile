@@ -17,6 +17,18 @@ type AllExpression struct {
 func (what *AllExpression) ParseBool(script any) (common.BoolExpression, any, error) {
 	what.literal = common.ToLiteral(script)
 
+	// See the identical normalization in AnyExpression.ParseBool for why this is needed: YAML
+	// mapping nodes decoded into a bare `any` destination can come through as map[any]any rather
+	// than map[string]any depending on how the enclosing value was decoded.
+	switch castScript := script.(type) {
+	case map[any]any:
+		normalized := make(map[string]any, len(castScript))
+		for key, value := range castScript {
+			normalized[fmt.Sprintf("%v", key)] = value
+		}
+		script = normalized
+	}
+
 	switch script.(type) {
 	case map[string]any:
 		for key, value := range script.(map[string]any) {

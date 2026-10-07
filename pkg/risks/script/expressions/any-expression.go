@@ -17,6 +17,21 @@ type AnyExpression struct {
 func (what *AnyExpression) ParseBool(script any) (common.BoolExpression, any, error) {
 	what.literal = common.ToLiteral(script)
 
+	// YAML mapping nodes decoded into a bare `any` destination (rather than a concretely-typed
+	// map[string]any) can come through as map[any]any rather than map[string]any, depending on
+	// how the enclosing value was decoded (ExpressionList.ParseAny already works around this for
+	// itself, but that fix is shallow -- it doesn't recurse into nested values like this one).
+	// Normalize here too rather than erroring on a type that YAML's own data model makes
+	// perfectly valid.
+	switch castScript := script.(type) {
+	case map[any]any:
+		normalized := make(map[string]any, len(castScript))
+		for key, value := range castScript {
+			normalized[fmt.Sprintf("%v", key)] = value
+		}
+		script = normalized
+	}
+
 	switch script.(type) {
 	case map[string]any:
 		for key, value := range script.(map[string]any) {

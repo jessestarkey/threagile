@@ -468,6 +468,8 @@ web-application:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_application: true
+        frontend_related: true
+        request_serving_api: true
 web-server:
     description: A web server
     attributes:
@@ -488,6 +490,7 @@ web-service-rest:
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_service: true
+        request_serving_api: true
 web-service-soap:
     aliases:
         - soap-api
@@ -496,6 +499,7 @@ web-service-soap:
         web-service-soap: true
         backend_related: true
         less_protected_type: true
+        request_serving_api: true
         processing_end_user_requests: true
         propagate_identity_to_outgoing_targets: true
         web_service: true
