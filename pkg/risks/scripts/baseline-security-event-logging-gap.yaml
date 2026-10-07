@@ -1,0 +1,153 @@
+id: baseline-security-event-logging-gap
+title: "Baseline Security Event Logging and SIEM Forwarding Gap"
+function: operations
+stride: information-disclosure
+cwe: 778
+description: >
+  This asset does not capture and forward authentication failures, authorization denials, and
+  input-validation rejections to the SIEM, beyond whatever narrower logging its own
+  feature-specific detection risks already require.
+impact: >
+  If this risk remains unmitigated, sustained probing, credential-stuffing, and
+  authorization-bypass attempts against this asset produce no correlated signal, leaving the SOC
+  blind to the buildup toward a successful compromise.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
+action: "Emit a distinct log event for every authentication failure, authorization denial, and input-validation rejection this asset produces, tagged with the calling identity or source, and forward these to the SIEM."
+mitigation: >
+  Instrument the asset to emit a structured log event for every authentication failure,
+  authorization denial, and input-validation rejection, each tagged with the calling identity
+  (user, service account, API key, or source IP where unauthenticated) and timestamp. Forward
+  these events to the central SIEM and build a correlation rule flagging a single identity or
+  source crossing a threshold of failures within a rolling window. References: NIST SP 800-53
+  AU-2 (Event Logging); NIST SP 800-53 AU-6 (Audit Record Review, Analysis, and Reporting); NIST
+  SP 800-53 SI-4 (System Monitoring).
+check: "Are authentication failures, authorization denials, and input-validation rejections captured and forwarded to the SIEM with active correlation rules?"
+detection_logic: >
+  Alert when a single identity or source crosses a defined threshold of authentication failures,
+  authorization denials, or input-validation rejections within a rolling window, and monitor for
+  the absence of expected security-event log volume as its own signal of a broken forwarding
+  pipeline.
+risk_assessment: >
+  High for any frontend, backend, or async-worker asset with no baseline security-event logging
+  forwarded to the SIEM.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once authentication failures, authorization denials, and input-validation rejections
+  are confirmed captured and forwarded to the SIEM with active correlation rules.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.frontend_related}"
+                  - true: "{.attributes.backend_related}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Baseline Security Event Logging and SIEM Forwarding Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
