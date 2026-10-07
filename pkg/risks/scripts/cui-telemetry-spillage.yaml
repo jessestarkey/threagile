@@ -1,0 +1,143 @@
+id: cui-telemetry-spillage
+title: CUI Telemetry Spillage
+function: operations
+stride: information-disclosure
+cwe: 532
+description: >
+  CUI can be written into application logs, stack traces, or observability telemetry through
+  debug logging, ORM query logging, or auto-instrumentation that captures request headers.
+impact: >
+  If this risk remains unmitigated, CUI reaching a log or telemetry pipeline constitutes a formal
+  data spill and may expose sensitive data to personnel without need-to-know.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+action: "Audit all log emission points for CUI content and implement pre-emission redaction."
+mitigation: >
+  Disable verbose/debug logging in production via environment-specific configuration. Implement a
+  structured logging wrapper that applies regex or pattern-based redaction to known CUI field
+  patterns before any log emission. Configure ORM and HTTP client libraries to suppress parameter
+  and body logging. Apply the same redaction pipeline to distributed tracing span attributes.
+  Restrict log storage access to personnel with appropriate clearance and need-to-know. References:
+  NIST SP 800-53 AU-3 (Content of Audit Records); NIST SP 800-53 AU-9 (Protection of Audit
+  Information); DoD CUI Registry spillage handling requirements.
+check: "Have all log emission points been audited for CUI content and confirmed to apply pre-emission redaction?"
+detection_logic: >
+  Run periodic DLP scans against log samples in the SIEM to detect patterns matching CUI field
+  formats. Monitor for environment configuration changes that enable debug or verbose logging in
+  production.
+risk_assessment: >
+  High if debug logging is enabled or if request/response body logging is active on any endpoint
+  that processes CUI. Medium with structured logging and redaction controls in place but no
+  periodic DLP validation.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once all log emission points are confirmed to emit only redacted/non-CUI content.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.frontend_related}"
+                  - true: "{.attributes.backend_related}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>CUI Telemetry Spillage</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

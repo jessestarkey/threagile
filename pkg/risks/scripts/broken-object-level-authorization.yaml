@@ -1,0 +1,145 @@
+id: broken-object-level-authorization
+title: Broken Object-Level Authorization (BOLA/IDOR)
+function: architecture
+stride: information-disclosure
+cwe: 639
+description: >
+  The backend API does not verify that an authenticated user is authorized to access a specific
+  object, allowing them to read, modify, or delete records belonging to other users or tenants
+  by changing an identifier in the request.
+impact: >
+  If this risk remains unmitigated, an authenticated user can access or modify records outside
+  their own -- including other users' or tenants' data -- without needing any additional
+  privilege escalation.
+asvs: "V4 - Access Control"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html"
+action: "Implement and test server-side object ownership verification on every API endpoint that operates on a resource by identifier."
+mitigation: >
+  Enforce server-side authorization checks on every data-access operation that accepts an object
+  identifier -- verify that the authenticated principal owns or has explicit permission for the
+  specific record, not just the resource type. Use opaque, non-sequential identifiers (UUIDs v4)
+  to eliminate enumeration. Implement automated BOLA test cases in the CI/CD pipeline. Apply
+  attribute-based access control (ABAC) or row-level security at the database layer as a
+  defense-in-depth backstop. References: OWASP API Security Top 10 API1:2023; NIST SP 800-53 AC-3
+  (Access Enforcement); NIST SP 800-53 AC-4 (Information Flow Enforcement).
+check: "Does every API endpoint accepting an object identifier verify the authenticated principal's specific-record authorization, not just resource-type access?"
+detection_logic: >
+  Include BOLA-specific test cases in the automated API test suite: for each endpoint that
+  accepts a resource ID, verify that a token for user A cannot retrieve or modify resources owned
+  by user B. Run DAST tools configured for IDOR detection. Monitor API access logs for sequential
+  or enumeration-pattern ID probing.
+risk_assessment: >
+  High for any multi-tenant API that operates on CUI records by identifier. Medium for
+  single-tenant deployments where all authenticated users are authorized to access all records.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope request-serving API
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once server-side object ownership verification is confirmed on every endpoint that
+  accepts a resource identifier.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.request_serving_api}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Broken Object-Level Authorization (BOLA/IDOR)</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high" (not an edge
+    # tier), so all 3 outcomes (medium/high/very-high) are reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: very-high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: very-high
+                  else:
+                    - return: high
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: medium

@@ -1,0 +1,159 @@
+id: broken-function-level-authorization
+title: Broken Function-Level Authorization (BFLA)
+function: architecture
+stride: elevation-of-privilege
+cwe: 285
+description: >
+  The backend API exposes administrative or privileged function endpoints that rely on
+  client-supplied role claims or obscurity rather than server-side role verification.
+impact: >
+  If this risk remains unmitigated, a low-privilege authenticated user who discovers an admin
+  endpoint can invoke privileged functions without triggering an authorization error.
+asvs: "V4 - Access Control"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html"
+action: "Enforce server-side role verification on every API endpoint, including administrative and internal endpoints, regardless of whether they are documented or discoverable."
+mitigation: >
+  Implement server-side role-based access control (RBAC) on every API endpoint -- never rely on
+  client-supplied role claims, obscure URLs, or UI visibility controls as an authorization
+  boundary. Apply deny-by-default. Enforce endpoint-level authorization in a centralized
+  middleware layer rather than individual controller logic. Include BFLA test cases in the
+  automated API test suite. References: OWASP API Security Top 10 API5:2023; NIST SP 800-53 AC-3
+  (Access Enforcement); NIST SP 800-53 AC-6 (Least Privilege).
+check: "Does a centralized authorization middleware enforce server-side role verification on every API endpoint, including undocumented or administrative ones?"
+detection_logic: >
+  Include cross-role endpoint access tests in the automated API test suite. Run DAST tools
+  configured to replay requests with downgraded role tokens against all discovered endpoints.
+  Monitor API access logs for low-privilege tokens accessing endpoints in administrative URL
+  namespaces.
+risk_assessment: >
+  High for APIs with administrative endpoints. Escalates to Critical if administrative endpoints
+  are unauthenticated or accessible without any privilege check.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope request-serving API
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once every API endpoint is confirmed to enforce server-side role verification
+  through a centralized authorization middleware.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.request_serving_api}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Broken Function-Level Authorization (BFLA)</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions. Baseline is "high".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: very-high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: very-high
+                  else:
+                    - return: high
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: medium

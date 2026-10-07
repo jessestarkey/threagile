@@ -1,0 +1,143 @@
+id: insecure-session-management
+title: Insecure Session Management
+function: architecture
+stride: spoofing
+cwe: 613
+description: >
+  The frontend application issues session tokens without enforcing secure handling -- missing
+  Secure/HttpOnly flags, excessive lifetimes, or no re-authentication before sensitive actions.
+impact: >
+  If this risk remains unmitigated, a stolen or fixated session token grants an attacker
+  authenticated access to the application for as long as the token remains valid.
+asvs: "V3 - Session Management"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+action: "Enforce Secure and HttpOnly cookie flags, implement absolute and idle session timeouts, and rotate session tokens on authentication events."
+mitigation: >
+  Set Secure and HttpOnly flags on all session cookies. Set SameSite=Strict or SameSite=Lax to
+  mitigate CSRF. Implement both an absolute session timeout and an idle timeout. Rotate session
+  tokens immediately after successful authentication and after any privilege escalation. Require
+  re-authentication for sensitive operations. References: NIST SP 800-53 AC-12 (Session
+  Termination); DISA Application Security and Development STIG (APSC-DV-001460, APSC-DV-001480);
+  OWASP ASVS V3.
+check: "Has session management configuration been audited and confirmed to enforce Secure/HttpOnly/SameSite flags, timeouts, and token rotation?"
+detection_logic: >
+  Run DAST tools with session management checks against all login and authenticated endpoints.
+  Check Set-Cookie response headers for Secure, HttpOnly, and SameSite attributes. Monitor
+  authentication logs for sessions exceeding the configured absolute timeout threshold.
+risk_assessment: >
+  Medium. Escalates to High if session tokens have no expiry, are transmitted over HTTP, or if
+  administrator sessions are affected.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope frontend asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once session management configuration is confirmed to enforce
+  Secure/HttpOnly/SameSite flags, idle and absolute timeouts, and token rotation on authentication
+  events. NOTE: Threagile's built-in 'session-id-using-shared-secret' rule may generate a
+  partially overlapping finding; this entry provides broader STIG-aligned session management
+  coverage including timeout and re-authentication requirements, not a duplicate.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.frontend_related}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Insecure Session Management</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Spoofing -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

@@ -1,0 +1,178 @@
+id: mishandling-exceptional-conditions
+title: Mishandling of Exceptional Conditions
+function: architecture
+stride: elevation-of-privilege
+cwe: 755
+description: >
+  The application does not consistently handle exceptional conditions (unhandled exceptions,
+  malformed input, resource exhaustion) as a fail-closed case -- an exception on an
+  authorization- or validation-critical path can fall through to an allowed state instead of a
+  denied one, or an unhandled error response can leak internal implementation detail.
+impact: >
+  If this risk remains unmitigated, an attacker can trigger an edge-case or malformed-input
+  exception to bypass an authorization or validation control that only executes on the
+  successful path, or harvest stack traces, internal paths, or library versions from an unhandled
+  error response to aid further attack.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
+action: "Ensure every authorization- or validation-critical code path fails closed on an unhandled exception, and that client-facing error responses never include internal implementation detail."
+mitigation: >
+  Wrap every authorization/validation-critical code path in explicit exception handling that
+  defaults to a deny/fail-closed outcome. Return generic, non-identifying error messages to the
+  client; log the full exception detail server-side only, correlated to a request ID. Add
+  explicit test coverage for the exception paths themselves, not just the happy path. Apply
+  resource limits so a resource-exhaustion condition degrades gracefully. References: OWASP Top
+  10:2025 A10 (Mishandling of Exceptional Conditions); NIST SP 800-53 SI-11 (Error Handling);
+  CWE-755.
+check: "Does every authorization/validation-critical exception path fail closed, with client-facing responses confirmed free of internal implementation detail?"
+detection_logic: >
+  Run fuzz/negative testing (malformed input, boundary values, forced resource exhaustion)
+  against every authorization/validation-critical endpoint and confirm each exception path
+  denies access rather than falling through to an allowed state. Scan application logs and
+  error-tracking tooling for stack traces or internal paths present in client-facing responses.
+risk_assessment: >
+  High for any asset whose exception paths haven't been explicitly tested for fail-closed
+  behavior on authorization/validation-critical logic. Escalates to Critical if a known
+  unhandled-exception path has been confirmed to bypass an authentication or authorization check.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
+  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once every authorization/validation-critical code path has explicit fail-closed
+  exception handling with test coverage, and client-facing error responses are confirmed to omit
+  stack traces and internal implementation detail. NOTE: this partially overlaps CUI Telemetry
+  Spillage on error/stack-trace content -- distinct channels, not a duplicate: this entry is
+  about what an unhandled exception exposes in the client-facing HTTP response (and whether it
+  fails open on an authorization check), while CUI Telemetry Spillage is about what ends up
+  written to logs/telemetry regardless of client-facing behavior.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.frontend_related}"
+                  - true: "{.attributes.backend_related}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Mishandling of Exceptional Conditions</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions. Baseline is "high" (not an edge tier), so all 3 outcomes (medium/high/very-high)
+    # are reachable depending on rank and the gated Business-Criticality bump.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: very-high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: very-high
+                  else:
+                    - return: high
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: medium

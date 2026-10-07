@@ -1,0 +1,125 @@
+id: multi-tenant-data-isolation
+title: Multi-Tenant Data Isolation Failure
+function: architecture
+stride: information-disclosure
+cwe: 668
+description: >
+  The asset serves multiple organizational tenants from a shared deployment without sufficient
+  isolation in database queries, caching, or background job processing.
+impact: >
+  If this risk remains unmitigated, an authorization failure that would expose one user's data
+  in a single-tenant system instead exposes an entire tenant's data to another tenant's users.
+asvs: "V4 - Access Control"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html"
+action: "Enforce tenant context in every database query and cache key, and test cross-tenant isolation on every data-access endpoint."
+mitigation: >
+  Enforce tenant ID as a mandatory filter in every database query at the ORM or repository layer.
+  Implement row-level security at the database layer as a defense-in-depth backstop. Include
+  tenant context in all cache keys. Validate tenant context in background job processors when
+  jobs are dequeued, not only when enqueued. Use opaque, non-sequential tenant identifiers.
+  References: NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AC-4 (Information Flow
+  Enforcement); DoD Cloud Multi-Tenant Security Requirements.
+check: "Is tenant ID enforced as a mandatory filter in every database query, cache key, and background job at dequeue time?"
+detection_logic: >
+  Execute cross-tenant access tests in the automated test suite: obtain authenticated tokens for
+  two distinct tenants and verify that tenant A's token cannot access any resources owned by
+  tenant B. Verify tenant ID inclusion in generated database query logs. Test cache isolation.
+risk_assessment: >
+  Critical for multi-tenant systems handling CUI. Severity of individual isolation failures is
+  at least one level higher than equivalent single-tenant findings.
+false_positives: >
+  Each tenant's data is stored in a completely isolated database schema or database instance
+  with no shared tables -- physical isolation rather than logical isolation with tenant ID
+  filtering. Dispose of a confirmed-compliant asset through risk_tracking instead of a tag: log
+  it as mitigated once physical or verified logical tenant isolation is confirmed across
+  database queries, caching, and background job processing.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.multi_tenant}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Multi-Tenant Data Isolation Failure</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
+    # ceiling), so only the downward case (low confidentiality rank AND not mission-critical)
+    # is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - confidentiality_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  confidentiality_low: false
+        - if:
+            and:
+              - true: "{confidentiality_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

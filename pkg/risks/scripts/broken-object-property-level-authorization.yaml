@@ -1,0 +1,146 @@
+id: broken-object-property-level-authorization
+title: Broken Object Property Level Authorization (Mass Assignment)
+function: architecture
+stride: tampering
+cwe: 915
+description: >
+  The backend API binds client request bodies directly to internal models without an explicit
+  per-field allow-list, allowing a client to set privileged fields the UI never exposes, or
+  receives fields in a response that were never meant to be exposed.
+impact: >
+  If this risk remains unmitigated, a client can escalate privilege by setting a field the
+  application's own framework silently accepted despite the UI never exposing it, or harvest
+  sensitive fields an endpoint returns without ever intending to.
+asvs: "V4 - Access Control"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
+action: "Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request/response bodies directly to internal models."
+mitigation: >
+  Use explicit request/response DTOs scoped per-endpoint rather than binding client input
+  directly to internal domain/ORM models. Maintain an explicit allow-list of which properties a
+  given role may write and which properties a response may include, enforced server-side
+  regardless of what the client sends. Include automated test cases that attempt to set
+  privileged/internal fields via the API and verify they are rejected. References: OWASP API
+  Security Top 10 API3:2023; NIST SP 800-53 AC-3 (Access Enforcement); CWE-915.
+check: "Does every API endpoint use explicit per-endpoint DTOs with a server-enforced allow-list of client-writable/readable properties?"
+detection_logic: >
+  Include automated API test cases that submit requests containing internal/privileged field
+  names not exposed in the documented request schema, and verify the server ignores or rejects
+  them. Diff each endpoint's actual JSON response against its documented response schema in CI.
+risk_assessment: >
+  High for any API that binds request bodies directly to internal models without an explicit
+  per-field allow-list. Escalates to Critical if a privilege-bearing field is client-writable
+  without server-side filtering.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope request-serving API
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once every endpoint is confirmed to use explicit per-endpoint request/response
+  DTOs with a documented, server-enforced allow-list.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.request_serving_api}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Broken Object Property Level Authorization (Mass Assignment)</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "high".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: very-high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: very-high
+                  else:
+                    - return: high
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: medium
