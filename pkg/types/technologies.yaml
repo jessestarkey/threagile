@@ -25,6 +25,29 @@ ai:
     attributes:
         ai: true
         less_protected_type: true
+ai-observability-stack:
+    aliases:
+        - llm-tracing
+        - inference-telemetry
+    description: The AI-specific monitoring, logging, or anomaly-detection layer for an AI system (LLM tracing, inference telemetry, behavioral drift detection)
+    attributes:
+        ai-observability-stack: true
+        ai: true
+        monitoring: true
+        security_control_related: true
+        less_protected_type: true
+ai-security-agent:
+    aliases:
+        - ai-driven-siem
+        - ueba
+        - automated-threat-hunter
+    description: An AI-powered defensive tool that makes trust decisions and triggers automated responses (AI-driven SIEM, UEBA, automated threat hunter, policy enforcement bot)
+    attributes:
+        ai-security-agent: true
+        ai: true
+        security_control_related: true
+        less_protected_type: true
+        application_logic: true
 application-server:
     aliases:
         - app-server
@@ -149,6 +172,17 @@ database:
         backend_related: true
         storing_end_user_data: true
         vulnerable_to_query_injection: true
+dataset-store:
+    aliases:
+        - ai-dataset-store
+        - training-data-store
+    description: The authoritative storage layer for AI training, evaluation, or fine-tuning datasets
+    attributes:
+        dataset-store: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
 desktop:
     aliases:
         - desktop-system
@@ -193,6 +227,19 @@ erp:
         request_serving_api: true
         storing_end_user_data: true
         web_application: true
+        application_logic: true
+eval-pipeline:
+    aliases:
+        - model-evaluation-pipeline
+        - benchmark-pipeline
+        - red-teaming-pipeline
+    description: A model evaluation, red-teaming, or benchmark pipeline that gates promotion decisions
+    attributes:
+        eval-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
         application_logic: true
 event-listener:
     description: An event listener waiting to be triggered and spring to action
@@ -415,6 +462,30 @@ monitoring:
         unnecessary_data_tolerated: true
         unprotected_communications_tolerated: true
         security_control_related: true
+multi-agent-gateway:
+    aliases:
+        - a2a-gateway
+        - mcp-server
+        - agent-registry
+    description: A gateway or registry mediating interactions between multiple AI agents across identity domains
+    attributes:
+        multi-agent-gateway: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        request_serving_api: true
+        application_logic: true
+rag-ingest-pipeline:
+    aliases:
+        - rag-ingest
+        - vector-embedding-pipeline
+    description: Ingests, chunks, embeds, and writes documents into a RAG vector store
+    attributes:
+        rag-ingest-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        application_logic: true
 rag-pipeline:
     aliases:
         - retrieval-augmented-generation
@@ -516,6 +587,19 @@ tool:
     attributes:
         tool: true
         propagate_identity_to_outgoing_targets: true
+training-pipeline:
+    aliases:
+        - model-training-pipeline
+        - fine-tuning-pipeline
+        - rlhf-pipeline
+    description: A model training, fine-tuning, RLHF, or continual-learning pipeline
+    attributes:
+        training-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
+        application_logic: true
 unknown-technology:
     aliases:
         - unknown

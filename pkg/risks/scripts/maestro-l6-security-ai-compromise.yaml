@@ -1,0 +1,144 @@
+id: maestro-l6-security-ai-compromise
+title: "MAESTRO L6: AI-Powered Security Tooling Compromise"
+function: architecture
+stride: elevation-of-privilege
+cwe: 269
+description: >
+  AI-powered defensive tools that make trust decisions and trigger automated responses are
+  themselves adversarial targets, and their compromise has outsized consequences.
+impact: >
+  If this risk remains unmitigated, a compromised security AI can suppress alerts for the
+  attacker's own activity, generate false incidents to overwhelm analysts, or pivot to other
+  systems from a trusted context.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
+action: "Apply the same adversarial threat modeling to AI security tools as to the systems they protect."
+mitigation: >
+  Maintain an independent, non-AI detection layer as a backstop that the AI security tool cannot
+  disable. Treat training and operational data fed to security AI as a high-value,
+  integrity-protected asset. Implement adversarial robustness testing on security AI models
+  before deployment and after significant retraining. Scope security AI agent permissions to
+  advisory-only -- alert generation, not automated response -- unless human-in-the-loop approval
+  is enforced for all response actions. References: MAESTRO L6 (Security and Compliance --
+  Vertical Layer) -- Security Agent Data Poisoning, Evasion of Security AI Agents, Compromised
+  Security AI Agents; NIST SP 800-53 SI-3, SI-7.
+check: "Does an independent, non-AI detection layer exist that the security AI tool cannot disable, and is its agent permission scope limited to advisory-only unless human-in-the-loop approval is enforced?"
+detection_logic: >
+  Implement a parallel rule-based detection layer that operates independently of the AI security
+  tool and alerts if their outputs diverge significantly. Monitor the security AI's own
+  inference logs for anomalous input patterns. Periodically run known-malicious test scenarios
+  against the security AI to verify detection (canary testing).
+risk_assessment: >
+  Critical for any organization where an AI security tool has automated response authority
+  (block, quarantine, disable). High for AI-assisted analysis tools with advisory-only scope.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI-security-agent
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once an independent non-AI detection backstop and advisory-only (or
+  human-in-the-loop-gated) response scope are confirmed in place.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-security-agent}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>MAESTRO L6: AI-Powered Security Tooling Compromise</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions. Baseline is "very-high" (the ceiling), so only the downward delta (every
+    # dimension at or below rank 1) is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - any_dimension_at_least_mid: false
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  any_dimension_at_least_mid: true
+        - if:
+            and:
+              - false: "{any_dimension_at_least_mid}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

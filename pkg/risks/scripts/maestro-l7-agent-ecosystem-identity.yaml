@@ -1,0 +1,138 @@
+id: maestro-l7-agent-ecosystem-identity
+title: "MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal Manipulation"
+function: architecture
+stride: spoofing
+cwe: 290
+description: >
+  At multi-agent trust boundaries where agents delegate tasks across identity domains, the
+  absence of strong agent identity and authorization controls enables impersonation, goal
+  manipulation, and repudiation.
+impact: >
+  If this risk remains unmitigated, a malicious agent can impersonate a trusted one or alter
+  another agent's objectives, operating silently inside the system's own trusted execution
+  context.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Establish cryptographic agent identity and a non-repudiation audit trail for all cross-agent interactions before deploying multi-agent workflows."
+mitigation: >
+  Assign each agent a unique, cryptographically verifiable identity (DIDs or PKI-backed service
+  accounts) and require mutual authentication for all agent-to-agent communication. Maintain a
+  central agent registry with strict admission controls -- require signed manifests for all
+  registered agents and tool definitions. Implement rate limiting on agent identity issuance to
+  detect Sybil attacks. Enforce immutability on deployed agent system prompts -- any
+  modification must go through an audited change management process. Log all agent-to-agent
+  interactions with cryptographic non-repudiation. Implement name collision detection in
+  MCP/tool registries. References: MAESTRO L7 (Agent Ecosystem) -- Agent Impersonation, Agent
+  Goal Manipulation, Sybil Attacks, Repudiation; NIST SP 800-53 IA-9 (Service Identification and
+  Authentication).
+check: "Does each agent have a unique, cryptographically verifiable identity with mutual authentication required for agent-to-agent communication, and is the agent registry admission-controlled with signed manifests?"
+detection_logic: >
+  Monitor agent registry for registrations or modifications outside the approved change window.
+  Alert on anomalous spikes in agent identity issuance. Audit cross-agent interaction logs for
+  identity mismatches between claimed and cryptographically verified agent identity. Run
+  periodic canary interactions using known-good agent identities to verify impersonation
+  detection.
+risk_assessment: >
+  Critical for any multi-agent deployment where agents delegate tasks across trust boundaries.
+  High for single-agent deployments that interact with externally registered tools or MCP
+  servers.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope multi-agent-gateway
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once cryptographic agent identity, mutual authentication, and a non-repudiation
+  audit trail are confirmed in place for all cross-agent interactions.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.multi-agent-gateway}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>MAESTRO L7: Agent Ecosystem Identity, Impersonation, and Goal Manipulation</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

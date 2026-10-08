@@ -1,0 +1,148 @@
+id: atlas-dataset-store-attack
+title: "ATLAS: AI Training Dataset Exfiltration and Integrity Attack"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  The authoritative dataset store for training or evaluation is a high-value target for both
+  integrity attacks and exfiltration by anyone with access to it.
+impact: >
+  If this risk remains unmitigated, exfiltration of training data constitutes a formal data
+  spill, and integrity compromise permanently poisons downstream models until rebuilt from a
+  known-good state.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+action: "Apply least-privilege access control, encryption at rest, and cryptographic integrity verification to all dataset storage."
+mitigation: >
+  Enforce strict RBAC on dataset store access -- limit write access to authenticated pipeline
+  service accounts only. Encrypt all datasets at rest with FIPS-validated cryptography.
+  Maintain cryptographic hashes for all dataset files and verify on read. Log all read and write
+  access to dataset artifacts. Apply DLP controls on data egress paths from the dataset store.
+  References: MITRE ATLAS AML.T0019 (Publish Poisoned Datasets), AML.T0025 (Exfiltration via
+  Cyber Means), AML.T0059 (Erode Dataset Integrity); NIST AI RMF MAP 2.3, NIST SP 800-53 AU-9.
+check: "Is dataset store access restricted to authenticated pipeline service accounts, with encryption at rest and cryptographic integrity verification on read?"
+detection_logic: >
+  Audit dataset store access logs for anomalous bulk read operations or writes from
+  unauthenticated sources. Verify cryptographic hashes of dataset files on each pipeline read.
+  Alert on DLP violations on data egress paths from the store.
+risk_assessment: >
+  High if the dataset store contains CUI training samples. Medium for de-identified or synthetic
+  datasets.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope dataset-store
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once strict RBAC, encryption at rest, and cryptographic integrity verification are
+  confirmed active.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.dataset-store}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: AI Training Dataset Exfiltration and Integrity Attack</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

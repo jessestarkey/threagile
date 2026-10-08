@@ -37,6 +37,13 @@ const (
 	IsAgentOrchestrator                               = "agent-orchestrator"
 	IsModelRegistry                                   = "model-registry"
 	IsApplicationLogic                                = "application_logic"
+	IsRAGIngestPipeline                               = "rag-ingest-pipeline"
+	IsTrainingPipeline                                = "training-pipeline"
+	IsDatasetStore                                    = "dataset-store"
+	IsEvalPipeline                                    = "eval-pipeline"
+	IsAIObservabilityStack                            = "ai-observability-stack"
+	IsAISecurityAgent                                 = "ai-security-agent"
+	IsMultiAgentGateway                               = "multi-agent-gateway"
 )
 
 type TechnologyList []*Technology

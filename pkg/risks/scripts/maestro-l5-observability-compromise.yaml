@@ -1,0 +1,122 @@
+id: maestro-l5-observability-compromise
+title: "MAESTRO L5: AI Observability Stack Compromise and Evidence Destruction"
+function: operations
+stride: information-disclosure
+cwe: 778
+description: >
+  The AI-specific monitoring and anomaly-detection layer is itself an adversarial target once an
+  attacker has initial access, since blinding it conceals further activity.
+impact: >
+  If this risk remains unmitigated, an attacker can selectively delete inference logs, mask
+  anomalous behavior, or exfiltrate sensitive prompts through the telemetry pipeline itself.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
+action: "Isolate AI observability infrastructure from the AI runtime write path and enforce tamper-evident logging."
+mitigation: >
+  Route AI inference telemetry to a write-once, append-only log store that the AI runtime
+  process cannot modify or delete. Enforce strict access separation between the AI system being
+  monitored and the monitoring infrastructure. Scrub or tokenize PII and CUI from telemetry
+  before storage using a pre-pipeline redaction layer. Implement integrity monitoring on
+  observability pipeline configurations. References: MAESTRO L5 (Evaluation and Observability)
+  -- Compromised Observability Tools, Evasion of Detection, Data Leakage through Observability;
+  NIST SP 800-53 AU-9 (Protection of Audit Information).
+check: "Is AI inference telemetry routed to a write-once store the AI runtime cannot modify, with PII/CUI scrubbed before storage and integrity monitoring on the pipeline's own configuration?"
+detection_logic: >
+  Monitor observability pipeline configuration files for unauthorized modifications. Alert on
+  any gap or discontinuity in inference log ingestion. Periodically verify log integrity using
+  stored hashes. Audit access logs of the observability infrastructure itself.
+risk_assessment: >
+  High for AI systems handling CUI where inference logs may capture sensitive content. Critical
+  when the observability stack is the primary post-incident forensic source.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI-observability-
+  stack asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead:
+  log it as mitigated once telemetry is confirmed routed to a write-once store the AI runtime
+  cannot modify, with PII/CUI scrubbed before storage.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-observability-stack}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>MAESTRO L5: AI Observability Stack Compromise and Evidence Destruction</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
+    # ceiling), so only the downward (Confidentiality low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - confidentiality_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  confidentiality_low: false
+        - if:
+            and:
+              - true: "{confidentiality_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

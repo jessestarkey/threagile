@@ -1,0 +1,148 @@
+id: atlas-dataset-ingest-integrity
+title: "ATLAS: Dataset and RAG Ingest Integrity Erosion"
+function: architecture
+stride: tampering
+cwe: 494
+description: >
+  The pipeline that chunks, embeds, and writes documents into a vector store or training
+  dataset is a high-value target for an adversary able to publish or inject poisoned content
+  upstream.
+impact: >
+  If this risk remains unmitigated, a compromised ingest pipeline produces a poisoned knowledge
+  base or training corpus that biases or corrupts model behavior at scale.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat the ingest pipeline as a critical security boundary with cryptographic provenance tracking."
+mitigation: >
+  Maintain a signed, immutable data manifest for all ingested content. Enforce strict access
+  controls on pipeline write paths. Apply statistical outlier detection to identify anomalous
+  content distributions. Validate content against a known-good schema prior to embedding. Log
+  and version all ingest mutations. References: MITRE ATLAS AML.T0019 (Publish Poisoned
+  Datasets), AML.T0020 (Poison Training Data), AML.T0059 (Erode Dataset Integrity); NIST AI RMF
+  MAP 2.3.
+check: "Is ingested content validated against a signed, immutable manifest with anomaly detection before embedding?"
+detection_logic: >
+  Monitor ingest pipeline write logs for anomalous sources. Run automated content validation and
+  anomaly detection on incoming documents before embedding. Alert on schema violations or
+  statistical distribution shifts in ingested data.
+risk_assessment: >
+  High for pipelines that consume external or user-contributed content. Medium for fully
+  internal, access-controlled corpora.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope RAG-ingest-pipeline
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once ingested content is confirmed validated against a signed, immutable manifest
+  with anomaly detection active.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.rag-ingest-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: Dataset and RAG Ingest Integrity Erosion</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

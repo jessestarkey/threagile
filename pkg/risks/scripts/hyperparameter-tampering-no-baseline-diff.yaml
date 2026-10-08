@@ -1,0 +1,140 @@
+id: hyperparameter-tampering-no-baseline-diff
+title: "Hyperparameter Tampering Without Baseline Diffing"
+function: operations
+stride: tampering
+cwe: 349
+description: >
+  There is no diff of a training run's actual applied hyperparameters against an approved
+  baseline before the resulting model is promoted.
+impact: >
+  If this risk remains unmitigated, an insider can bias what a model learns by changing a single
+  hyperparameter, leaving no trace in the code and still passing standard evaluation.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Diff every promotion-bound training run's actual applied hyperparameters against an approved per-pipeline baseline before the resulting model is eligible for promotion."
+mitigation: >
+  Record the actual hyperparameters applied to every training run (not merely the config file as
+  authored, but what was actually passed to the training job, since these can diverge) and diff
+  them against an approved baseline for that pipeline before allowing promotion. Require a
+  documented, reviewed justification for any deviation from baseline rather than allowing silent
+  divergence. Retain the recorded hyperparameters alongside the resulting model artifact for
+  later audit. References: NIST AI RMF (MANAGE 2.3, MEASURE 2.7); NIST SP 800-53 SI-7 (Software,
+  Firmware, and Information Integrity).
+check: "Are a training run's actual applied hyperparameters diffed against an approved baseline before the resulting model is promoted?"
+detection_logic: >
+  Audit the promotion pipeline for a recorded hyperparameter diff step and confirm it runs
+  against the actual applied values, not the authored config file alone. Confirm reviewed
+  justification exists for any recorded deviation from baseline.
+risk_assessment: >
+  High for any training pipeline promoting models with no recorded hyperparameter diff against
+  an approved baseline.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope training-pipeline
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once a hyperparameter diff against an approved baseline is confirmed to run before
+  every promotion.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.training-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Hyperparameter Tampering Without Baseline Diffing</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

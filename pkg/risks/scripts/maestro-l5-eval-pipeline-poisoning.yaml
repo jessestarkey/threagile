@@ -1,0 +1,141 @@
+id: maestro-l5-eval-pipeline-poisoning
+title: "MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning"
+function: architecture
+stride: tampering
+cwe: 349
+description: >
+  The model evaluation and benchmark pipeline that gates promotion decisions can be manipulated
+  at the dataset, scoring, or reporting layer.
+impact: >
+  If this risk remains unmitigated, a backdoored or degraded model can pass pre-production
+  review and reach every user in production undetected.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat evaluation datasets and scoring infrastructure with the same integrity controls as production systems."
+mitigation: >
+  Store evaluation datasets in a write-protected, access-controlled repository with
+  cryptographic hashing. Separate the evaluation pipeline's compute environment from the
+  training pipeline with no shared write access. Maintain a secondary, independently curated
+  adversarial holdout set stored offline and never used for training. Require dual-approval for
+  any modification to evaluation datasets or scoring logic. References: MAESTRO L5 (Evaluation
+  and Observability) -- Manipulation of Evaluation Metrics, Poisoned Benchmarks; NIST AI RMF
+  MEASURE 2.5.
+check: "Are evaluation datasets write-protected with cryptographic hashing, and is the evaluation pipeline's compute environment separated from the training pipeline with no shared write access?"
+detection_logic: >
+  Verify cryptographic hashes of evaluation dataset files before every eval run. Alert on any
+  change to evaluation dataset artifacts outside the approved change management process.
+  Cross-validate automated pipeline results against a manual spot-check on a random sample
+  before every promotion decision.
+risk_assessment: >
+  High for any AI system where a single automated evaluation pipeline is the sole gate before
+  production promotion.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope eval-pipeline
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once evaluation datasets are confirmed write-protected with cryptographic hashing
+  and the eval environment is confirmed separated from training.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.eval-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>MAESTRO L5: Evaluation Pipeline and Benchmark Poisoning</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
