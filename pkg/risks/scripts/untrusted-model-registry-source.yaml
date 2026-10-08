@@ -1,0 +1,125 @@
+id: untrusted-model-registry-source
+title: "Untrusted Model Registry Source"
+function: architecture
+stride: tampering
+cwe: 494
+description: >
+  This serving platform has loaded, or can load, a model whose registry host and artifact
+  digest do not resolve to an approved internal registry.
+impact: >
+  If this risk remains unmitigated, a model bypasses every certification, signing, and scanning
+  gate the approved registry enforces, with no way for the serving platform to distinguish it
+  from a properly vetted one.
+asvs: "V14 - Configuration"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: "Restrict the serving platform to load models only from the approved internal registry, verified by registry host and artifact digest, and block direct loading from any other source."
+mitigation: >
+  Configure the serving platform's model-loading path to accept only artifacts whose registry
+  host and digest match the approved internal registry's manifest -- reject any load request
+  referencing a public hub, a local filesystem path outside the registry sync location, or an
+  unrecognized host. Treat a request to bypass this restriction (e.g., for rapid
+  experimentation) as requiring the same review as a production deployment, not an informal
+  exception. References: NIST SP 800-53 SR-4 (Provenance); NIST AI RMF (MANAGE 2.3); MAESTRO L6
+  (Security and Compliance) / L7 (Ecosystem).
+check: "Does the serving platform's model-loading path accept only artifacts whose registry host and digest match the approved internal registry?"
+detection_logic: >
+  Audit the serving platform's model-loading configuration/logs for any load referencing a host
+  or path outside the approved internal registry. Monitor for model-loading requests that bypass
+  the standard registry-sync path.
+risk_assessment: >
+  Critical for any serving platform capable of loading a model from a source other than the
+  approved internal registry.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope model-serving/
+  model-registry asset, by design). Dispose of a confirmed-compliant asset through risk_tracking
+  instead: log it as mitigated once the serving platform is confirmed to load models only from
+  the approved internal registry, verified by host and digest.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.model-serving}"
+                  - true: "{.attributes.model-registry}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Untrusted Model Registry Source</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

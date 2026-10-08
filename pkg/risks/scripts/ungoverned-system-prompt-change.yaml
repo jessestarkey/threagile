@@ -1,0 +1,153 @@
+id: ungoverned-system-prompt-change
+title: "Ungoverned Production System Prompt Change"
+function: operations
+stride: tampering
+cwe: 284
+description: >
+  This asset's production system prompt can be edited without version control, review, or
+  injection-hardening requirements.
+impact: >
+  If this risk remains unmitigated, an unreviewed prompt change can silently widen the model's
+  capability or remove a safety constraint, with no runtime signal for a filter or detector to
+  catch.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Bring production system prompts under source control with mandatory review before deployment, and enforce explicit instruction-boundary/context-separation structure in every version."
+mitigation: >
+  Store system prompts as versioned artifacts in source control, requiring the same PR review
+  and approval as application code before a change reaches production. Require every system
+  prompt version to maintain explicit structural separation between system instructions, user
+  input, and any retrieved/tool-returned content (clear delimiters, role-anchoring), reviewed as
+  part of the change. Log which prompt version served each production request so an incident can
+  be traced to the exact prompt in effect at the time. References: NIST AI RMF (GOVERN 1.5,
+  MANAGE 4.1); OWASP Top 10 for LLM Applications (LLM01 Prompt Injection); NIST SP 800-53 CM-3
+  (Configuration Change Control).
+check: "Are production system prompts version-controlled with mandatory review, and does every version maintain explicit structural separation between system instructions and user/tool content?"
+detection_logic: >
+  Audit the system prompt's storage location for version-control history and confirm every
+  change in production is traceable to an approved review. Log the prompt version served per
+  request and verify it against the version-control record.
+risk_assessment: >
+  High for any production LLM asset where the system prompt can be modified without version
+  control and review.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope LLM-endpoint/RAG-
+  pipeline/agent-orchestrator asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once system prompts are confirmed version-controlled
+  with mandatory review and explicit instruction-boundary structure.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.llm-endpoint}"
+                  - true: "{.attributes.rag-pipeline}"
+                  - true: "{.attributes.agent-orchestrator}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Ungoverned Production System Prompt Change</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

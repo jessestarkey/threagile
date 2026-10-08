@@ -1,0 +1,150 @@
+id: missing-canary-prompt-testing
+title: "No Canary Prompt Testing Against Production Inference Endpoint"
+function: operations
+stride: tampering
+cwe: 1059
+description: >
+  There is no versioned suite of known-answer prompts run against the production inference
+  endpoint on a recurring cadence to detect a silently swapped model, a disabled safety filter,
+  or an unreviewed system prompt change.
+impact: >
+  If this risk remains unmitigated, a disabled guardrail or a silently swapped model can persist
+  for an extended period, since traffic-based monitoring alone has no independent baseline to
+  compare against.
+asvs: "V7 - Error Handling and Logging"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Run a versioned suite of fixed, known-answer canary prompts against the production inference endpoint on a recurring schedule, and alert on any deviation from the expected response class."
+mitigation: >
+  Build a versioned suite of canary prompts with known-acceptable response characteristics
+  (including prompts specifically designed to verify safety guardrails are active) and execute
+  it against the production endpoint on a defined schedule (e.g., hourly), independent of real
+  user traffic. Alert immediately on any canary result outside its expected class, since this is
+  one of the few signals that catches a silent model swap, a disabled guardrail, or an unreviewed
+  system prompt change without waiting for a user-visible incident. References: NIST AI RMF
+  (MEASURE 2.7, MANAGE 4.1); MAESTRO L5 (Evaluation and Observability).
+check: "Does a versioned canary prompt suite run against the production endpoint on a recurring schedule, independent of real traffic, with alerting on deviation?"
+detection_logic: >
+  Confirm a canary suite execution schedule exists and review its recent run history for
+  coverage and alerting configuration. Audit for a gap between the canary suite's last known
+  model/prompt version and the version actually serving production traffic.
+risk_assessment: >
+  High for any production inference endpoint with no recurring canary suite independent of real
+  traffic monitoring.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope LLM-endpoint asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once a versioned canary suite is confirmed running against this endpoint on a
+  recurring schedule with alerting on deviation.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.llm-endpoint}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>No Canary Prompt Testing Against Production Inference Endpoint</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

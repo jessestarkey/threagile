@@ -1,0 +1,149 @@
+id: missing-model-rollback-killswitch
+title: "Missing Model Rollback and Kill-Switch Mechanism"
+function: operations
+stride: denial-of-service
+cwe: 410
+description: >
+  There is no capability to revert this model-serving asset to a previously validated version,
+  or cut traffic via a kill switch, without rerunning the full deployment pipeline.
+impact: >
+  If this risk remains unmitigated, a model found to be compromised or badly regressed continues
+  serving production traffic for the full duration of a redeployment cycle.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Implement a rollback mechanism that restores a previously validated model version within a defined recovery time, and a kill switch that can halt serving entirely with a defined safe-mode fallback."
+mitigation: >
+  Maintain the previous validated model version in a ready-to-serve state (not archived/cold
+  storage) so traffic can be redirected to it without a full pipeline run, and define and test
+  the actual recovery time this takes. Implement a kill switch -- both an automated trigger
+  (e.g., on an eval/canary failure) and a manual override -- that halts serving and falls back to
+  a defined safe mode (static response, degraded functionality, or full outage, whichever is
+  safer for this use case) rather than continuing to serve a known-bad model. References: NIST AI
+  RMF (MANAGE 2.2, MANAGE 4.1); MAESTRO L5 (Evaluation and Observability).
+check: "Is there a tested rollback-within-recovery-time path to the previous validated model version, and an independent kill switch with a defined safe-mode fallback?"
+detection_logic: >
+  Confirm the previous validated model version is maintained in a ready-to-serve state (not
+  requiring a full pipeline rerun) and request evidence of a tested rollback drill with a
+  recorded recovery time. Confirm a kill switch exists with both an automated and a manual
+  trigger path.
+risk_assessment: >
+  High for any production model-serving asset with no tested rollback path and no kill switch
+  independent of the standard deployment pipeline.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope model-serving
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
+  as mitigated once a tested rollback-within-recovery-time path and an independent kill switch
+  with a defined safe-mode fallback are confirmed to exist.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.model-serving}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing Model Rollback and Kill-Switch Mechanism</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Denial-of-Service -> Availability. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.availability}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
