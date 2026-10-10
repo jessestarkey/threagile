@@ -50,6 +50,8 @@ const (
 	IsAISyntheticDataPipeline                         = "ai-synthetic-data-pipeline"
 	IsAIFeatureStore                                  = "ai-feature-store"
 	IsAIContentProvenanceService                      = "ai-content-provenance-service"
+	IsCDSGuard                                        = "cds-guard"
+	IsCDSDataDiode                                    = "cds-data-diode"
 )
 
 type TechnologyList []*Technology

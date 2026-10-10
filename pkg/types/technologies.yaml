@@ -308,6 +308,34 @@ build-pipeline:
         build-pipeline: true
         development_relevant: true
         less_protected_type: true
+cds-data-diode:
+    aliases:
+        - data-diode
+        - one-way-transfer-device
+        - unidirectional-gateway
+        - owl-data-diode
+    description: A hardware-enforced, strictly unidirectional transfer device with no physical return channel, carrying content one-way across a classification or network boundary
+    attributes:
+        cds-data-diode: true
+        backend_related: true
+        security_control_related: true
+        high_value_target: true
+        traffic_forwarding: true
+cds-guard:
+    aliases:
+        - cross-domain-solution
+        - cds
+        - radiant-mercury
+        - tactical-cds
+        - isse-guard
+        - trusted-thin-client
+    description: A dedicated, accredited appliance that inspects and mediates content crossing a classification boundary between two security domains, typically performing automated content, malware, and classification-marking checks and often requiring human-in-the-loop review before release
+    attributes:
+        cds-guard: true
+        backend_related: true
+        security_control_related: true
+        high_value_target: true
+        traffic_forwarding: true
 client-system:
     aliases:
         - client

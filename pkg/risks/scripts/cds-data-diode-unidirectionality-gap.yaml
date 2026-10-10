@@ -1,0 +1,133 @@
+id: cds-data-diode-unidirectionality-gap
+title: "CDS Data Diode Unidirectionality Verification and Feed Integrity Gap"
+function: operations
+stride: tampering
+cwe: 345
+description: >
+  A data diode's entire assurance rests on one physical property -- that no return path exists
+  -- rather than on any content inspection, since a true hardware diode performs none. Both the
+  unidirectionality claim itself and the integrity of what crosses on the one-way feed need
+  independent verification rather than vendor assertion alone.
+impact: >
+  If this risk remains unmitigated, a diode whose one-way property has never been
+  independently verified could carry an undetected return channel, and because the diode
+  itself inspects nothing, corrupted or malicious content on the forward feed reaches the
+  receiving side with no filtering at all to catch it.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Independently verify the diode's unidirectionality on a recurring schedule, and apply content integrity verification on the receiving side rather than relying on the diode for any inspection."
+mitigation: >
+  Independently test and periodically re-verify the diode's physical unidirectionality --
+  vendor accreditation at initial installation is not a substitute for recurring verification,
+  since a hardware fault or an unauthorized modification after installation would not
+  self-report. Apply cryptographic integrity verification (signed manifests or hashes) to
+  content on the receiving side of the feed, since the diode itself performs no content
+  inspection and cannot be relied upon to catch corruption or injected content introduced
+  before the diode. Treat the sending-side system, not the diode, as responsible for any
+  content-level assurance the mission actually needs. References: NIST SP 800-53 SC-7
+  (Boundary Protection); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity);
+  DoD Raise-the-Bar Cross Domain Solution requirements.
+check: "Is the diode's physical unidirectionality independently verified on a recurring schedule, and is content integrity checked on the receiving side rather than assumed from the diode's own forwarding?"
+detection_logic: >
+  Audit records for the diode's recurring independent unidirectionality verification testing,
+  distinct from initial vendor accreditation. Confirm the receiving side applies cryptographic
+  integrity verification to content arriving via the diode.
+risk_assessment: >
+  Critical for any data diode with no recurring independent unidirectionality verification, or
+  whose receiving side trusts arriving content with no integrity verification of its own.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope CDS-data-diode
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
+  it as mitigated once recurring unidirectionality verification and receiving-side integrity
+  checking are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.cds-data-diode}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>CDS Data Diode Unidirectionality Verification and Feed Integrity Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor) -- a hardware diode's physical construction makes this
+    # a materially rarer failure than a software guard's rule-set drift, so only the upward
+    # (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- an undetected return channel or
+    # unfiltered corrupted feed is a total failure of the one property this device provides,
+    # regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high
