@@ -52,6 +52,15 @@ const (
 	IsAIContentProvenanceService                      = "ai-content-provenance-service"
 	IsCDSGuard                                        = "cds-guard"
 	IsCDSDataDiode                                    = "cds-data-diode"
+	IsNetworkEncryptor                                = "network-encryptor"
+	IsVulnerabilityScanner                            = "vulnerability-scanner"
+	IsCertificateValidationService                    = "certificate-validation-service"
+	IsICSController                                   = "ics-controller"
+	IsEndpointSecurityManager                         = "endpoint-security-manager"
+	IsSatelliteGroundStation                          = "satellite-ground-station"
+	IsSpaceVehicle                                    = "space-vehicle"
+	IsUASGroundControlStation                         = "uas-ground-control-station"
+	IsUASAirVehicle                                   = "uas-air-vehicle"
 )
 
 type TechnologyList []*Technology

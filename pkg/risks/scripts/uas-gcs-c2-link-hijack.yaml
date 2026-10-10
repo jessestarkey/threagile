@@ -1,0 +1,139 @@
+id: uas-gcs-c2-link-hijack
+title: "UAS Ground Control Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink"
+function: operations
+stride: spoofing
+cwe: 306
+description: >
+  A UAS command-and-control link is commonly line-of-sight RF, attackable with far less
+  sophisticated equipment than a satellite uplink would require. An unauthenticated command
+  link lets an adversary take direct control of the air vehicle, and an unencrypted sensor or
+  video downlink -- the documented real-world case of intercepted unencrypted drone video
+  feeds -- discloses everything the vehicle observes to anyone within radio range.
+impact: >
+  If this risk remains unmitigated, an adversary within radio range can either hijack command
+  of the air vehicle outright or passively intercept its full sensor and video feed, with
+  neither requiring more than commodity RF equipment against an unauthenticated or unencrypted
+  link.
+asvs: "V9 - Communications"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
+action: "Cryptographically authenticate the command-and-control link and encrypt the telemetry/sensor/video downlink, rather than relying on frequency-hopping or protocol obscurity alone."
+mitigation: >
+  Cryptographically authenticate every command sent over the control link so the air vehicle
+  can distinguish its legitimate ground control station from an impersonator, rather than
+  relying on frequency-hopping, proprietary protocols, or physical proximity as the control.
+  Encrypt the telemetry, sensor, and video downlink end to end -- unencrypted full-motion
+  video has been intercepted by adversaries in real documented incidents, and the same
+  exposure applies to any unencrypted downlink regardless of platform. Define and test a
+  documented lost-link failsafe behavior (e.g. return-to-home, controlled landing) so a
+  jammed or severed link does not itself become the attack. References: NIST SP 800-53 SC-8
+  (Transmission Confidentiality and Integrity); NIST SP 800-53 IA-3 (Device Identification and
+  Authentication); DoD UAS cybersecurity guidance.
+check: "Is the command-and-control link cryptographically authenticated, is the telemetry/sensor/video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?"
+detection_logic: >
+  Audit the command-link protocol for cryptographic authentication versus reliance on
+  frequency-hopping or obscurity alone. Confirm the telemetry/sensor/video downlink is
+  encrypted end to end. Review lost-link failsafe behavior documentation and test records.
+risk_assessment: >
+  Critical for any UAS ground control station whose command link is not cryptographically
+  authenticated, or whose sensor/video downlink is unencrypted.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope uas-ground-
+  control-station asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once command-link authentication and downlink
+  encryption are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.uas-ground-control-station}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>UAS Ground Control Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a hijacked command link is a total
+    # loss-of-control failure regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

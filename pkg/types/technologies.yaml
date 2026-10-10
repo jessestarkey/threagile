@@ -336,6 +336,20 @@ cds-guard:
         security_control_related: true
         high_value_target: true
         traffic_forwarding: true
+certificate-validation-service:
+    aliases:
+        - ocsp-responder
+        - ocsp
+        - crl-distribution-point
+        - crl
+    description: A PKI certificate-status validation service (an OCSP responder or CRL distribution point) used to check revocation status for CAC/PIV or non-person-entity certificates
+    attributes:
+        certificate-validation-service: true
+        backend_related: true
+        security_control_related: true
+        high_value_target: true
+        request_serving_api: true
+        may_contain_secrets: true
 client-system:
     aliases:
         - client
@@ -431,6 +445,19 @@ ejb:
         propagate_identity_to_outgoing_targets: true
         request_serving_api: true
         application_logic: true
+endpoint-security-manager:
+    aliases:
+        - hbss
+        - ess
+        - edr-console
+        - epo
+    description: A centralized endpoint security/EDR management console that pushes policy, signature updates, and remediation code to every managed endpoint (e.g. DoD ESS/HBSS-class, Trellix ePO)
+    attributes:
+        endpoint-security-manager: true
+        backend_related: true
+        security_control_related: true
+        high_value_target: true
+        may_contain_secrets: true
 erp:
     aliases:
         - enterprise-resource-planning
@@ -482,6 +509,18 @@ hsm:
         hsm: true
         backend_related: true
         security_control_related: true
+ics-controller:
+    aliases:
+        - plc
+        - rtu
+        - scada-controller
+        - bas-controller
+        - pacs-panel
+    description: An industrial, building-automation, or physical-access-control controller running control logic over an industrial protocol (e.g. Modbus, BACnet, DNP3) or legacy access-control protocol (e.g. Wiegand)
+    attributes:
+        ics-controller: true
+        backend_related: true
+        high_value_target: true
 identity-provider:
     aliases:
         - idp
@@ -626,6 +665,20 @@ monitoring:
         unnecessary_data_tolerated: true
         unprotected_communications_tolerated: true
         security_control_related: true
+network-encryptor:
+    aliases:
+        - haipe
+        - taclane
+        - csfc-vpn-gateway
+        - macsec-encryptor
+        - type-1-encryptor
+    description: An inline, Type-1 or CSfC-approved network encryption device providing red/black separation for classified or CUI traffic over an untrusted transport (e.g. a HAIPE encryptor, CSfC Multi-Site Connectivity VPN/MACsec gateway)
+    attributes:
+        network-encryptor: true
+        backend_related: true
+        security_control_related: true
+        high_value_target: true
+        traffic_forwarding: true
 report-engine:
     aliases:
         - reporting
@@ -649,6 +702,16 @@ reverse-proxy:
         no_storage_at_rest: true
         propagate_identity_to_outgoing_targets: true
         traffic_forwarding: true
+satellite-ground-station:
+    aliases:
+        - ttc-ground-station
+        - satcom-ground-segment
+        - mission-control-uplink
+    description: A ground-segment telemetry, tracking, and command (TT&C) system that uplinks commands to and downlinks telemetry from a spacecraft
+    attributes:
+        satellite-ground-station: true
+        backend_related: true
+        high_value_target: true
 scheduler:
     aliases:
         - cron
@@ -694,6 +757,19 @@ sourcecode-repository:
         development_relevant: true
         less_protected_type: true
         may_contain_secrets: true
+space-vehicle:
+    aliases:
+        - satellite
+        - spacecraft
+        - satellite-bus
+        - on-orbit-vehicle
+    description: The on-orbit spacecraft itself, receiving command uplink and returning telemetry via its own command-and-data-handling subsystem, distinct from the ground segment that commands it
+    attributes:
+        space-vehicle: true
+        backend_related: true
+        high_value_target: true
+        less_protected_type: true
+        application_logic: true
 stream-processing:
     description: Data stream processing
     attributes:
@@ -715,6 +791,29 @@ tool:
     attributes:
         tool: true
         propagate_identity_to_outgoing_targets: true
+uas-air-vehicle:
+    aliases:
+        - drone
+        - uav
+        - unmanned-aircraft
+    description: The airborne, uncrewed vehicle itself, receiving command-and-control uplink and returning telemetry/sensor data via RF link to its ground control station
+    attributes:
+        uas-air-vehicle: true
+        client: true
+        frontend_related: true
+        less_protected_type: true
+        high_value_target: true
+uas-ground-control-station:
+    aliases:
+        - drone-gcs
+        - uav-control-station
+        - uas-gcs
+    description: The operator console that commands a UAS air vehicle and receives its telemetry and sensor/video downlink
+    attributes:
+        uas-ground-control-station: true
+        backend_related: true
+        high_value_target: true
+        application_logic: true
 unknown-technology:
     aliases:
         - unknown
@@ -727,6 +826,19 @@ vault:
         vault: true
         backend_related: true
         security_control_related: true
+vulnerability-scanner:
+    aliases:
+        - acas
+        - tenable
+        - nessus
+        - compliance-scanner
+    description: A credentialed network vulnerability and compliance scanning platform that authenticates to every in-scope host to assess patch and configuration posture (e.g. DoD ACAS/Tenable.sc, Nessus)
+    attributes:
+        vulnerability-scanner: true
+        backend_related: true
+        security_control_related: true
+        high_value_target: true
+        may_contain_secrets: true
 waf:
     aliases:
         - web-application-firewall

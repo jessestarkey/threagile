@@ -1,0 +1,139 @@
+id: certificate-validation-soft-fail
+title: "Certificate Validation Service Soft-Fail Revocation Checking"
+function: operations
+stride: spoofing
+cwe: 299
+description: >
+  A certificate-status validation service (OCSP responder or CRL distribution point) that
+  fails open -- treating an unreachable or slow revocation check as "not revoked" rather than
+  rejecting the authentication attempt -- lets a revoked or compromised certificate continue
+  authenticating successfully, especially in degraded or disconnected (DDIL) conditions where
+  the responder is most likely to be unreachable.
+impact: >
+  If this risk remains unmitigated, an attacker holding a revoked or compromised certificate
+  authenticates successfully whenever the revocation check cannot complete, which is exactly
+  when an attacker who has caused the outage -- or is operating during one -- most needs it
+  to.
+asvs: "V9 - Communications"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cheat_Sheet.html"
+action: "Configure revocation checking to fail closed, and confirm every relying system uses a DoD-approved OCSP/CRL source consistent with CAC/PIV authentication requirements."
+mitigation: >
+  Configure every relying party's revocation check to fail closed -- reject the authentication
+  attempt when the OCSP responder or CRL cannot be reached or does not respond in time, rather
+  than treating the absence of a definitive answer as implicit non-revocation. Confirm the
+  revocation source itself is a DoD-approved OCSP/CRL source as required for CAC two-factor
+  authentication of privileged users. Where degraded or disconnected (DDIL) operation is a
+  genuine requirement, address it with a short-validity cached response signed by the
+  responder rather than an unconditional fail-open default. References: NIST SP 800-53 IA-5
+  (Authenticator Management); DoD Cloud Computing Mission Owner Network Security Requirements
+  Guide (CAC/OCSP revocation requirements).
+check: "Does revocation checking fail closed when the OCSP responder or CRL is unreachable, and does every relying system use a DoD-approved OCSP/CRL source?"
+detection_logic: >
+  Audit relying-party configuration for fail-open versus fail-closed behavior on revocation-
+  check timeout or unavailability. Confirm the configured OCSP/CRL source is on the DoD-
+  approved list. Test by simulating responder unavailability and confirming authentication is
+  rejected rather than silently permitted.
+risk_assessment: >
+  Critical for any certificate-validation service or relying party configured to fail open on
+  an unreachable or unresponsive revocation check.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope certificate-
+  validation-service asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once fail-closed behavior and a DoD-approved
+  revocation source are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.certificate-validation-service}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Certificate Validation Service Soft-Fail Revocation Checking</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a revocation check that fails open
+    # defeats the entire purpose of revocation regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

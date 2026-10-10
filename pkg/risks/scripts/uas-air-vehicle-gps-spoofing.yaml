@@ -1,0 +1,140 @@
+id: uas-air-vehicle-gps-spoofing
+title: "UAS GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure"
+function: architecture
+stride: tampering
+cwe: 290
+description: >
+  An air vehicle navigating on unauthenticated civilian GPS/PNT signals can be spoofed or
+  jammed into a false position, redirecting, forcing down, or crashing it -- a well-documented,
+  frequently demonstrated attack against both civilian and military drones. Separately, a
+  downed or recovered airframe that was not built to protect what it carries exposes onboard
+  cryptographic keys and mission data to anyone who physically recovers it, a consequence no
+  satellite shares.
+impact: >
+  If this risk remains unmitigated, an adversary can redirect or down the vehicle using
+  nothing more than a GPS spoofing or jamming signal, and a vehicle later recovered -- whether
+  forced down by that attack or lost for any other reason -- can hand an adversary the onboard
+  keys and mission data needed to compromise the broader system it was part of.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Cross-check GPS/PNT against an independent navigation source to detect spoofing, and ensure onboard cryptographic material and mission data are protected by anti-tamper/zeroization in the event of physical capture."
+mitigation: >
+  Cross-check GPS/PNT position against an independent navigation source (inertial navigation,
+  terrain-reference, or a military anti-spoofing GPS variant where available) so a spoofed
+  civilian GPS signal is detected as a disagreement rather than silently trusted. Equip the
+  vehicle with anti-tamper or zeroization capability that destroys or renders unusable onboard
+  cryptographic keys and sensitive mission data if the vehicle is captured or recovered by an
+  unauthorized party, rather than assuming recovery will not happen. Define and test a
+  documented lost-navigation failsafe behavior distinct from the ground control station's own
+  lost-link failsafe. References: DHS/CISA guidance on GPS spoofing and jamming; NIST SP
+  800-53 SC-7 (Boundary Protection); DoD anti-tamper policy for unmanned systems.
+check: "Does the vehicle cross-check GPS/PNT against an independent navigation source to detect spoofing, and is onboard cryptographic material/mission data protected by anti-tamper or zeroization capability in the event of physical capture?"
+detection_logic: >
+  Review the vehicle's navigation architecture for independent cross-checking versus sole
+  reliance on unauthenticated civilian GPS. Audit anti-tamper/zeroization capability and test
+  records for onboard cryptographic material and mission data protection.
+risk_assessment: >
+  Critical for any air vehicle relying solely on unauthenticated civilian GPS with no
+  independent navigation cross-check, or carrying cryptographic material/mission data with no
+  anti-tamper or zeroization protection against physical capture.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope uas-air-vehicle
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
+  it as mitigated once independent navigation cross-checking and anti-tamper/zeroization
+  protection are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.uas-air-vehicle}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>UAS GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a successfully spoofed navigation signal
+    # is a total loss-of-control failure regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

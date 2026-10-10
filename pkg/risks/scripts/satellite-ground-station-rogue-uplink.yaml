@@ -1,0 +1,132 @@
+id: satellite-ground-station-rogue-uplink
+title: "Satellite Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation"
+function: operations
+stride: spoofing
+cwe: 306
+description: >
+  A ground station that uplinks commands to a spacecraft is impersonable if command
+  authentication relies on obscurity of the link rather than cryptographic verification --
+  letting an unauthorized or rogue ground station issue commands the spacecraft accepts as
+  legitimate.
+impact: >
+  If this risk remains unmitigated, an adversary operating an unauthorized ground station can
+  command the spacecraft directly, bypassing every control this organization's own ground
+  segment enforces, with no cryptographic check at the spacecraft to tell the difference.
+asvs: "V9 - Communications"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
+action: "Cryptographically authenticate every command uplink, and monitor for commands or telemetry sessions originating from an unrecognized ground station."
+mitigation: >
+  Cryptographically authenticate every command uplinked to the spacecraft rather than relying
+  on link obscurity, frequency coordination, or physical ground-station access alone as the
+  control. Monitor for command or telemetry sessions originating from an unrecognized ground
+  station identity, and alert on any uplink attempt that fails authentication rather than
+  silently dropping it. Treat the ground station's own command-origination credentials with
+  the same protection as any other high-value signing key, since their compromise is
+  functionally equivalent to operating a rogue ground station legitimately. References: MITRE
+  SPARTA (Space Attack Research and Tactic Analysis) -- Rogue Ground Station / Unauthorized
+  Uplink; NIST IR 8401 (Satellite Ground Segment Security); NIST SP 800-53 IA-3 (Device
+  Identification and Authentication).
+check: "Is every command uplink cryptographically authenticated independent of link obscurity, and is monitoring in place for uplink attempts from an unrecognized ground station identity?"
+detection_logic: >
+  Audit the command-uplink protocol for cryptographic authentication versus reliance on
+  obscurity, frequency coordination, or physical access alone. Review monitoring coverage for
+  failed-authentication or unrecognized-origin uplink attempts.
+risk_assessment: >
+  Critical for any ground station whose command uplink relies on link obscurity rather than
+  cryptographic authentication, or where no monitoring exists for unauthorized uplink
+  attempts.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope satellite-
+  ground-station asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once cryptographic command authentication and
+  unauthorized-uplink monitoring are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.satellite-ground-station}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Satellite Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor) -- intercepting or spoofing a satellite uplink
+    # credibly requires materially more sophisticated capability than most RF attacks -- so
+    # only the upward (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a successfully impersonated ground
+    # station is a total command-authority failure regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

@@ -1,0 +1,147 @@
+id: endpoint-security-manager-fleet-compromise
+title: "Endpoint Security Management Console Fleet-Wide Compromise Path"
+function: operations
+stride: elevation-of-privilege
+cwe: 269
+description: >
+  A centralized endpoint security/EDR management console pushes policy, signature updates,
+  and remediation code to every endpoint it manages, which means compromising the console
+  itself is equivalent to obtaining code execution on the entire managed fleet at once.
+impact: >
+  If this risk remains unmitigated, an attacker who compromises the console can push a
+  malicious policy or "remediation" action to every managed endpoint simultaneously, turning
+  the organization's own defensive tooling into the fastest path to total fleet compromise.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Require MFA and administrative tiering for console access, and verify the integrity of policy/signature content before it is pushed fleet-wide."
+mitigation: >
+  Require multi-factor authentication and a dedicated, tiered administrative account (never a
+  general-purpose domain admin credential) for access to the endpoint security console.
+  Verify the integrity of policy, signature, and remediation-action content before it is
+  pushed fleet-wide -- a code-signing or change-approval step distinct from the console's own
+  built-in distribution mechanism. Monitor for policy pushes or remediation actions
+  originating outside documented change windows or approved administrative sessions, since the
+  console's own normal operation is indistinguishable from an attacker using it exactly as
+  designed. References: NIST SP 800-53 AC-6 (Least Privilege); NIST SP 800-53 CM-5 (Access
+  Restrictions for Change); DoD Endpoint Security Solutions (ESS) implementation guidance.
+check: "Does console access require MFA and a dedicated tiered administrative account, is pushed policy/signature/remediation content integrity-verified before distribution, and are pushes outside documented change windows monitored?"
+detection_logic: >
+  Audit console authentication configuration for MFA and administrative tiering. Review the
+  content-signing or change-approval process for pushed policy/signature/remediation actions.
+  Monitor for fleet-wide pushes occurring outside documented change windows.
+risk_assessment: >
+  Critical for any endpoint security console with no MFA/tiering on administrative access, or
+  no integrity verification on content pushed fleet-wide.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope endpoint-
+  security-manager asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once MFA/tiering and content integrity
+  verification are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.endpoint-security-manager}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Endpoint Security Management Console Fleet-Wide Compromise Path</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor) -- this requires actual console-level compromise, a
+    # rarer event than a routine configuration gap -- so only the upward (RAA >= 40) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
+    # dimensions. Baseline is "very-high" (the ceiling), so only the downward delta (every
+    # dimension at or below rank 1) is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - any_dimension_at_least_mid: false
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  any_dimension_at_least_mid: true
+        - if:
+            and:
+              - false: "{any_dimension_at_least_mid}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

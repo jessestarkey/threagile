@@ -1,0 +1,137 @@
+id: space-vehicle-bus-segmentation-gap
+title: "Space Vehicle Onboard Command Authentication and Bus Segmentation Gap"
+function: architecture
+stride: spoofing
+cwe: 284
+description: >
+  The spacecraft's own command-and-data-handling subsystem is the last line of defense if
+  ground-segment controls are ever bypassed or spoofed, yet it is frequently assumed secure by
+  inheritance from the ground segment rather than independently authenticating commands at the
+  vehicle itself. A validated command can also reach other subsystems or payloads with no
+  isolation if the onboard bus has no segmentation between command-and-data-handling and the
+  rest of the vehicle.
+impact: >
+  If this risk remains unmitigated, a command that reaches the spacecraft through any path
+  other than the intended ground station -- whether via a compromised ground segment or a
+  flaw elsewhere -- is accepted and can reach attitude control, payload, or other critical
+  subsystems with nothing onboard to stop it.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Authenticate commands at the spacecraft's own receiver independent of ground-segment controls, and segment the command-and-data-handling subsystem from other onboard buses and payloads."
+mitigation: >
+  Require the spacecraft's own command-and-data-handling subsystem to cryptographically
+  authenticate every command it receives, independent of any trust already established by the
+  ground segment -- the vehicle should not assume a command is legitimate solely because it
+  arrived through the expected uplink path. Segment the command-and-data-handling subsystem
+  from attitude control, payload, and other critical buses so that a single accepted but
+  malicious command cannot reach every subsystem at once. Since the vehicle cannot be
+  physically patched or re-hardened after launch, validate this architecture during
+  pre-launch integration and test rather than relying on an on-orbit fix. References: MITRE
+  SPARTA (Space Attack Research and Tactic Analysis) -- space segment command and data
+  handling techniques; NIST IR 8401 (Satellite Ground Segment Security, space segment
+  considerations); NIST SP 800-53 SC-7 (Boundary Protection).
+check: "Does the spacecraft's own command-and-data-handling subsystem cryptographically authenticate every command independent of ground-segment trust, and is it segmented from other onboard buses and payloads?"
+detection_logic: >
+  Review the spacecraft's command-authentication design for independence from ground-segment
+  trust versus implicit inheritance. Audit the onboard bus architecture for segmentation
+  between command-and-data-handling and other critical subsystems.
+risk_assessment: >
+  Critical for any space vehicle whose onboard command authentication is not independently
+  verified at the vehicle itself, or whose command-and-data-handling subsystem has no
+  segmentation from other onboard buses.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope space-vehicle
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
+  it as mitigated once independent onboard command authentication and bus segmentation are
+  confirmed during pre-launch integration and test.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.space-vehicle}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Space Vehicle Onboard Command Authentication and Bus Segmentation Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "unlikely" (the floor) -- reaching the spacecraft's own command path
+    # requires defeating or bypassing the ground segment first -- so only the upward
+    # (RAA >= 40) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: possible
+            else:
+              - return: unlikely
+
+    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- an accepted malicious command reaching
+    # unsegmented subsystems is a total loss-of-vehicle-level failure regardless of this
+    # asset's own rating, and the vehicle cannot be physically re-hardened after launch.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

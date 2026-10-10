@@ -1,0 +1,131 @@
+id: ics-controller-unauthenticated-protocol
+title: "ICS/PACS Controller Unauthenticated Industrial Protocol Command Injection"
+function: architecture
+stride: tampering
+cwe: 306
+description: >
+  Industrial control protocols (Modbus, BACnet, DNP3) and legacy physical-access-control
+  protocols (Wiegand) were designed without native authentication, so a controller speaking
+  one of them by default accepts a command-mode or configuration-mode write from anyone who
+  can reach it on the network or wire, with no credential check at all.
+impact: >
+  If this risk remains unmitigated, an attacker who reaches the controller's network segment
+  or physical wiring can inject commands or rewrite its program logic exactly as if they were
+  the legitimate control system or badge reader, with no authentication step to stop them.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Segment ICS/PACS controller traffic from the general IT network, and apply the strongest authentication the protocol supports (OSDP Secure Channel for access control, protocol-aware filtering for industrial protocols)."
+mitigation: >
+  Place ICS and PACS controllers on a dedicated, segmented network isolated from the general
+  IT network, with protocol-aware filtering (an industrial firewall or protocol-aware IDS) at
+  the boundary rather than relying on the controller's own protocol to enforce anything.
+  Replace legacy unauthenticated access-control wiring (Wiegand) with OSDP Secure Channel
+  where the hardware supports it, since Wiegand's cleartext credential transmission is
+  trivially sniffed and replayed. Where the industrial protocol itself has no authentication
+  option at all, treat network segmentation and physical access to the wiring as the only real
+  controls and document them as such rather than assuming the protocol provides any assurance.
+  References: MITRE ATT&CK for ICS; UFC 4-010-06 (Cybersecurity of Facility-Related Control
+  Systems); NIST SP 800-82 (Guide to Operational Technology Security).
+check: "Are ICS/PACS controllers segmented from the general IT network with protocol-aware filtering at the boundary, and has legacy unauthenticated access-control wiring been replaced with an authenticated protocol where supported?"
+detection_logic: >
+  Audit network segmentation for ICS/PACS controller traffic, confirming isolation from the
+  general IT network and protocol-aware filtering at the boundary. Inventory access-control
+  hardware for Wiegand versus OSDP Secure Channel deployment.
+risk_assessment: >
+  Critical for any ICS/PACS controller reachable from the general IT network with no
+  protocol-aware filtering, or any access-control panel still using unauthenticated Wiegand
+  wiring where OSDP Secure Channel hardware is available.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope ics-controller
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
+  it as mitigated once network segmentation and the strongest available protocol
+  authentication are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ics-controller}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ICS/PACS Controller Unauthenticated Industrial Protocol Command Injection</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "very-likely" (the ceiling) -- these protocols lacking authentication by
+    # design is the norm, not the exception -- so only the downward (RAA < 15) delta is
+    # reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high
