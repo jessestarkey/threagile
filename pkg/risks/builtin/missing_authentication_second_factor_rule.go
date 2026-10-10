@@ -21,9 +21,18 @@ func (*MissingAuthenticationSecondFactorRule) Category() *types.RiskCategory {
 		Impact:     "If this risk is unmitigated, attackers might be able to access or modify highly sensitive data without strong authentication.",
 		ASVS:       "V2 - Authentication Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html",
-		Action:     "Authentication with Second Factor (2FA)",
-		Mitigation: "Apply an authentication method to the technical asset protecting highly sensitive data via " +
-			"two-factor authentication for human users.",
+		Action: "Require phishing-resistant multi-factor authentication (CAC/PIV or FIDO2) for every human session reaching " +
+			"this asset, enforced centrally at the identity provider.",
+		Mitigation: "Enforce MFA at the identity provider through a conditional-access or authentication policy scoped to this " +
+			"application, so it cannot be bypassed through an alternate login path. In DoD environments use CAC/PIV " +
+			"certificate-based authentication; elsewhere use FIDO2/WebAuthn security keys or platform authenticators " +
+			"meeting NIST SP 800-63B AAL3, or at minimum AAL2. Do not accept SMS or voice one-time codes, and do not use " +
+			"push approval without number matching, which is vulnerable to MFA-fatigue attacks. Require step-up " +
+			"re-authentication for privileged or high-impact operations. Disable legacy protocols that cannot carry a " +
+			"second factor (basic authentication, NTLM, legacy mail protocols), and protect break-glass accounts with " +
+			"hardware keys, alerting on every use, and periodic review. References: CWE-308; MITRE ATT&CK T1078 (Valid " +
+			"Accounts), T1110 (Brute Force), T1621 (Multi-Factor Authentication Request Generation); OWASP Top 10:2025 A07 " +
+			"(Authentication Failures); NIST SP 800-53 IA-2(1), IA-2(2); OMB M-22-09.",
 		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function: types.BusinessSide,
 		STRIDE:   types.ElevationOfPrivilege,
@@ -73,12 +82,12 @@ func (r *MissingAuthenticationSecondFactorRule) GenerateRisks(input *types.Model
 			}
 		}
 	}
-		return risks, nil
+	return risks, nil
 }
 
 func appendRisk(
-	input *types.Model, risks []*types.Risk, r *MissingAuthenticationSecondFactorRule, 
-	technicalAsset *types.TechnicalAsset, commLink *types.CommunicationLink, 
+	input *types.Model, risks []*types.Risk, r *MissingAuthenticationSecondFactorRule,
+	technicalAsset *types.TechnicalAsset, commLink *types.CommunicationLink,
 	callersCommLink *types.CommunicationLink, title string) []*types.Risk {
 	moreRisky :=
 		input.HighestCommunicationLinkConfidentiality(callersCommLink) >= types.Confidential ||

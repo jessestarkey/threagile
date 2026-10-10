@@ -22,16 +22,22 @@ func (*MissingCloudHardeningRule) Category() *types.RiskCategory {
 		Impact:     "If this risk is unmitigated, attackers might access cloud components in an unintended way.",
 		ASVS:       "V1 - Architecture, Design and Threat Modeling Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:     "Cloud Hardening",
-		Mitigation: "Apply hardening of all cloud components and services, taking special care to follow the individual risk descriptions (which " +
-			"depend on the cloud provider tags in the model). " +
-			"<br><br>For <b>Amazon Web Services (AWS)</b>: Follow the <i>CIS Benchmark for Amazon Web Services</i> (see also the automated checks of cloud audit tools like <i>\"PacBot\", \"CloudSploit\", \"CloudMapper\", \"ScoutSuite\", or \"Prowler AWS CIS Benchmark Tool\"</i>). " +
-			"<br>For EC2 and other servers running Amazon Linux, follow the <i>CIS Benchmark for Amazon Linux</i> and switch to IMDSv2. " +
-			"<br>For S3 buckets follow the <i>Security Best Practices for Amazon S3</i> at <a href=\"https://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html\">https://docs.aws.amazon.com/AmazonS3/latest/dev/security-best-practices.html</a> to avoid accidental leakage. " +
-			"<br>Also take a look at some of these tools: <a href=\"https://github.com/toniblyx/my-arsenal-of-aws-security-tools\">https://github.com/toniblyx/my-arsenal-of-aws-security-tools</a> " +
-			"<br><br>For <b>Microsoft Azure</b>: Follow the <i>CIS Benchmark for Microsoft Azure</i> (see also the automated checks of cloud audit tools like <i>\"CloudSploit\" or \"ScoutSuite\"</i>)." +
-			"<br><br>For <b>Google Cloud Platform</b>: Follow the <i>CIS Benchmark for Google Cloud Computing Platform</i> (see also the automated checks of cloud audit tools like <i>\"CloudSploit\" or \"ScoutSuite\"</i>). " +
-			"<br><br>For <b>Oracle Cloud Platform</b>: Follow the hardening best practices (see also the automated checks of cloud audit tools like <i>\"CloudSploit\"</i>).",
+		Action: "Assess this cloud component against the provider's DISA STIG or CIS benchmark using continuous posture " +
+			"management, enforce guardrails as policy, and remediate every failed control.",
+		Mitigation: "Enable cloud security posture management across the subscription or account (Microsoft Defender for Cloud " +
+			"with the regulatory compliance dashboard, AWS Security Hub with the CIS AWS Foundations and NIST SP 800-53 " +
+			"standards, or GCP Security Command Center) and remediate every failed control for this component, " +
+			"prioritizing public exposure, identity, and logging findings. Apply guardrails as code (Azure Policy " +
+			"initiatives; AWS Service Control Policies and Config rules) that deny public network access to storage, " +
+			"databases, and key vaults, require private endpoints and customer-managed keys where mandated, and enforce " +
+			"diagnostic logging to the central workspace. Require AWS IMDSv2 with hop limit 1 and block 169.254.169.254 " +
+			"from containers, remove long-lived access keys in favor of managed identities or roles, and enforce MFA and " +
+			"least privilege on all control-plane principals. Enable control-plane audit logging (Azure Activity Log; AWS " +
+			"CloudTrail in all regions with log file validation) and data-plane logging, forwarded to the SIEM. For DoD " +
+			"workloads, deploy only into the authorized impact-level region (Azure Government, AWS GovCloud) and follow " +
+			"the DISA Cloud Computing SRG and SCCA. Run Prowler or ScoutSuite in CI to catch drift before deployment. " +
+			"References: CWE-16; MITRE ATT&CK T1530 (Data from Cloud Storage), T1078.004 (Cloud Accounts), T1552.005 " +
+			"(Cloud Instance Metadata API); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP 800-53 CM-6, CM-7.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Operations,
 		STRIDE:         types.Tampering,
@@ -283,7 +289,7 @@ func (r *MissingCloudHardeningRule) addTrustBoundaryAccordingToBaseTag(
 
 func (r *MissingCloudHardeningRule) addSharedRuntimeAccordingToBaseTag(
 	sharedRuntime *types.SharedRuntime,
-	cloudAssets map[string]*CloudAssets,) {
+	cloudAssets map[string]*CloudAssets) {
 	if sharedRuntime.IsTaggedWithAny(r.SupportedTags()...) {
 		for _, provider := range providers {
 			if isTaggedWithBaseTag(sharedRuntime.Tags, strings.ToLower(provider)) {

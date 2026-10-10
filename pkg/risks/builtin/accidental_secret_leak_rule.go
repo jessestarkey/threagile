@@ -23,11 +23,19 @@ func (*AccidentalSecretLeakRule) Category() *types.RiskCategory {
 			"find secrets accidentally checked-in.",
 		ASVS:       "V14 - Configuration Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:     "Build Pipeline Hardening",
-		Mitigation: "Establish measures preventing accidental check-in or package-in of secrets into sourcecode repositories " +
-			"and artifact registries. This starts by using good .gitignore and .dockerignore files, but does not stop there. " +
-			"See for example tools like <i>\"git-secrets\" or \"Talisman\"</i> to have check-in preventive measures for secrets. " +
-			"Consider also to regularly scan your repositories for secrets accidentally checked-in using scanning tools like <i>\"gitleaks\" or \"gitrob\"</i>.",
+		Action: "Block secrets from entering source repositories and artifact registries with pre-commit and server-side push " +
+			"scanning, scan the existing history, and revoke and rotate any secret ever found.",
+		Mitigation: "Enforce secret scanning at three points: a pre-commit hook on developer workstations (gitleaks, git-secrets, " +
+			"or detect-secrets); a server-side push-protection rule on the source repository that rejects commits " +
+			"containing known credential formats or high-entropy strings; and a CI stage that scans every build artifact " +
+			"and container image layer (trufflehog, gitleaks, or the registry's native scanner) before it is published. " +
+			"Keep .gitignore and .dockerignore entries for local credential files (.env, *.pem, *.pfx, kubeconfig, " +
+			"terraform.tfstate) and use multi-stage container builds so build-time credentials never persist into a " +
+			"published layer. Run a one-time full-history scan of every in-scope repository and registry. Treat any secret " +
+			"found as compromised: revoke and rotate it at its issuer first, then purge it from history (git filter-repo " +
+			"or BFG), because deleting the file in a new commit leaves it in history and in every existing clone. Replace " +
+			"static credentials in code and configuration with references resolved at runtime from a vault or a workload " +
+			"identity. References: CWE-798, CWE-540; MITRE ATT&CK T1552.001 (Credentials In Files); NIST SP 800-53 IA-5(7).",
 		Check:                      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:                   types.Operations,
 		STRIDE:                     types.InformationDisclosure,

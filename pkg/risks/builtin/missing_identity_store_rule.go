@@ -18,10 +18,18 @@ func (*MissingIdentityStoreRule) Category() *types.RiskCategory {
 			"critical assets (and thus not seeing their risks).",
 		Impact: "If this risk is unmitigated, attackers might be able to exploit risks unseen in this threat model in the identity provider/store " +
 			"that is currently missing in the model.",
-		ASVS:           "V2 - Authentication Verification Requirements",
-		CheatSheet:     "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
-		Action:         "Identity Store",
-		Mitigation:     "Include an identity store in the model if the application has a login.",
+		ASVS:       "V2 - Authentication Verification Requirements",
+		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+		Action: "Add the identity provider and identity store that authenticate this system's users to the threat model, with " +
+			"their data flows to every asset that authorizes by end-user identity.",
+		Mitigation: "Model the identity provider (for example Entra ID, Keycloak, Okta) and its identity store (directory or user " +
+			"database) as technical assets, as out-of-scope assets if an enterprise identity team operates them, with the " +
+			"authentication and token-validation communication links to every asset that authorizes requests by end-user " +
+			"identity. Without them, risks to the component that issues every credential this system trusts (identity " +
+			"provider isolation, missing MFA, credential storage, federation trust tampering) cannot be evaluated. Record " +
+			"whether the identity service is inherited from an enterprise authorization package or operated by this " +
+			"system, since that determines which controls this system must implement itself. References: NIST SP 800-53 " +
+			"IA-2, IA-5, PL-8; NIST SP 800-63-3; DoD ICAM Reference Design.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Spoofing,

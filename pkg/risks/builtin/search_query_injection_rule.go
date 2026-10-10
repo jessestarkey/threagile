@@ -22,10 +22,18 @@ func (*SearchQueryInjectionRule) Category() *types.RiskCategory {
 			"eventually further escalate towards a deeper system penetration via code executions.",
 		ASVS:       "V5 - Validation, Sanitization and Encoding Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html",
-		Action:     "Search-Query Injection Prevention",
-		Mitigation: "Try to use libraries that properly encode search query meta characters in searches and don't expose the " +
-			"query unfiltered to the caller. " +
-			"When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.",
+		Action: "Build search queries with the client library's structured query API and escaped user terms, never by " +
+			"concatenating caller input into query strings, and never forward caller parameters to the engine unfiltered.",
+		Mitigation: "Construct queries with the search client's typed query builders (Elasticsearch or OpenSearch Query DSL " +
+			"objects, SolrJ parameter APIs) and pass user input only as term or match values, not as raw query_string or " +
+			"Lucene syntax; where users must write query syntax, use simple_query_string with restricted flags. Escape " +
+			"Lucene and Solr special characters in user terms. Never pass caller-controlled request parameters through to " +
+			"the engine: Solr local parameters, qt, shards, stream.url, and the Velocity response writer, and " +
+			"Elasticsearch scripted queries, have each enabled remote code execution or SSRF in real deployments (for " +
+			"example CVE-2017-12629, CVE-2019-17558). Enforce document-level security in the query itself or the engine's " +
+			"security plugin so a modified query cannot return records outside the caller's authorization. Keep the engine " +
+			"off the public network, require authentication on its API, disable dynamic scripting where unused, and keep " +
+			"it patched. References: CWE-943, CWE-74; MITRE ATT&CK T1190; OWASP Top 10:2025 A05 (Injection).",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,

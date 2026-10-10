@@ -20,11 +20,20 @@ func (*PathTraversalRule) Category() *types.RiskCategory {
 			"business data files, etc.) from the filesystem of affected components.",
 		ASVS:       "V12 - File and Resources Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
-		Action:     "Path-Traversal Prevention",
-		Mitigation: "Before accessing the file cross-check that it resides in the expected folder and is of the expected " +
-			"type and filename/suffix. Try to use a mapping if possible instead of directly accessing by a filename which is " +
-			"(partly or fully) provided by the caller. " +
-			"When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.",
+		Action: "Resolve every caller-influenced file path to its canonical form and verify it stays inside an allowlisted " +
+			"base directory, or replace caller-supplied filenames with server-side identifiers.",
+		Mitigation: "Prefer indirect references: map a caller-supplied identifier to a server-side filename through a lookup table " +
+			"or database key, so the caller never supplies a path. Where a filename must be accepted, validate it against " +
+			"a strict allowlist (letters, digits, hyphen, underscore, and one permitted extension), reject path " +
+			"separators, parent-directory segments, NUL bytes, and their encoded variants (percent-encoded and overlong " +
+			"UTF-8 forms, Windows alternate data streams and reserved device names), then canonicalize the joined path " +
+			"(realpath, Path.GetFullPath, java.nio toRealPath) and confirm it still begins with the intended base " +
+			"directory before opening it. Run the process under a least-privilege account whose filesystem permissions " +
+			"exclude configuration, key, and credential files, and use a read-only root filesystem in containers. Apply " +
+			"the same checks to archive extraction (Zip Slip) and to template or include directives (local file " +
+			"inclusion). For third-party products, confirm the vendor's path handling and keep the product patched. " +
+			"References: CWE-22, CWE-98; CAPEC-126 (Path Traversal); MITRE ATT&CK T1083 (File and Directory Discovery); " +
+			"OWASP Top 10:2025 A01 (Broken Access Control).",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.InformationDisclosure,

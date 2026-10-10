@@ -22,11 +22,20 @@ func (*MissingBuildInfrastructureRule) Category() *types.RiskCategory {
 			"critical build infrastructure components missing in the model.",
 		ASVS:       "V1 - Architecture, Design and Threat Modeling Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:     "Build Pipeline Hardening",
-		Mitigation: "Include the build infrastructure in the model.",
-		Check:      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function:   types.Architecture,
-		STRIDE:     types.Tampering,
+		Action: "Add the developer endpoints, source repository, build pipeline, and artifact registry that produce this " +
+			"system's custom code to the threat model, with their data flows to the deployment targets.",
+		Mitigation: "Model the full software delivery path for every custom-developed component: developer workstations " +
+			"(devops-client), the source code repository, the CI/CD pipeline and its runners, the artifact or container " +
+			"registry, and the communication links from each to the deployment targets, with their real trust boundaries " +
+			"and CIA ratings. Once these assets exist in the model, the supply-chain rules (code backdooring, unchecked " +
+			"deployment, accidental secret leak, push instead of pull deployment, container base image backdooring) can " +
+			"evaluate them; without them, the most direct path to compromising production is invisible to the analysis. If " +
+			"the build platform is owned by a shared enterprise team, model it as out-of-scope assets so its data flows " +
+			"into this system still appear, and cite that platform's own authorization package. References: NIST SP " +
+			"800-218 (SSDF) PO.3, PO.5; NIST SP 800-53 SA-15, SR-3; MITRE ATT&CK T1195.002.",
+		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function: types.Architecture,
+		STRIDE:   types.Tampering,
 		DetectionLogic: "Models with in-scope custom-developed parts missing in-scope development (code creation) and build infrastructure " +
 			"components (devops-client, sourcecode-repo, build-pipeline, etc.).",
 		RiskAssessment: "The risk rating depends on the highest sensitivity of the in-scope assets running custom-developed parts.",
@@ -48,19 +57,19 @@ func (r *MissingBuildInfrastructureRule) GenerateRisks(input *types.Model) ([]*t
 	var mostRelevantAsset *types.TechnicalAsset
 	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
 		technicalAsset := input.TechnicalAssets[id]
-		
+
 		getTechFlags(technicalAsset, &hasBuildPipeline, &hasSourcecodeRepo, &hasDevOpsClient)
 
 		if r.skipAsset(technicalAsset) {
 			continue
 		}
-	
+
 		hasCustomDevelopedParts = true
 		if impact == types.LowImpact {
 			mostRelevantAsset = technicalAsset
 			evaluateImpactFromHighestCIAValues(input, technicalAsset, &impact)
 		}
-		
+
 		evaluateImpactFromTechnicalAssetCIAValues(technicalAsset, &impact)
 
 		// just for referencing the most interesting asset

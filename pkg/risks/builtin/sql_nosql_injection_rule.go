@@ -19,9 +19,20 @@ func (*SqlNoSqlInjectionRule) Category() *types.RiskCategory {
 		Impact:     "If this risk is unmitigated, attackers might be able to modify SQL/NoSQL queries to steal and modify data and eventually further escalate towards a deeper system penetration via code executions.",
 		ASVS:       "V5 - Validation, Sanitization and Encoding Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
-		Action:     "SQL/NoSQL-Injection Prevention",
-		Mitigation: "Try to use parameter binding to be safe from injection vulnerabilities. " +
-			"When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.",
+		Action: "Use parameterized queries or prepared statements for every database call, prohibit string-built query text, " +
+			"and connect with a least-privilege database account.",
+		Mitigation: "Execute all SQL with bound parameters (JDBC PreparedStatement, ADO.NET SqlParameter, driver placeholders, ORM " +
+			"query builders) and never concatenate or format caller input into query text. Identifiers that cannot be " +
+			"parameterized (ORDER BY columns, table names, sort direction) must be validated against a fixed allowlist. " +
+			"Audit ORM raw-query escapes (raw(), FromSqlRaw, createNativeQuery, text()) and stored procedures that build " +
+			"dynamic SQL internally. For NoSQL stores, reject operator keys in caller-supplied JSON (MongoDB $where, $ne, " +
+			"$gt, $regex), disable server-side JavaScript execution, and bind input to typed query objects. Connect with " +
+			"an account limited to the specific tables and DML operations required, with no DDL, no file or OS access " +
+			"(xp_cmdshell, COPY ... PROGRAM, LOAD_FILE, INTO OUTFILE), and no administrative rights, so a successful " +
+			"injection cannot escalate to code execution. Add SAST rules for injection sinks in CI and DAST (sqlmap, ZAP) " +
+			"against staging. For third-party products, confirm the vendor's query handling and keep the product patched. " +
+			"References: CWE-89, CWE-943; CAPEC-66 (SQL Injection), CAPEC-676 (NoSQL Injection); MITRE ATT&CK T1190; OWASP " +
+			"Top 10:2025 A05 (Injection).",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,

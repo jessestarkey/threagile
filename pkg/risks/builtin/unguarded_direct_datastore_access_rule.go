@@ -18,11 +18,21 @@ func (*UnguardedDirectDatastoreAccessRule) Category() *types.RiskCategory {
 		Impact:      "If this risk is unmitigated, attackers might be able to directly attack sensitive data stores without any protecting components in-between.",
 		ASVS:        "V1 - Architecture, Design and Threat Modeling Requirements",
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:      "Encapsulation of Datastore",
-		Mitigation:  "Encapsulate the datastore access behind a guarding service or application.",
-		Check:       "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function:    types.Architecture,
-		STRIDE:      types.ElevationOfPrivilege,
+		Action: "Remove direct cross-boundary access to this datastore by placing an application service or API in front of " +
+			"it, and restrict the datastore's network rules to that service alone.",
+		Mitigation: "Route every cross-boundary data access through an application tier or data-access API that authenticates the " +
+			"caller, authorizes each operation against the caller's entitlements, validates input, and exposes only the " +
+			"queries the business function needs, so no external component holds raw database credentials or a database " +
+			"network path. Restrict the datastore's firewall or network security group to the application tier's subnet or " +
+			"private endpoint, and disable public network access. For reporting and analytics consumers, provide a " +
+			"read-only replica, a curated view, or an export pipeline instead of direct access to the primary store. Where " +
+			"direct access is operationally unavoidable (DBA administration), require a bastion or just-in-time privileged " +
+			"access path with MFA and session recording. Send database connection and privileged-statement audit logs to " +
+			"the SIEM. References: CWE-668, CWE-284; MITRE ATT&CK T1213 (Data from Information Repositories), T1078 (Valid " +
+			"Accounts); NIST SP 800-53 AC-3, AC-4, SC-7.",
+		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function: types.Architecture,
+		STRIDE:   types.ElevationOfPrivilege,
 		DetectionLogic: "In-scope technical assets of type " + types.Datastore.String() + " (except " + types.IdentityStoreLDAP + " when accessed from " + types.IdentityProvider + " and " + types.FileServer + " when accessed via file transfer protocols) with confidentiality rating " +
 			"of " + types.Confidential.String() + " (or higher) or with integrity rating of " + types.Critical.String() + " (or higher) " +
 			"which have incoming data-flows from assets outside across a network trust-boundary. DevOps config and deployment access is excluded from this risk.", // TODO new rule "missing bastion host"?

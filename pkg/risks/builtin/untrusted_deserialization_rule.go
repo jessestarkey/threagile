@@ -21,11 +21,20 @@ func (*UntrustedDeserializationRule) Category() *types.RiskCategory {
 		Impact:     "If this risk is unmitigated, attackers might be able to execute code on target systems by exploiting untrusted deserialization endpoints.",
 		ASVS:       "V5 - Validation, Sanitization and Encoding Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
-		Action:     "Prevention of Deserialization of Untrusted Data",
-		Mitigation: "Try to avoid the deserialization of untrusted data (even of data within the same trust-boundary as long as " +
-			"it is sent across a remote connection) in order to stay safe from Untrusted Deserialization vulnerabilities. " +
-			"Alternatively a strict whitelisting approach of the classes/types/values to deserialize might help as well. " +
-			"When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.",
+		Action: "Stop deserializing untrusted input with native object serializers; switch to data-only formats with schema " +
+			"validation, and enforce strict type allowlists where native deserialization must remain.",
+		Mitigation: "Replace native object serialization on every externally reachable interface (Java ObjectInputStream, RMI, JMX " +
+			"and EJB remoting, .NET BinaryFormatter, NetDataContractSerializer, LosFormatter and ViewState without MAC " +
+			"validation, Python pickle, PHP unserialize, Ruby Marshal, and YAML loaders that construct arbitrary objects) " +
+			"with data-only formats such as JSON or Protocol Buffers bound to explicit DTO types and validated against a " +
+			"schema. Where native deserialization cannot be removed, apply a strict allowlist of permitted classes (Java " +
+			"JEP 290 serialization filters via jdk.serialFilter, a restrictive .NET SerializationBinder), verify an HMAC " +
+			"over the payload before deserializing it, and disable polymorphic type handling in JSON libraries (Jackson " +
+			"default typing, Json.NET TypeNameHandling other than None). Remove unused gadget-chain libraries from the " +
+			"classpath and keep dependencies patched. Run the deserializing process with least privilege and restricted " +
+			"egress to limit the impact of code execution. For third-party products, confirm the vendor has removed or " +
+			"filtered unsafe deserialization and keep the product patched. References: CWE-502; CAPEC-586 (Object " +
+			"Injection); MITRE ATT&CK T1190; OWASP Top 10:2025 A08 (Software or Data Integrity Failures).",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Tampering,

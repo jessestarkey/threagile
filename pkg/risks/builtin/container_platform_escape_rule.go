@@ -23,13 +23,22 @@ func (*ContainerPlatformEscapeRule) Category() *types.RiskCategory {
 			"and the container platform itself.",
 		ASVS:       "V14 - Configuration Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
-		Action:     "Container Infrastructure Hardening",
-		Mitigation: "Apply hardening of all container infrastructures. " +
-			"<p>See for example the <i>CIS-Benchmarks for Docker and Kubernetes</i> " +
-			"as well as the <i>Docker Bench for Security</i> ( <a href=\"https://github.com/docker/docker-bench-security\">https://github.com/docker/docker-bench-security</a> ) " +
-			"or <i>InSpec Checks for Docker and Kubernetes</i> ( <a href=\"https://github.com/dev-sec/cis-kubernetes-benchmark\">https://github.com/dev-sec/cis-docker-benchmark</a> and <a href=\"https://github.com/dev-sec/cis-kubernetes-benchmark\">https://github.com/dev-sec/cis-kubernetes-benchmark</a> ). " +
-			"Use only trusted base images, verify digital signatures and apply image creation best practices. Also consider using Google's <b>Distroless</i> base images or otherwise very small base images. " +
-			"Apply namespace isolation and nod affinity to separate pods from each other in terms of access and nodes the same style as you separate data.",
+		Action: "Harden the container platform against escape: enforce the restricted pod security profile, block privileged " +
+			"and host-namespace workloads, and apply the DISA Kubernetes STIG or CIS Kubernetes Benchmark.",
+		Mitigation: "Enforce the Kubernetes Pod Security Standards restricted profile (Pod Security Admission or an equivalent " +
+			"policy engine) on every workload namespace: no privileged containers, no hostPID, hostIPC, or hostNetwork, no " +
+			"hostPath mounts, runAsNonRoot, allowPrivilegeEscalation false, all Linux capabilities dropped, a read-only " +
+			"root filesystem, and a RuntimeDefault or stricter seccomp profile plus AppArmor or SELinux confinement. Never " +
+			"mount the container runtime socket (docker.sock, containerd.sock) into a workload. Disable automatic " +
+			"service-account token mounting where unused and bind service accounts to least-privilege RBAC roles with no " +
+			"cluster-admin or wildcard verbs. Block pod access to the kubelet API and the cloud instance metadata endpoint " +
+			"(NetworkPolicy; IMDSv2 with hop limit 1). Patch node kernels and the container runtime promptly, since many " +
+			"escapes are kernel or runc bugs (for example CVE-2019-5736, CVE-2022-0185, CVE-2024-21626). Use sandboxed " +
+			"runtimes (gVisor, Kata Containers) for workloads handling untrusted input, and separate workloads of " +
+			"differing sensitivity onto dedicated node pools with taints and tolerations. Validate continuously with " +
+			"kube-bench against the STIG or CIS benchmark, and run runtime threat detection (Falco, Defender for " +
+			"Containers, GuardDuty EKS Runtime Monitoring). References: CWE-250, CWE-269; MITRE ATT&CK T1611 (Escape to " +
+			"Host), T1610 (Deploy Container); NIST SP 800-190.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS or CSVS chapter applied?",
 		Function:       types.Operations,
 		STRIDE:         types.ElevationOfPrivilege,

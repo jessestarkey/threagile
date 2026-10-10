@@ -22,11 +22,21 @@ func (*PushInsteadPullDeploymentRule) Category() *types.RiskCategory {
 			"unnecessarily increased.",
 		ASVS:       "V1 - Architecture, Design and Threat Modeling Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:     "Build Pipeline Hardening",
-		Mitigation: "Try to prefer pull-based deployments (like GitOps scenarios offer) over push-based deployments to reduce the attack surface of the production system.",
-		Check:      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function:   types.Architecture,
-		STRIDE:     types.Tampering,
+		Action: "Replace push-based deployment from the build pipeline with a pull-based GitOps agent inside the target " +
+			"environment that fetches and verifies signed artifacts itself.",
+		Mitigation: "Run a deployment agent inside the target environment (Argo CD or Flux for Kubernetes, or an equivalent pull " +
+			"agent for VMs) that watches a Git repository and artifact registry and applies changes itself, so production " +
+			"needs no inbound administrative interface reachable from the pipeline and the pipeline holds no production " +
+			"credentials. The pipeline's job ends at publishing a signed artifact and updating the desired-state " +
+			"repository through a reviewed pull request. Configure the agent to verify artifact signatures and provenance " +
+			"before applying, and scope its own permissions to the namespaces or resources it manages. Where push " +
+			"deployment cannot be eliminated, use short-lived, environment-scoped credentials issued per run through OIDC " +
+			"federation, require manual approval gates for production, and restrict the deployment endpoint to the " +
+			"runner's private network. References: CWE-668; MITRE ATT&CK T1072 (Software Deployment Tools), T1195.002; " +
+			"NIST SP 800-53 CM-5, AC-17; NIST SP 800-204D.",
+		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function: types.Architecture,
+		STRIDE:   types.Tampering,
 		DetectionLogic: "Models with build pipeline components accessing in-scope targets of deployment (in a non-readonly way) which " +
 			"are not build-related components themselves.",
 		RiskAssessment: "The risk rating depends on the highest sensitivity of the deployment targets running custom-developed parts.",

@@ -19,11 +19,19 @@ func (*CrossSiteRequestForgeryRule) Category() *types.RiskCategory {
 			"by visiting an attacker controlled web site.",
 		ASVS:       "V4 - Access Control Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
-		Action:     "CSRF Prevention",
-		Mitigation: "Try to use anti-CSRF tokens ot the double-submit patterns (at least for logged-in requests). " +
-			"When your authentication scheme depends on cookies (like session or token cookies), consider marking them with " +
-			"the same-site flag. " +
-			"When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.",
+		Action: "Protect every state-changing request with the framework's synchronizer token or signed double-submit cookie, " +
+			"and set SameSite on all session cookies as defense in depth.",
+		Mitigation: "Enable the web framework's built-in CSRF protection (synchronizer token pattern, or the signed double-submit " +
+			"cookie pattern for stateless applications) and validate the token server-side on every state-changing request " +
+			"(POST, PUT, PATCH, DELETE). Never change state on GET or HEAD. Set SameSite=Lax or Strict, Secure, and " +
+			"HttpOnly on all session and authentication cookies as an additional layer, not the only control. For APIs " +
+			"called from browser JavaScript, authenticate with a bearer token in the Authorization header or require a " +
+			"custom request header rather than relying on ambient cookies, and restrict CORS to an explicit origin " +
+			"allowlist with no wildcard when credentials are allowed. Verify the Origin or Sec-Fetch-Site header on " +
+			"sensitive endpoints, and require re-authentication for high-impact actions such as changing credentials, " +
+			"roles, or transfer destinations. For third-party products, confirm the vendor's CSRF protection is enabled " +
+			"and keep the product patched. References: CWE-352; CAPEC-62 (Cross Site Request Forgery); OWASP Top 10:2025 " +
+			"A01 (Broken Access Control).",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Spoofing,

@@ -18,9 +18,19 @@ func (*MissingAuthenticationRule) Category() *types.RiskCategory {
 		Impact:      "If this risk is unmitigated, attackers might be able to access or modify sensitive data in an unauthenticated way.",
 		ASVS:        "V2 - Authentication Verification Requirements",
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
-		Action:      "Authentication of Incoming Requests",
-		Mitigation: "Apply an authentication method to the technical asset. To protect highly sensitive data consider " +
-			"the use of two-factor authentication for human users.",
+		Action: "Require every request to this asset to carry a verified identity: enterprise identity provider authentication " +
+			"for users, and mutual TLS or short-lived workload identity tokens for services.",
+		Mitigation: "Authenticate every interface of this asset rather than relying on network location. For human users, " +
+			"integrate with the enterprise identity provider over OIDC or SAML using DoD CAC/PIV or another " +
+			"phishing-resistant authenticator. For service-to-service calls, use mutual TLS with certificates from an " +
+			"internal CA or service mesh, or short-lived workload identity tokens (managed identity, IAM roles for service " +
+			"accounts, SPIFFE/SPIRE) validated on every request for signature, issuer, audience, and expiry; avoid " +
+			"long-lived shared API keys. Enforce authentication with a default-deny filter at the framework or gateway so " +
+			"new endpoints are protected unless explicitly marked public, and review every public exception. Disable or " +
+			"authenticate management, metrics, and debug endpoints that ship unauthenticated by default (Spring Boot " +
+			"Actuator, Elasticsearch, Redis, etcd, database admin consoles). References: CWE-306, CWE-287; MITRE ATT&CK " +
+			"T1190 (Exploit Public-Facing Application); OWASP Top 10:2025 A07 (Authentication Failures); OWASP API " +
+			"Security Top 10:2023 API2 (Broken Authentication); NIST SP 800-53 IA-2, IA-9.",
 		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function: types.Architecture,
 		STRIDE:   types.ElevationOfPrivilege,

@@ -20,9 +20,19 @@ func (*XmlExternalEntityRule) Category() *types.RiskCategory {
 			"of other components.",
 		ASVS:       "V14 - Configuration Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
-		Action:     "XML Parser Hardening",
-		Mitigation: "Apply hardening of all XML parser instances in order to stay safe from XML External Entity (XXE) vulnerabilities. " +
-			"When a third-party product is used instead of custom developed software, check if the product applies the proper mitigation and ensure a reasonable patch-level.",
+		Action: "Disable DTD processing and external entity resolution in every XML parser that handles caller-supplied XML, " +
+			"or move the interface to a non-XML format.",
+		Mitigation: "Configure every parser that handles caller-influenced XML to reject DOCTYPE declarations entirely: in Java, " +
+			"set the disallow-doctype-decl feature on DocumentBuilderFactory and SAXParserFactory and disable DTD support " +
+			"on XMLInputFactory; in .NET, use DtdProcessing.Prohibit with a null XmlResolver; in Python, use defusedxml; " +
+			"with libxml2, never enable XML_PARSE_NOENT or XML_PARSE_DTDLOAD. Where DTDs are genuinely required, disable " +
+			"external general and parameter entities and external DTD loading, and cap entity expansion to stop " +
+			"billion-laughs denial of service. Cover every XML entry point, including SOAP endpoints, SAML assertions, SVG " +
+			"uploads, Office documents (DOCX and XLSX are ZIP-wrapped XML), RSS feeds, and XSLT processing. Prefer JSON " +
+			"for new interfaces. Restrict filesystem permissions and outbound egress so a missed parser cannot read key " +
+			"files or reach internal services. Keep XML libraries and SOAP and SAML frameworks patched. References: " +
+			"CWE-611, CWE-776; CAPEC-221 (Data Serialization External Entities Blowup); MITRE ATT&CK T1190; OWASP Top " +
+			"10:2025 A02 (Security Misconfiguration).",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.InformationDisclosure,

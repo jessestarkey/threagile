@@ -20,11 +20,20 @@ func (*ContainerBaseImageBackdooringRule) Category() *types.RiskCategory {
 		Impact:     "If this risk is unmitigated, attackers might be able to deeply persist in the target system by executing code in deployed containers.",
 		ASVS:       "V10 - Malicious Code Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
-		Action:     "Container Infrastructure Hardening",
-		Mitigation: "Apply hardening of all container infrastructures (see for example the <i>CIS-Benchmarks for Docker and Kubernetes</i> and the <i>Docker Bench for Security</i>). " +
-			"Use only trusted base images of the original vendors, verify digital signatures and apply image creation best practices. " +
-			"Also consider using Google's <i>Distroless</i> base images or otherwise very small base images. " +
-			"Regularly execute container image scans with tools checking the layers for vulnerable components.",
+		Action: "Build containers only from approved, digest-pinned, signature-verified base images mirrored into a hardened " +
+			"internal registry, and scan every image layer before deployment.",
+		Mitigation: "Source base images only from a vetted hardened catalog (for DoD workloads, Iron Bank hardened images; " +
+			"otherwise vendor-signed minimal images such as distroless) mirrored into an internal registry, and block " +
+			"pulls from public registries at the network and admission-control layer. Reference base images by immutable " +
+			"sha256 digest in every Dockerfile, never by a mutable tag such as latest. Verify the base image signature " +
+			"(cosign, Notation) during the build, and verify the final image signature at deployment with an admission " +
+			"controller (Kyverno, OPA Gatekeeper, or Sigstore policy-controller) that rejects unsigned or unapproved " +
+			"images. Scan every layer for known vulnerabilities and embedded malware in CI (Trivy, Grype, Anchore) and " +
+			"fail the build on critical findings, then rescan images already in the registry on a schedule, since new CVEs " +
+			"are published after build time. Generate and retain an SBOM (SPDX or CycloneDX) per image. Keep runtime " +
+			"images minimal (no shell, package manager, or compiler) and rebuild on a fixed cadence to pick up patched " +
+			"base layers. References: CWE-506, CWE-1395; MITRE ATT&CK T1525 (Implant Internal Image), T1195.002; NIST SP " +
+			"800-190; DoD Container Image Creation and Deployment Guide.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS/CSVS applied?",
 		Function:       types.Operations,
 		STRIDE:         types.Tampering,

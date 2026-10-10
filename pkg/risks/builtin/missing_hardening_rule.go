@@ -24,9 +24,19 @@ func (r *MissingHardeningRule) Category() *types.RiskCategory {
 		Impact:     "If this risk remains unmitigated, attackers might be able to easier attack high-value targets.",
 		ASVS:       "V14 - Configuration Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:     "System Hardening",
-		Mitigation: "Try to apply all hardening best practices (like CIS benchmarks, OWASP recommendations, vendor " +
-			"recommendations, DevSec Hardening Framework, DBSAT for Oracle databases, and others).",
+		Action: "Apply and verify the DISA STIG or CIS benchmark for every layer of this high-value asset (OS, middleware, " +
+			"application), implemented as code and checked continuously.",
+		Mitigation: "Identify the applicable hardening baseline for each layer of this high-attractiveness asset: DISA STIGs or " +
+			"SRGs for DoD systems (operating system, web server, application server, database, container platform), CIS " +
+			"Benchmarks elsewhere, and vendor security configuration guides (for example Oracle DBSAT, Microsoft security " +
+			"baselines). Implement them as code (Ansible, PowerShell DSC, hardened golden images, Kubernetes admission " +
+			"policies) so the configuration is reproducible and drift is detectable. Remove unused services, packages, " +
+			"default accounts, sample applications, and debug or management endpoints; change every default credential; " +
+			"and limit listening ports to those in the documented ports, protocols, and services list. Scan with SCAP " +
+			"Compliance Checker, OpenSCAP, or CIS-CAT and document each deviation with a justification or POA&M item. " +
+			"Re-scan after every change and at least monthly, and patch within the timelines set by vulnerability " +
+			"management policy. References: CWE-16, CWE-1188; MITRE ATT&CK T1190, T1068 (Exploitation for Privilege " +
+			"Escalation); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP 800-53 CM-6, CM-7, SI-2.",
 		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function: types.Operations,
 		STRIDE:   types.Tampering,

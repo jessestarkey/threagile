@@ -20,11 +20,20 @@ func (*MissingVaultIsolationRule) Category() *types.RiskCategory {
 			"highly sensitive vault assets and their data stores, as they are not separated by network segmentation.",
 		ASVS:       "V1 - Architecture, Design and Threat Modeling Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
-		Action:     "Network Segmentation",
-		Mitigation: "Apply a network segmentation trust-boundary around the highly sensitive vault assets and their data stores.",
-		Check:      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function:   types.Operations,
-		STRIDE:     types.ElevationOfPrivilege,
+		Action: "Isolate the secrets vault and its storage backend in a dedicated network segment reachable only through " +
+			"private endpoints by the workloads that need it.",
+		Mitigation: "Disable public network access on the vault and expose it only through private endpoints or VPC endpoints in a " +
+			"dedicated subnet with a default-deny network policy admitting only the specific workload subnets and " +
+			"management paths that need it. Do not co-host a self-managed vault (for example HashiCorp Vault) or its " +
+			"storage backend (Raft, Consul, a database) on the same servers, node pool, or database instance as " +
+			"application workloads. Restrict vault administration to privileged access workstations with just-in-time " +
+			"elevation, separate vault administrator roles from secret-consumer roles, and require MFA for all human " +
+			"access. Alert on vault policy changes, new access grants, bulk secret reads, and access from unexpected " +
+			"network sources. References: CWE-653; MITRE ATT&CK T1555 (Credentials from Password Stores), T1552 (Unsecured " +
+			"Credentials); NIST SP 800-53 SC-7, SC-12, AC-6.",
+		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function: types.Operations,
+		STRIDE:   types.ElevationOfPrivilege,
 		DetectionLogic: "In-scope vault assets " +
 			"when surrounded by other (not vault-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-vault related assets are within the same execution environment (i.e. same database or same application server).",

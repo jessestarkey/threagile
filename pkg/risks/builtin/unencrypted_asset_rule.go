@@ -19,11 +19,23 @@ func (*UnencryptedAssetRule) Category() *types.RiskCategory {
 		Impact:     "If this risk is unmitigated, attackers might be able to access unencrypted data when successfully compromising sensitive components.",
 		ASVS:       "V6 - Stored Cryptography Verification Requirements",
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
-		Action:     "Encryption of Technical Asset",
-		Mitigation: "Apply encryption to the technical asset.",
-		Check:      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function:   types.Operations,
-		STRIDE:     types.InformationDisclosure,
+		Action: "Enable encryption at rest for this asset and all of its backups and snapshots using FIPS 140-validated " +
+			"cryptography, with customer-managed keys held in a separate key vault for sensitive data.",
+		Mitigation: "Turn on storage-level encryption for every volume, database, bucket, backup, and snapshot of this asset " +
+			"(Azure Storage Service Encryption and Transparent Data Encryption; AWS EBS, S3, and RDS encryption; LUKS or " +
+			"BitLocker on self-managed hosts) using FIPS 140-2/140-3 validated modules. For CUI and higher-sensitivity " +
+			"data, use customer-managed keys held in a separate key vault or HSM, restricted to the storage service's " +
+			"identity, rotated on a defined schedule, with key access logged. Where the threat includes privileged " +
+			"insiders or an attacker with filesystem or database access on a running host, add application- or field-level " +
+			"encryption (SQL Always Encrypted, envelope encryption with per-record data keys) for the most sensitive " +
+			"fields, because volume encryption only protects against offline media access. Encrypt temporary files, " +
+			"caches, swap, and logs that may contain sensitive data, and enforce encryption through policy (Azure Policy, " +
+			"AWS Config) so unencrypted resources cannot be created. References: CWE-311, CWE-312; MITRE ATT&CK T1005 " +
+			"(Data from Local System), T1530 (Data from Cloud Storage); OWASP Top 10:2025 A04 (Cryptographic Failures); " +
+			"NIST SP 800-53 SC-28, SC-28(1), SC-12, SC-13.",
+		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function: types.Operations,
+		STRIDE:   types.InformationDisclosure,
 		DetectionLogic: "In-scope unencrypted technical assets (excluding " + types.ReverseProxy +
 			", " + types.LoadBalancer + ", " + types.WAF + ", " + types.IDS +
 			", " + types.IPS + " and embedded components like " + types.Library + ") " +
