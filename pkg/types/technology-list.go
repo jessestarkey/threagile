@@ -44,6 +44,12 @@ const (
 	IsAIObservabilityStack                            = "ai-observability-stack"
 	IsAISecurityAgent                                 = "ai-security-agent"
 	IsMultiAgentGateway                               = "ai-multi-agent-gateway"
+	IsAIGateway                                       = "ai-gateway"
+	IsAIGuardrails                                    = "ai-guardrails"
+	IsAIVectorStore                                   = "ai-vector-store"
+	IsAISyntheticDataPipeline                         = "ai-synthetic-data-pipeline"
+	IsAIFeatureStore                                  = "ai-feature-store"
+	IsAIContentProvenanceService                      = "ai-content-provenance-service"
 )
 
 type TechnologyList []*Technology

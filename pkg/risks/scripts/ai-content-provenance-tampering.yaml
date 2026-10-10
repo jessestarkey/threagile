@@ -1,0 +1,140 @@
+id: ai-content-provenance-tampering
+title: "Content Provenance Watermark Stripping and Forged Credential Insertion"
+function: operations
+stride: tampering
+cwe: 345
+description: >
+  A service embedding or verifying content-provenance or watermarking metadata on AI-generated
+  or AI-processed content is subject to two distinct failures: the metadata can be stripped by
+  routine format conversion, recompression, or cropping without detection, and a forged or
+  replayed provenance credential can be inserted to make tampered or synthetic content appear
+  authentically sourced.
+impact: >
+  If this risk remains unmitigated, downstream consumers that trust a provenance or watermark
+  signal as proof of authenticity can be made to accept tampered or fully synthetic content as
+  genuine, or to discard genuinely authentic content once its signal is silently stripped.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Cryptographically sign provenance credentials so stripping is detectable as a missing signature rather than silent absence, and verify signatures against a trusted issuer list before any content is treated as authenticated."
+mitigation: >
+  Issue provenance or watermark credentials under a cryptographic signature tied to a specific,
+  auditable issuer rather than a bare metadata tag that silently disappears under re-encoding.
+  Verify that signature against a trusted issuer list at consumption time -- do not treat the
+  mere presence of provenance-shaped metadata as sufficient. Log every verification outcome
+  (valid, missing, invalid signature) distinctly, since a missing signal and a forged one both
+  require different responses. Where content is expected to retain provenance through a known
+  processing pipeline (e.g. a CDN resize step), confirm that pipeline re-signs or otherwise
+  preserves the chain rather than silently dropping it. References: NIST SP 800-53 SI-7
+  (Software, Firmware, and Information Integrity); NIST AI RMF MANAGE 4.1; C2PA Technical
+  Specification (Content Credentials).
+check: "Are provenance credentials cryptographically signed under an auditable issuer, verified against a trusted issuer list at consumption, and are missing-signature and invalid-signature outcomes logged distinctly?"
+detection_logic: >
+  Audit the provenance service's issuance process for cryptographic signing versus bare
+  metadata tagging. Review verification logs for the rate of missing-versus-invalid signature
+  outcomes, and confirm both are surfaced rather than treated identically. Spot-check content
+  that has passed through a known re-encoding step for provenance chain continuity.
+risk_assessment: >
+  High for any provenance or watermarking service whose issued credentials are not
+  cryptographically signed, or whose consumers do not verify against a trusted issuer list.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI-content-
+  provenance-service asset, by design). Dispose of a confirmed-compliant asset through
+  risk_tracking instead: log it as mitigated once cryptographic signing and trusted-issuer
+  verification are confirmed active.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-content-provenance-service}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Content Provenance Watermark Stripping and Forged Credential Insertion</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a forged or stripped authenticity signal
+    # being trusted downstream is a total failure of this service's one job, regardless of
+    # this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

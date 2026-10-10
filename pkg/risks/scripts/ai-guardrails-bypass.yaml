@@ -1,0 +1,136 @@
+id: ai-guardrails-bypass
+title: "Guardrail Bypass and Fail-Open Moderation Gap"
+function: operations
+stride: tampering
+cwe: 693
+description: >
+  A moderation or safety-filter layer inspecting LLM input or output can be defeated by
+  encoding, obfuscation, or multi-turn jailbreak techniques, or can fail open -- passing traffic
+  through unfiltered -- when it errors or times out rather than failing closed.
+impact: >
+  If this risk remains unmitigated, the entire purpose of the guardrail silently collapses
+  either under a known bypass technique or the first time the filter itself malfunctions, with
+  no signal to anyone downstream that moderation stopped applying.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Verify the guardrail fails closed on error or timeout, and test it against current known bypass techniques (encoding, obfuscation, multi-turn drift) on a recurring basis."
+mitigation: >
+  Configure the guardrail to fail closed -- block or hold the request -- on internal error,
+  timeout, or upstream unavailability, never pass-through. Test the guardrail on a recurring
+  schedule against current known bypass classes (payload encoding/obfuscation, multi-turn
+  context drift, adversarial suffix injection) rather than assuming initial vendor validation
+  remains sufficient as bypass techniques evolve. Log every guardrail decision (allow, block,
+  fail-open) with enough context to reconstruct why, and alert specifically on fail-open events
+  rather than letting them pass silently. Do not rely on a single guardrail layer alone for a
+  high-consequence action. References: OWASP Top 10 for LLM Applications (LLM01 Prompt
+  Injection); NIST AI RMF MANAGE 2.3; NIST SP 800-53 SC-7 (Boundary Protection).
+check: "Does the guardrail fail closed on error or timeout, is it tested against current known bypass techniques on a recurring schedule, and are fail-open events logged and alerted on distinctly from normal blocks?"
+detection_logic: >
+  Audit the guardrail's error-handling configuration for fail-open behavior. Review bypass-
+  testing records for recency and coverage of current known technique classes. Confirm
+  fail-open events are distinguishable from normal allow/block decisions in the guardrail's own
+  logs and that they trigger an alert.
+risk_assessment: >
+  High for any guardrail with no confirmed fail-closed configuration or no recurring bypass
+  testing. Critical if the guardrail is the only control gating a high-consequence action (e.g.
+  tool execution, financial transaction, OT-adjacent output).
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI-guardrails
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
+  it as mitigated once fail-closed behavior and recurring bypass testing are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-guardrails}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Guardrail Bypass and Fail-Open Moderation Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a guardrail collapsing is a total control
+    # failure regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

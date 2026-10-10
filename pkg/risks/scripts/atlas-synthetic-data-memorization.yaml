@@ -1,0 +1,152 @@
+id: atlas-synthetic-data-memorization
+title: "ATLAS: Synthetic Data Generator Memorization and Residual Source-Data Leakage"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  A pipeline generating synthetic training or evaluation data specifically to avoid exposing
+  real sensitive source data can defeat its own purpose if the generative model underneath it
+  has memorized and reproduces fragments of that source data in its output.
+impact: >
+  If this risk remains unmitigated, synthetic data that was adopted specifically to keep real
+  CUI or classified source data from leaving its original boundary can itself carry recoverable
+  fragments of that data into every downstream consumer of the synthetic set, undetected.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Test synthetic output for memorized source-data fragments before release, and bound the generator's exposure to any single source record."
+mitigation: >
+  Run a membership-inference or near-duplicate-detection test against the generator's output
+  before it is released to any downstream consumer, comparing generated records against the
+  real source dataset for verbatim or near-verbatim fragments. Apply differential-privacy
+  training or output filtering where the generator is fine-tuned directly on sensitive source
+  data, bounding how much any single source record can influence the output. Treat the
+  synthetic output as inheriting the source data's classification until this testing confirms
+  otherwise, rather than assuming synthesis itself is a declassification step. References: MITRE
+  ATLAS AML.T0024 (Exfiltration via ML Inference API); NIST AI RMF MANAGE 2.3; NIST SP 800-188
+  (De-Identification of Government Datasets).
+check: "Is the generator's output tested for memorized source-data fragments before release, and is the synthetic set treated as inheriting the source classification until that testing confirms otherwise?"
+detection_logic: >
+  Audit release records for the synthetic data pipeline for evidence of a membership-inference
+  or near-duplicate-detection pass prior to each release. Spot-check generated records against
+  the source dataset for verbatim or near-verbatim overlap.
+risk_assessment: >
+  High for any synthetic data pipeline whose generator was trained or fine-tuned directly on CUI
+  or classified source data with no memorization testing performed before release.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI-synthetic-data-
+  pipeline asset, by design). Dispose of a confirmed-compliant asset through risk_tracking
+  instead: log it as mitigated once memorization testing is confirmed performed before each
+  release.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-synthetic-data-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: Synthetic Data Generator Memorization and Residual Source-Data Leakage</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

@@ -1,0 +1,154 @@
+id: atlas-vector-store-inversion
+title: "ATLAS: Vector Store Embedding Inversion and Unauthorized Similarity Query Abuse"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  A dedicated vector store holding embeddings for similarity search is subject to embedding
+  inversion -- reconstructing the underlying source text or data from the vectors themselves --
+  and to similarity-query abuse that reconstructs or infers membership of records an attacker
+  should never see directly.
+impact: >
+  If this risk remains unmitigated, an attacker with query access or a leaked embedding dump can
+  recover sensitive source content that was never meant to be directly retrievable, even though
+  no plaintext document was ever exposed.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+action: "Restrict vector store query access to authenticated, least-privilege callers, rate-limit similarity queries, and treat embedding exports with the same handling controls as the source data they were derived from."
+mitigation: >
+  Enforce authenticated, least-privilege access to the vector store's query API -- do not expose
+  it directly to end users. Rate-limit and log similarity queries to detect bulk-extraction or
+  systematic-probing patterns consistent with an inversion attempt. Treat embedding exports and
+  backups with the same classification and handling controls as the source data they were
+  derived from, since embeddings are not an anonymization boundary. Where multiple tenants share
+  a vector store, enforce per-tenant query isolation so similarity search cannot cross tenant
+  boundaries. References: MITRE ATLAS AML.T0024 (Exfiltration via ML Inference API); NIST AI RMF
+  MAP 2.3; NIST SP 800-53 SC-28 (Protection of Information at Rest).
+check: "Is vector store query access authenticated and least-privilege, are similarity queries rate-limited and logged, and are embedding exports handled under the same classification as their source data?"
+detection_logic: >
+  Monitor vector store query logs for abnormal volume, systematic sweep patterns, or query
+  vectors crafted to probe specific records rather than retrieve for a legitimate downstream
+  task. Audit embedding export/backup locations for classification handling equivalent to the
+  source data.
+risk_assessment: >
+  High for any vector store holding embeddings derived from CUI or PII source content with no
+  query rate-limiting or access restriction. Medium where the store holds only public or
+  already-redacted source content.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope vector-store asset,
+  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  mitigated once query access is confirmed authenticated and rate-limited, with embedding
+  exports handled under the source data's own classification.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-vector-store}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: Vector Store Embedding Inversion and Unauthorized Similarity Query Abuse</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

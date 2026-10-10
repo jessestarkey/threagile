@@ -25,6 +25,18 @@ ai-agent-orchestrator:
         backend_related: true
         request_serving_api: true
         application_logic: true
+ai-content-provenance-service:
+    aliases:
+        - content-credentials
+        - watermarking-service
+        - c2pa-service
+    description: A service that embeds or verifies cryptographic content-provenance or watermarking metadata (e.g., C2PA Content Credentials) on AI-generated or AI-processed content
+    attributes:
+        ai-content-provenance-service: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        security_control_related: true
 ai-dataset-store:
     aliases:
         - dataset-store
@@ -50,6 +62,49 @@ ai-eval-pipeline:
         less_protected_type: true
         development_relevant: true
         application_logic: true
+ai-feature-store:
+    aliases:
+        - feature-store
+        - feast
+        - tecton
+    description: A centralized store serving curated ML features consistently to both training and real-time inference paths
+    attributes:
+        ai-feature-store: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
+ai-gateway:
+    aliases:
+        - llm-gateway
+        - llm-proxy
+        - litellm
+        - portkey
+        - kong-ai-gateway
+    description: A gateway or proxy that routes, rate-limits, and cost-tracks requests across one or more LLM backends on behalf of calling applications
+    attributes:
+        ai-gateway: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        request_serving_api: true
+        application_logic: true
+ai-guardrails:
+    aliases:
+        - content-safety-filter
+        - prompt-shield
+        - llm-guardrail
+        - nemo-guardrails
+        - llama-guard
+        - bedrock-guardrails
+    description: A moderation or safety-filter layer inspecting LLM input/output for policy violations, jailbreak attempts, or harmful content before or after the underlying model call
+    attributes:
+        ai-guardrails: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        application_logic: true
+        security_control_related: true
 ai-llm-endpoint:
     aliases:
         - llm-endpoint
@@ -153,6 +208,18 @@ ai-security-agent:
         ai: true
         security_control_related: true
         less_protected_type: true
+ai-synthetic-data-pipeline:
+    aliases:
+        - synthetic-data-generator
+        - data-synthesis-pipeline
+    description: A pipeline that generates synthetic training or evaluation data, typically via a generative model, to avoid exposing real sensitive source data during model development
+    attributes:
+        ai-synthetic-data-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
+        application_logic: true
 ai-training-pipeline:
     aliases:
         - training-pipeline
@@ -167,6 +234,20 @@ ai-training-pipeline:
         less_protected_type: true
         development_relevant: true
         application_logic: true
+ai-vector-store:
+    aliases:
+        - vector-database
+        - pinecone
+        - weaviate
+        - qdrant
+        - milvus
+        - pgvector
+    description: A dedicated vector database or vector-indexed store holding embeddings for similarity search, independent of any retrieval or orchestration logic layered on top of it
+    attributes:
+        ai-vector-store: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
 application-server:
     aliases:
         - app-server

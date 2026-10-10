@@ -1,0 +1,151 @@
+id: ai-feature-store-lineage-gap
+title: "Feature Store Lineage Gap and Unauthorized Derived-Feature Reuse"
+function: architecture
+stride: tampering
+cwe: 284
+description: >
+  A centralized feature store serving curated ML features to both training and inference loses
+  track of which source dataset and classification each feature was derived from once another
+  team or model begins reusing it, letting a feature derived from sensitive source data flow
+  into a consumer that never inherited the original data's handling controls.
+impact: >
+  If this risk remains unmitigated, a feature engineered from CUI or PII source data can be
+  silently reused by an unrelated downstream model or team with no awareness of its origin,
+  propagating the original data's sensitivity into a context with none of its protections.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Tag every feature in the store with its source dataset and classification, and gate cross-team or cross-project feature reuse on that lineage record."
+mitigation: >
+  Record the source dataset, derivation logic, and classification for every feature at the
+  point it is written into the store, not reconstructed after the fact. Gate feature reuse
+  across team or project boundaries on a review of that lineage record, equivalent to how
+  access to the original source dataset itself would be reviewed. Alert when a feature derived
+  from a restricted-or-above source dataset is requested by a consumer that has never been
+  granted access to that source dataset directly. References: NIST SP 800-53 SR-4 (Provenance);
+  NIST SP 800-53 AC-4 (Information Flow Enforcement); NIST AI RMF MAP 2.3.
+check: "Does every feature in the store carry a recorded source dataset and classification, and is cross-team or cross-project feature reuse gated on review of that lineage record?"
+detection_logic: >
+  Audit the feature store's metadata for features missing a recorded source dataset or
+  classification. Cross-reference feature consumers against the access list of the feature's
+  recorded source dataset, flagging any consumer with feature access but no direct access to
+  the source.
+risk_assessment: >
+  High for any feature store serving features derived from CUI or PII source data to more than
+  one team or project with no lineage record enforced at write time.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI-feature-store
+  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
+  it as mitigated once lineage recording at write time and reuse gating are confirmed active.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-feature-store}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Feature Store Lineage Gap and Unauthorized Derived-Feature Reuse</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low
