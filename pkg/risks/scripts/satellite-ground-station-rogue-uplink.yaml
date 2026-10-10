@@ -54,7 +54,7 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                true: "{.attributes.satellite-ground-station}"
+                true: "{.attributes.space-ground-station}"
           then:
             return: true
 

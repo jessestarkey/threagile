@@ -57,10 +57,10 @@ const (
 	IsCertificateValidationService                    = "certificate-validation-service"
 	IsICSController                                   = "ics-controller"
 	IsEndpointSecurityManager                         = "endpoint-security-manager"
-	IsSatelliteGroundStation                          = "satellite-ground-station"
+	IsSpaceGroundStation                              = "space-ground-station"
 	IsSpaceVehicle                                    = "space-vehicle"
-	IsUASGroundControlStation                         = "uas-ground-control-station"
-	IsUASAirVehicle                                   = "uas-air-vehicle"
+	IsAirGroundStation                                = "air-ground-station"
+	IsAirVehicle                                      = "air-vehicle"
 )
 
 type TechnologyList []*Technology

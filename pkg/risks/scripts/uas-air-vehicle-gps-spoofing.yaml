@@ -56,7 +56,7 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                true: "{.attributes.uas-air-vehicle}"
+                true: "{.attributes.air-vehicle}"
           then:
             return: true
 

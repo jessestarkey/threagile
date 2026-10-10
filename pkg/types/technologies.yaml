@@ -248,6 +248,31 @@ ai-vector-store:
         ai: true
         backend_related: true
         less_protected_type: true
+air-ground-station:
+    aliases:
+        - uas-ground-control-station
+        - drone-gcs
+        - uav-control-station
+        - uas-gcs
+    description: The operator console that commands a UAS air vehicle and receives its telemetry and sensor/video downlink
+    attributes:
+        air-ground-station: true
+        backend_related: true
+        high_value_target: true
+        application_logic: true
+air-vehicle:
+    aliases:
+        - uas-air-vehicle
+        - drone
+        - uav
+        - unmanned-aircraft
+    description: The airborne, uncrewed vehicle itself, receiving command-and-control uplink and returning telemetry/sensor data via RF link to its ground control station
+    attributes:
+        air-vehicle: true
+        client: true
+        frontend_related: true
+        less_protected_type: true
+        high_value_target: true
 application-server:
     aliases:
         - app-server
@@ -702,16 +727,6 @@ reverse-proxy:
         no_storage_at_rest: true
         propagate_identity_to_outgoing_targets: true
         traffic_forwarding: true
-satellite-ground-station:
-    aliases:
-        - ttc-ground-station
-        - satcom-ground-segment
-        - mission-control-uplink
-    description: A ground-segment telemetry, tracking, and command (TT&C) system that uplinks commands to and downlinks telemetry from a spacecraft
-    attributes:
-        satellite-ground-station: true
-        backend_related: true
-        high_value_target: true
 scheduler:
     aliases:
         - cron
@@ -757,6 +772,17 @@ sourcecode-repository:
         development_relevant: true
         less_protected_type: true
         may_contain_secrets: true
+space-ground-station:
+    aliases:
+        - satellite-ground-station
+        - ttc-ground-station
+        - satcom-ground-segment
+        - mission-control-uplink
+    description: A ground-segment telemetry, tracking, and command (TT&C) system that uplinks commands to and downlinks telemetry from a spacecraft
+    attributes:
+        space-ground-station: true
+        backend_related: true
+        high_value_target: true
 space-vehicle:
     aliases:
         - satellite
@@ -791,29 +817,6 @@ tool:
     attributes:
         tool: true
         propagate_identity_to_outgoing_targets: true
-uas-air-vehicle:
-    aliases:
-        - drone
-        - uav
-        - unmanned-aircraft
-    description: The airborne, uncrewed vehicle itself, receiving command-and-control uplink and returning telemetry/sensor data via RF link to its ground control station
-    attributes:
-        uas-air-vehicle: true
-        client: true
-        frontend_related: true
-        less_protected_type: true
-        high_value_target: true
-uas-ground-control-station:
-    aliases:
-        - drone-gcs
-        - uav-control-station
-        - uas-gcs
-    description: The operator console that commands a UAS air vehicle and receives its telemetry and sensor/video downlink
-    attributes:
-        uas-ground-control-station: true
-        backend_related: true
-        high_value_target: true
-        application_logic: true
 unknown-technology:
     aliases:
         - unknown
