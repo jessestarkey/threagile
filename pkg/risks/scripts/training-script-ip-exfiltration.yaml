@@ -48,7 +48,7 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                true: "{.attributes.training-pipeline}"
+                true: "{.attributes.ai-training-pipeline}"
           then:
             return: true
 

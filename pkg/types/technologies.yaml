@@ -1,18 +1,3 @@
-agent-orchestrator:
-    aliases:
-        - ai-agent-orchestrator
-        - langchain
-        - autogen
-        - crewai
-        - react-agent-loop
-    description: An AI agent orchestration layer that plans, decomposes tasks, and dispatches tool calls
-    attributes:
-        agent-orchestrator: true
-        ai: true
-        less_protected_type: true
-        backend_related: true
-        request_serving_api: true
-        application_logic: true
 ai:
     aliases:
         - artificial-intelligence
@@ -25,6 +10,102 @@ ai:
     attributes:
         ai: true
         less_protected_type: true
+ai-agent-orchestrator:
+    aliases:
+        - agent-orchestrator
+        - langchain
+        - autogen
+        - crewai
+        - react-agent-loop
+    description: An AI agent orchestration layer that plans, decomposes tasks, and dispatches tool calls
+    attributes:
+        ai-agent-orchestrator: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        request_serving_api: true
+        application_logic: true
+ai-dataset-store:
+    aliases:
+        - dataset-store
+        - training-data-store
+    description: The authoritative storage layer for AI training, evaluation, or fine-tuning datasets
+    attributes:
+        ai-dataset-store: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
+ai-eval-pipeline:
+    aliases:
+        - eval-pipeline
+        - model-evaluation-pipeline
+        - benchmark-pipeline
+        - red-teaming-pipeline
+    description: A model evaluation, red-teaming, or benchmark pipeline that gates promotion decisions
+    attributes:
+        ai-eval-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
+        application_logic: true
+ai-llm-endpoint:
+    aliases:
+        - llm-endpoint
+        - llm-inference-api
+        - llm-inference
+        - model-inference-api
+    description: An LLM or ML model inference API endpoint
+    attributes:
+        ai-llm-endpoint: true
+        ai: true
+        less_protected_type: true
+        request_serving_api: true
+        application_logic: true
+ai-model-registry:
+    aliases:
+        - model-registry
+        - mlflow
+        - huggingface-hub
+        - model-artifact-store
+    description: A registry or artifact store for AI model weights and configuration
+    attributes:
+        ai-model-registry: true
+        ai: true
+        less_protected_type: true
+        development_relevant: true
+        may_contain_secrets: true
+ai-model-serving:
+    aliases:
+        - model-serving
+        - model-server
+        - inference-server
+        - vllm
+        - triton
+        - torchserve
+        - ollama
+    description: A model-serving host that loads and runs a trained model artifact
+    attributes:
+        ai-model-serving: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        application_logic: true
+ai-multi-agent-gateway:
+    aliases:
+        - multi-agent-gateway
+        - a2a-gateway
+        - mcp-server
+        - agent-registry
+    description: A gateway or registry mediating interactions between multiple AI agents across identity domains
+    attributes:
+        ai-multi-agent-gateway: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        request_serving_api: true
+        application_logic: true
 ai-observability-stack:
     aliases:
         - llm-tracing
@@ -36,6 +117,31 @@ ai-observability-stack:
         monitoring: true
         security_control_related: true
         less_protected_type: true
+ai-rag-ingest-pipeline:
+    aliases:
+        - rag-ingest-pipeline
+        - rag-ingest
+        - vector-embedding-pipeline
+    description: Ingests, chunks, embeds, and writes documents into a RAG vector store
+    attributes:
+        ai-rag-ingest-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        application_logic: true
+ai-rag-pipeline:
+    aliases:
+        - rag-pipeline
+        - retrieval-augmented-generation
+        - vector-search-pipeline
+    description: A Retrieval-Augmented Generation pipeline combining vector retrieval with LLM grounding
+    attributes:
+        ai-rag-pipeline: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        request_serving_api: true
+        application_logic: true
 ai-security-agent:
     aliases:
         - ai-driven-siem
@@ -47,6 +153,19 @@ ai-security-agent:
         ai: true
         security_control_related: true
         less_protected_type: true
+ai-training-pipeline:
+    aliases:
+        - training-pipeline
+        - model-training-pipeline
+        - fine-tuning-pipeline
+        - rlhf-pipeline
+    description: A model training, fine-tuning, RLHF, or continual-learning pipeline
+    attributes:
+        ai-training-pipeline: true
+        ai: true
+        backend_related: true
+        less_protected_type: true
+        development_relevant: true
         application_logic: true
 application-server:
     aliases:
@@ -172,17 +291,6 @@ database:
         backend_related: true
         storing_end_user_data: true
         vulnerable_to_query_injection: true
-dataset-store:
-    aliases:
-        - ai-dataset-store
-        - training-data-store
-    description: The authoritative storage layer for AI training, evaluation, or fine-tuning datasets
-    attributes:
-        dataset-store: true
-        ai: true
-        backend_related: true
-        less_protected_type: true
-        development_relevant: true
 desktop:
     aliases:
         - desktop-system
@@ -227,19 +335,6 @@ erp:
         request_serving_api: true
         storing_end_user_data: true
         web_application: true
-        application_logic: true
-eval-pipeline:
-    aliases:
-        - model-evaluation-pipeline
-        - benchmark-pipeline
-        - red-teaming-pipeline
-    description: A model evaluation, red-teaming, or benchmark pipeline that gates promotion decisions
-    attributes:
-        eval-pipeline: true
-        ai: true
-        backend_related: true
-        less_protected_type: true
-        development_relevant: true
         application_logic: true
 event-listener:
     description: An event listener waiting to be triggered and spring to action
@@ -353,18 +448,6 @@ ldap-server:
         backend_related: true
         identity_related: true
         identity_store: true
-llm-endpoint:
-    aliases:
-        - llm-inference-api
-        - llm-inference
-        - model-inference-api
-    description: An LLM or ML model inference API endpoint
-    attributes:
-        llm-endpoint: true
-        ai: true
-        less_protected_type: true
-        request_serving_api: true
-        application_logic: true
 library:
     description: A software library
     attributes:
@@ -423,34 +506,6 @@ mobile-app:
         frontend_related: true
         less_protected_type: true
         propagate_identity_to_outgoing_targets: true
-model-registry:
-    aliases:
-        - ai-model-registry
-        - mlflow
-        - huggingface-hub
-        - model-artifact-store
-    description: A registry or artifact store for AI model weights and configuration
-    attributes:
-        model-registry: true
-        ai: true
-        less_protected_type: true
-        development_relevant: true
-        may_contain_secrets: true
-model-serving:
-    aliases:
-        - model-server
-        - inference-server
-        - vllm
-        - triton
-        - torchserve
-        - ollama
-    description: A model-serving host that loads and runs a trained model artifact
-    attributes:
-        model-serving: true
-        ai: true
-        less_protected_type: true
-        backend_related: true
-        application_logic: true
 monitoring:
     aliases:
         - siem
@@ -462,42 +517,6 @@ monitoring:
         unnecessary_data_tolerated: true
         unprotected_communications_tolerated: true
         security_control_related: true
-multi-agent-gateway:
-    aliases:
-        - a2a-gateway
-        - mcp-server
-        - agent-registry
-    description: A gateway or registry mediating interactions between multiple AI agents across identity domains
-    attributes:
-        multi-agent-gateway: true
-        ai: true
-        backend_related: true
-        less_protected_type: true
-        request_serving_api: true
-        application_logic: true
-rag-ingest-pipeline:
-    aliases:
-        - rag-ingest
-        - vector-embedding-pipeline
-    description: Ingests, chunks, embeds, and writes documents into a RAG vector store
-    attributes:
-        rag-ingest-pipeline: true
-        ai: true
-        backend_related: true
-        less_protected_type: true
-        application_logic: true
-rag-pipeline:
-    aliases:
-        - retrieval-augmented-generation
-        - vector-search-pipeline
-    description: A Retrieval-Augmented Generation pipeline combining vector retrieval with LLM grounding
-    attributes:
-        rag-pipeline: true
-        ai: true
-        less_protected_type: true
-        backend_related: true
-        request_serving_api: true
-        application_logic: true
 report-engine:
     aliases:
         - reporting
@@ -587,19 +606,6 @@ tool:
     attributes:
         tool: true
         propagate_identity_to_outgoing_targets: true
-training-pipeline:
-    aliases:
-        - model-training-pipeline
-        - fine-tuning-pipeline
-        - rlhf-pipeline
-    description: A model training, fine-tuning, RLHF, or continual-learning pipeline
-    attributes:
-        training-pipeline: true
-        ai: true
-        backend_related: true
-        less_protected_type: true
-        development_relevant: true
-        application_logic: true
 unknown-technology:
     aliases:
         - unknown

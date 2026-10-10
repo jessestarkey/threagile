@@ -49,7 +49,7 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                true: "{.attributes.llm-endpoint}"
+                true: "{.attributes.ai-llm-endpoint}"
           then:
             return: true
 

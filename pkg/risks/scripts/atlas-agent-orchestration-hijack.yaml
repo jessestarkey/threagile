@@ -51,7 +51,7 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                true: "{.attributes.agent-orchestrator}"
+                true: "{.attributes.ai-agent-orchestrator}"
           then:
             return: true
 

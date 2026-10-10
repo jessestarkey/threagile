@@ -49,8 +49,8 @@ risk:
             - any:
                 in: "{tech_asset.technologies}"
                 or:
-                  - true: "{.attributes.model-serving}"
-                  - true: "{.attributes.model-registry}"
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-model-registry}"
           then:
             return: true
 

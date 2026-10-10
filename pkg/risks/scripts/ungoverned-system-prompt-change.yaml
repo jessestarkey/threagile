@@ -50,9 +50,9 @@ risk:
             - any:
                 in: "{tech_asset.technologies}"
                 or:
-                  - true: "{.attributes.llm-endpoint}"
-                  - true: "{.attributes.rag-pipeline}"
-                  - true: "{.attributes.agent-orchestrator}"
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
           then:
             return: true
 
