@@ -1,7 +1,7 @@
 id: insufficient-audit-logging
 title: "Insufficient Audit Logging (AU-2 Compliance Gap)"
 function: operations
-stride: information-disclosure
+stride: repudiation
 cwe: 778
 description: >
   The asset does not generate audit records for the event types NIST SP 800-53 AU-2 requires,
@@ -87,7 +87,9 @@ risk:
               - return: possible
         - return: likely
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    # STRIDE is Repudiation -> Integrity (per inject_risks.py's own STRIDE_TO_CIA_DIMENSION
+    # convention: a missing or tamperable audit trail is an integrity failure of the evidence
+    # itself, not a confidentiality one). Baseline is "medium".
     get_impact:
       parameters:
         - tech_asset
@@ -109,19 +111,19 @@ risk:
             - cia_rank: low
         - if:
             equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
+              first: "{tech_asset.integrity}"
+              second: important
             then:
               - assign:
                   cia_rank: mid
         - if:
             or:
               - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
+                  first: "{tech_asset.integrity}"
+                  second: critical
               - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
             then:
               - assign:
                   cia_rank: high

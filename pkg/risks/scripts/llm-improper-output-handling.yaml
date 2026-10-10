@@ -1,0 +1,149 @@
+id: llm-improper-output-handling
+title: "OWASP LLM05: Improper Output Handling Reaching a Downstream Sink"
+function: architecture
+stride: tampering
+cwe: 74
+description: >
+  LLM output is passed to a downstream consumer -- a browser rendering HTML/markdown, a
+  database query, a shell or code interpreter, a template engine, or another backend API --
+  without context-appropriate encoding or validation at that specific sink, letting the model's
+  output tamper with whatever interprets it next exactly as an untrusted user input would.
+impact: >
+  If this risk remains unmitigated, any successful prompt manipulation upstream converts
+  directly into XSS, SQL/command injection, SSRF, or unauthorized downstream API calls --
+  and because the model's own output is trusted by default at the point of consumption, this
+  applies even when the output is merely wrong rather than attacker-steered.
+asvs: "V5 - Validation, Sanitization and Encoding"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat LLM output as untrusted input to whatever consumes it next, and apply context-appropriate encoding or validation at each specific downstream sink rather than trusting the model's output by default."
+mitigation: >
+  Apply the same context-appropriate output encoding or validation to LLM output that would be
+  applied to any other untrusted input reaching the same sink: HTML/markdown-escape output
+  rendered in a browser (and do not allow raw HTML passthrough), use parameterized queries
+  rather than string-built SQL for any text-to-SQL path, run code-interpreter or tool-execution
+  output in a sandboxed environment with no ambient credentials, enable auto-escaping in any
+  template engine the output passes through, and validate/allow-list output schemas before
+  forwarding to a downstream API rather than passing the model's raw response through. Never
+  treat the model's own output as implicitly trusted just because it originated from your own
+  inference endpoint -- the same output is the direct product of whatever input (including an
+  indirect-injection payload) the model was given. References: OWASP Top 10 for LLM
+  Applications (LLM05:2025 Improper Output Handling); CWE-79 (XSS), CWE-89 (SQL Injection),
+  CWE-94 (Code Injection); NIST AI RMF MANAGE 2.3.
+check: "Is context-appropriate output encoding or validation applied at every downstream sink this asset's LLM output reaches (browser rendering, database query, code interpreter, template engine, or downstream API)?"
+detection_logic: >
+  Audit every downstream consumer of this asset's LLM output for sink-appropriate encoding or
+  validation: browser rendering for HTML/markdown escaping, database access for parameterized
+  queries, code-interpreter/tool-execution paths for sandboxing, template rendering for
+  auto-escaping, and downstream API calls for output schema validation. Flag any sink that
+  passes the model's raw output through unmodified.
+risk_assessment: >
+  High for any LLM asset whose output reaches a browser, database, code interpreter, or
+  downstream API with no sink-specific encoding or validation. Critical if the sink executes
+  with elevated privilege (an unsandboxed code interpreter or a downstream API with broad
+  access).
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI model-serving/
+  LLM-endpoint/RAG-pipeline/agent-orchestrator asset, by design). Dispose of a confirmed-
+  compliant asset through risk_tracking instead: log it as mitigated once every downstream
+  sink is confirmed to apply context-appropriate encoding or validation to this asset's LLM
+  output.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>OWASP LLM05: Improper Output Handling Reaching a Downstream Sink</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- unescaped output reaching an interpreter
+    # is a total control failure at that sink regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high
