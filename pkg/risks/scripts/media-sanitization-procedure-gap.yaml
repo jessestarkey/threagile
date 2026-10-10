@@ -10,7 +10,7 @@ impact: >
   If this risk remains unmitigated, CUI persists recoverable on a disk that is decommissioned,
   repurposed, or returned to a cloud provider or hardware vendor without verified sanitization.
 asvs: "V8 - Data Protection"
-cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html"
+cheat_sheet: "https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final"
 action: "Adopt and document a NIST SP 800-88-aligned sanitization procedure for this asset's storage, exercised at decommissioning, repurposing, or hardware return."
 mitigation: >
   Adopt a documented sanitization procedure aligned to NIST SP 800-88 for this asset's persistent

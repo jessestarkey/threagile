@@ -11,7 +11,7 @@ impact: >
   tier, access policy, DLP, retention -- apply a default posture that may not match the data's
   true sensitivity.
 asvs: "V8 - Data Protection"
-cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html"
+cheat_sheet: "https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final"
 action: "Enroll the data store in an automated discovery/classification scan and apply the resulting sensitivity labels before any classification-driven control is configured."
 mitigation: >
   Run an automated classification/discovery scan (e.g., Microsoft Purview, Azure Information

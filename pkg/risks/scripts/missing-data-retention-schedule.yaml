@@ -10,7 +10,7 @@ impact: >
   If this risk remains unmitigated, sensitive holdings can be retained indefinitely with no owner
   for disposal, while records needed for a later investigation can be lost prematurely.
 asvs: "V8 - Data Protection"
-cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Data_Classification_Cheat_Sheet.html"
+cheat_sheet: "https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final"
 action: "Document a retention period and a specific disposition action (not merely 'delete') for each data/classification type this asset holds, and implement automated enforcement where the platform supports it."
 mitigation: >
   Define a retention schedule per data classification/record type, sourced from the applicable

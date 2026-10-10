@@ -15,7 +15,7 @@ impact: >
   when an attacker who has caused the outage -- or is operating during one -- most needs it
   to.
 asvs: "V9 - Communications"
-cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cheat_Sheet.html"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
 action: "Configure revocation checking to fail closed, and confirm every relying system uses a DoD-approved OCSP/CRL source consistent with CAC/PIV authentication requirements."
 mitigation: >
   Configure every relying party's revocation check to fail closed -- reject the authentication
