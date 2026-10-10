@@ -1,0 +1,161 @@
+id: atlas-chaff-data-spamming
+title: "ATLAS: Chaff Data Spamming and Detection Signal Dilution"
+function: operations
+stride: denial-of-service
+cwe: 693
+description: >
+  An adversary can flood a model-serving or inference endpoint with high volumes of
+  plausible-looking but meaningless input specifically to mask a real malicious action within
+  the noise, or to dilute the signal any connected monitoring, anomaly-detection, or
+  continuous-learning process depends on -- distinct from raw volumetric denial of service,
+  since the goal is degrading detection or learning fidelity rather than exhausting compute
+  capacity.
+impact: >
+  If this risk remains unmitigated, a genuine attack can be executed concealed within a flood
+  of chaff traffic that any connected detection system was never tuned to separate from noise,
+  or a continuous-learning process can be steered by diluting its training signal with
+  adversary-supplied junk at sufficient volume.
+asvs: "V11 - Business Logic"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Apply input plausibility/novelty scoring distinct from rate limiting, and ensure any connected monitoring or continuous-learning process is tuned to detect signal dilution specifically."
+mitigation: >
+  Apply input plausibility or novelty scoring that flags a high volume of near-duplicate or
+  low-information-content requests as suspicious, distinct from -- and in addition to -- raw
+  rate limiting, since chaff traffic is specifically designed to appear individually
+  legitimate. Ensure any connected monitoring, anomaly-detection, or continuous-learning
+  process is itself tuned to detect a sudden drop in query diversity or signal-to-noise ratio,
+  not only absolute volume. Where continuous or online learning is in use, apply the same
+  provenance and integrity controls to high-volume input streams as to any other training
+  data source, rather than assuming volume alone implies legitimacy. References: MITRE ATLAS
+  AML.T0046 (Spamming ML System with Chaff Data); NIST AI RMF MANAGE 2.3; NIST SP 800-53 SI-4
+  (System Monitoring).
+check: "Is input plausibility/novelty scoring applied distinct from rate limiting, and is any connected monitoring or continuous-learning process tuned to detect signal dilution rather than only absolute request volume?"
+detection_logic: >
+  Monitor for a sustained drop in per-request information content or query diversity
+  alongside elevated request volume, distinct from a simple volume spike. Audit connected
+  monitoring/anomaly-detection and continuous-learning processes for explicit signal-dilution
+  detection versus volume-only thresholds.
+risk_assessment: >
+  High for any model-serving or inference endpoint with connected monitoring, anomaly
+  detection, or continuous/online learning that has no signal-dilution-specific detection, only
+  volume-based thresholds.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI model-serving/
+  LLM-endpoint asset, by design). Dispose of a confirmed-compliant asset through risk_tracking
+  instead: log it as mitigated once plausibility/novelty scoring and signal-dilution-aware
+  monitoring are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-llm-endpoint}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: Chaff Data Spamming and Detection Signal Dilution</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Denial-of-Service -> Availability. Baseline is "medium".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - cia_rank: low
+        - if:
+            equal:
+              first: "{tech_asset.availability}"
+              second: important
+            then:
+              - assign:
+                  cia_rank: mid
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.availability}"
+                  second: mission-critical
+            then:
+              - assign:
+                  cia_rank: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{cia_rank}"
+              second: mid
+            then:
+              - if:
+                  true: "{mission_critical}"
+                  then:
+                    - return: high
+                  else:
+                    - return: medium
+        - if:
+            true: "{mission_critical}"
+            then:
+              - return: medium
+            else:
+              - return: low

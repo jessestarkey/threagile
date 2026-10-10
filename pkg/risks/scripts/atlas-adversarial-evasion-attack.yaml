@@ -1,0 +1,143 @@
+id: atlas-adversarial-evasion-attack
+title: "ATLAS: Adversarial Evasion Attack Against Model Decision Boundary"
+function: architecture
+stride: tampering
+cwe: 20
+description: >
+  An adversary can craft an input with small, often human-imperceptible perturbations
+  specifically designed to cross the model's decision boundary -- causing it to misclassify
+  or make an incorrect decision -- while the input still appears legitimate to a human
+  reviewer or any downstream system that does not independently re-examine it.
+impact: >
+  If this risk remains unmitigated, an adversary can reliably make the model produce an
+  incorrect classification or decision on demand, defeating any security or safety control
+  that relies on that model's output being trustworthy, without the crafted input ever
+  looking anomalous to a human.
+asvs: "V11 - Business Logic"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: "Apply adversarial training and input-space defenses, and require independent confirmation before acting on any model decision with security or safety consequence."
+mitigation: >
+  Apply adversarial training using known perturbation techniques so the model's decision
+  boundary is less exploitable by small crafted perturbations. Apply input preprocessing
+  (randomized smoothing, input transformation/compression) that disrupts the precise
+  perturbation an evasion attack depends on without materially degrading legitimate input.
+  Where the model's decision has a security or safety consequence (access control, content
+  moderation, fraud detection, an OT-adjacent action), require independent confirmation --
+  a second signal, a different model, or human review -- rather than trusting a single
+  model's output alone for a high-consequence decision. Monitor confidence-score
+  distributions for the unusual patterns adversarial examples often produce near the decision
+  boundary. References: MITRE ATLAS AML.T0015 (Evade ML Model); NIST AI RMF MANAGE 2.3; NIST
+  SP 800-53 SI-10 (Information Input Validation).
+check: "Is adversarial training or input-space defense applied to the model, and does any security- or safety-consequential decision require independent confirmation rather than trusting the model's output alone?"
+detection_logic: >
+  Audit model training records for adversarial-training coverage against known perturbation
+  techniques. Review input-preprocessing configuration for randomized smoothing or
+  transformation defenses. Confirm high-consequence decisions driven by this model require
+  independent confirmation. Monitor confidence-score distributions for near-boundary anomaly
+  patterns.
+risk_assessment: >
+  Critical for any model whose decision gates a security or safety consequence with no
+  adversarial training, input-space defense, or independent confirmation step in place.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope AI model-serving/
+  LLM-endpoint asset, by design). Dispose of a confirmed-compliant asset through risk_tracking
+  instead: log it as mitigated once adversarial training/input-space defenses and independent
+  confirmation for high-consequence decisions are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-llm-endpoint}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>ATLAS: Adversarial Evasion Attack Against Model Decision Boundary</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
+    # downward (Integrity low) delta is reachable -- a reliably evaded decision boundary is a
+    # total control failure regardless of this asset's own rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - integrity_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: important
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - assign:
+                  integrity_low: false
+        - if:
+            and:
+              - true: "{integrity_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high

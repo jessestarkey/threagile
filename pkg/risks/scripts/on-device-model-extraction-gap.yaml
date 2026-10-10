@@ -1,0 +1,156 @@
+id: on-device-model-extraction-gap
+title: "On-Device Model Extraction Resistance Gap"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  A model fielded onto physical hardware an adversary could gain physical custody of -- an
+  edge or embedded deployment rather than a cloud-hosted virtual instance -- yields the full
+  model to anyone who recovers that hardware unless it runs inside a trusted execution
+  environment or secure enclave.
+impact: >
+  If this risk remains unmitigated, physical custody of the device hands an adversary the
+  complete model with no detection or revocation possible afterward, unlike a cloud-hosted
+  model where physical custody of the underlying hardware was never a realistic attack path in
+  the first place.
+asvs: "V8 - Data Protection"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html"
+action: "Run the model inside a trusted execution environment or secure enclave on any physically-deployed hardware, and treat its physical recovery as a realistic attack path requiring design-time mitigation."
+mitigation: >
+  Run the model inside a trusted execution environment or hardware secure enclave rather than
+  as a plain process on physically-deployed hardware, so that physical custody of the device
+  alone is insufficient to recover the model weights. Where a TEE/enclave is not available on
+  the target hardware, apply model encryption at rest with keys that cannot be extracted
+  without the enclave or an equivalent hardware root of trust. Treat physical recovery of the
+  device (loss, theft, capture, battlefield recovery) as a realistic attack path to design
+  against, not an edge case -- unlike a cloud-hosted model, physical custody of edge/embedded
+  hardware is a genuinely reachable attack surface. References: NIST AI RMF MANAGE 2.3; NIST
+  SP 800-53 SC-28 (Protection of Information at Rest); DoD anti-tamper policy for fielded
+  systems.
+check: "Does the model run inside a trusted execution environment or secure enclave on this physically-deployed hardware, or is it otherwise protected against extraction if the device is physically recovered?"
+detection_logic: >
+  Audit the deployment architecture for TEE/secure-enclave usage on physically-fielded model-
+  serving or inference hardware. Where no enclave is present, confirm model-at-rest encryption
+  with a hardware-backed key that survives device recovery intact.
+risk_assessment: >
+  Critical for any physically-deployed model-serving or inference asset with no trusted
+  execution environment, secure enclave, or equivalent hardware-backed protection against
+  extraction on physical recovery.
+false_positives: >
+  Not applicable via tag (this rule fires unconditionally for every in-scope, physically-
+  deployed AI model-serving/inference asset, by design). Dispose of a confirmed-compliant
+  asset through risk_tracking instead: log it as mitigated once TEE/secure-enclave protection
+  or equivalent is confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            # "physical" is machine's zero value with yaml omitempty, so it never survives
+            # the script engine's own internal re-serialization as a literal string to
+            # compare equal against -- checking it's none of the other 3 machine values
+            # correctly captures physical (and anything genuinely unset, which defaults to
+            # physical in Threagile's own schema) without that pitfall.
+            - not-equal:
+                first: "{tech_asset.machine}"
+                second: virtual
+            - not-equal:
+                first: "{tech_asset.machine}"
+                second: container
+            - not-equal:
+                first: "{tech_asset.machine}"
+                second: serverless
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-llm-endpoint}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>On-Device Model Extraction Resistance Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
+    # ceiling), so only the downward (Confidentiality low) delta is reachable -- physical
+    # recovery of the device is a total extraction event regardless of this asset's own
+    # rating.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - mission_critical: false
+        - if:
+            or:
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: critical
+              - equal:
+                  first: "{$model.business_criticality}"
+                  second: mission-critical
+            then:
+              - assign:
+                  mission_critical: true
+        - assign:
+            - confidentiality_low: true
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: restricted
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - assign:
+                  confidentiality_low: false
+        - if:
+            and:
+              - true: "{confidentiality_low}"
+              - false: "{mission_critical}"
+            then:
+              - return: high
+            else:
+              - return: very-high
