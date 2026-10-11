@@ -86,10 +86,13 @@ risk:
             else:
               - return: very-likely
 
-    # Mirrors compute_impact()'s CIA-rank delta on the single STRIDE-mapped dimension (Tampering
-    # -> Integrity) plus the gated Business-Criticality bump. Baseline is already the top tier
-    # (very-high), so the only visible movement is a drop to "high" when Integrity is low AND the
-    # model-level criticality bump doesn't offset it back up.
+    # Mirrors compute_impact()'s CIA-rank delta on the single STRIDE-mapped dimension
+    # (Tampering -> Integrity). Baseline is already the top tier (very-high), so the only
+    # visible movement is a drop to "high" when Integrity is low. Impact is purely a function
+    # of this asset's own Integrity rank -- the model-wide Business Criticality bump that used
+    # to apply here was removed (see git history / the sibling Python engine's compute_impact()
+    # for the rationale: it mostly inflated already-peripheral assets rather than protecting
+    # genuinely under-rated ones).
     get_impact:
       parameters:
         - tech_asset
@@ -107,19 +110,6 @@ risk:
         # flips it when a known NON-ZERO tier explicitly matches, rather than the other way
         # around.
         - assign:
-            - mission_critical: false
-        - if:
-            or:
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: critical
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: mission-critical
-            then:
-              - assign:
-                  mission_critical: true
-        - assign:
             - integrity_low: true
         - if:
             or:
@@ -136,9 +126,7 @@ risk:
               - assign:
                   integrity_low: false
         - if:
-            and:
-              - true: "{integrity_low}"
-              - false: "{mission_critical}"
+            true: "{integrity_low}"
             then:
               - return: high
             else:

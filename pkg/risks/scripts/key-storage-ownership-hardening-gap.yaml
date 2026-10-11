@@ -82,23 +82,14 @@ risk:
               - return: unlikely
 
     # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
+    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
+    # Business Criticality bump that used to apply here was removed (see git history / the
+    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
+    # already-peripheral assets rather than protecting genuinely under-rated ones).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - mission_critical: false
-        - if:
-            or:
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: critical
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: mission-critical
-            then:
-              - assign:
-                  mission_critical: true
         - assign:
             - cia_rank: low
         - if:
@@ -130,15 +121,5 @@ risk:
               first: "{cia_rank}"
               second: mid
             then:
-              - if:
-                  true: "{mission_critical}"
-                  then:
-                    - return: high
-                  else:
-                    - return: medium
-        - if:
-            true: "{mission_critical}"
-            then:
               - return: medium
-            else:
-              - return: low
+        - return: low

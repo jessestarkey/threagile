@@ -87,26 +87,16 @@ risk:
                     - return: likely
 
     # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "low" (the floor), so
-    # only the upward delta (Confidentiality high, or the gated Business-Criticality bump) is
-    # reachable -- "restricted" maps to a zero CIA delta from this floor, so only confidential/
-    # strictly-confidential visibly moves it.
+    # only the upward delta (Confidentiality high) is reachable -- "restricted" maps to a zero
+    # CIA delta from this floor, so only confidential/strictly-confidential visibly moves it.
+    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
+    # Business Criticality bump that used to apply here was removed (see git history / the
+    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
+    # already-peripheral assets rather than protecting genuinely under-rated ones).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - mission_critical: false
-        - if:
-            or:
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: critical
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: mission-critical
-            then:
-              - assign:
-                  mission_critical: true
         - assign:
             - confidentiality_high: false
         - if:
@@ -121,9 +111,7 @@ risk:
               - assign:
                   confidentiality_high: true
         - if:
-            or:
-              - true: "{confidentiality_high}"
-              - true: "{mission_critical}"
+            true: "{confidentiality_high}"
             then:
               - return: medium
             else:

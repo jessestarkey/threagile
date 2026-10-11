@@ -92,23 +92,14 @@ risk:
     # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
     # dimensions. Baseline is "very-high" (the ceiling), so only the downward delta (every
     # dimension at or below rank 1) is reachable.
+    # Impact is purely a function of this asset's own max CIA rank across all three dimensions
+    # -- the model-wide Business Criticality bump that used to apply here was removed (see git
+    # history / the sibling Python engine's compute_impact() for the rationale: it mostly
+    # inflated already-peripheral assets rather than protecting genuinely under-rated ones).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - mission_critical: false
-        - if:
-            or:
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: critical
-              - equal:
-                  first: "{$model.business_criticality}"
-                  second: mission-critical
-            then:
-              - assign:
-                  mission_critical: true
         - assign:
             - any_dimension_at_least_mid: false
         - if:
@@ -144,9 +135,7 @@ risk:
               - assign:
                   any_dimension_at_least_mid: true
         - if:
-            and:
-              - false: "{any_dimension_at_least_mid}"
-              - false: "{mission_critical}"
+            false: "{any_dimension_at_least_mid}"
             then:
               - return: high
             else:
