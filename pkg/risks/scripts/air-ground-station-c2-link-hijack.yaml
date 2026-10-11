@@ -1,10 +1,10 @@
-id: uas-gcs-c2-link-hijack
-title: "UAS Ground Control Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink"
+id: air-ground-station-c2-link-hijack
+title: "Air Ground Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink"
 function: operations
 stride: spoofing
 cwe: 306
 description: >
-  A UAS command-and-control link is commonly line-of-sight RF, attackable with far less
+  An air vehicle command-and-control link is commonly line-of-sight RF, attackable with far less
   sophisticated equipment than a satellite uplink would require. An unauthenticated command
   link lets an adversary take direct control of the air vehicle, and an unencrypted sensor or
   video downlink -- the documented real-world case of intercepted unencrypted drone video
@@ -35,11 +35,11 @@ detection_logic: >
   frequency-hopping or obscurity alone. Confirm the telemetry/sensor/video downlink is
   encrypted end to end. Review lost-link failsafe behavior documentation and test records.
 risk_assessment: >
-  Critical for any UAS ground control station whose command link is not cryptographically
+  Critical for any air ground station whose command link is not cryptographically
   authenticated, or whose sensor/video downlink is unencrypted.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope uas-ground-
-  control-station asset, by design). Dispose of a confirmed-compliant asset through
+  Not applicable via tag (this rule fires unconditionally for every in-scope air-ground-
+  station asset, by design). Dispose of a confirmed-compliant asset through
   risk_tracking instead: log it as mitigated once command-link authentication and downlink
   encryption are confirmed.
 
@@ -62,7 +62,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>UAS Ground Control Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Air Ground Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"

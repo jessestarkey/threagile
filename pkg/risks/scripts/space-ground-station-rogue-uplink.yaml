@@ -1,5 +1,5 @@
-id: satellite-ground-station-rogue-uplink
-title: "Satellite Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation"
+id: space-ground-station-rogue-uplink
+title: "Space Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation"
 function: operations
 stride: spoofing
 cwe: 306
@@ -36,7 +36,7 @@ risk_assessment: >
   cryptographic authentication, or where no monitoring exists for unauthorized uplink
   attempts.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope satellite-
+  Not applicable via tag (this rule fires unconditionally for every in-scope space-
   ground-station asset, by design). Dispose of a confirmed-compliant asset through
   risk_tracking instead: log it as mitigated once cryptographic command authentication and
   unauthorized-uplink monitoring are confirmed.
@@ -60,7 +60,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>Satellite Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Space Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"

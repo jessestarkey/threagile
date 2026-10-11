@@ -1,5 +1,5 @@
-id: uas-air-vehicle-gps-spoofing
-title: "UAS GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure"
+id: air-vehicle-gps-spoofing
+title: "Air Vehicle GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure"
 function: architecture
 stride: tampering
 cwe: 290
@@ -40,7 +40,7 @@ risk_assessment: >
   independent navigation cross-check, or carrying cryptographic material/mission data with no
   anti-tamper or zeroization protection against physical capture.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope uas-air-vehicle
+  Not applicable via tag (this rule fires unconditionally for every in-scope air-vehicle
   asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
   it as mitigated once independent navigation cross-checking and anti-tamper/zeroization
   protection are confirmed.
@@ -64,7 +64,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>UAS GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Air Vehicle GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"
