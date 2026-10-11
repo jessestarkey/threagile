@@ -89,8 +89,8 @@ risk:
             else:
               - return: very-likely
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high" (not an edge
-    # tier), so all 3 outcomes (medium/high/very-high) are reachable.
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium" (not an edge
+    # tier), so all 3 outcomes (low/medium/high) are reachable.
     get_impact:
       parameters:
         - tech_asset
@@ -133,7 +133,7 @@ risk:
               first: "{cia_rank}"
               second: high
             then:
-              - return: very-high
+              - return: high
         - if:
             equal:
               first: "{cia_rank}"
@@ -142,12 +142,12 @@ risk:
               - if:
                   true: "{mission_critical}"
                   then:
-                    - return: very-high
-                  else:
                     - return: high
+                  else:
+                    - return: medium
         - if:
             true: "{mission_critical}"
             then:
-              - return: high
-            else:
               - return: medium
+            else:
+              - return: low
