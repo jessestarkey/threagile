@@ -137,7 +137,7 @@ risk:
               first: "{cia_rank}"
               second: high
             then:
-              - return: high
+              - return: very-high
         - if:
             equal:
               first: "{cia_rank}"
@@ -146,12 +146,12 @@ risk:
               - if:
                   true: "{mission_critical}"
                   then:
-                    - return: high
+                    - return: very-high
                   else:
-                    - return: medium
+                    - return: high
         - if:
             true: "{mission_critical}"
             then:
-              - return: medium
+              - return: high
             else:
-              - return: low
+              - return: medium

@@ -77,7 +77,7 @@ func (r *CrossSiteScriptingRule) createRisk(parsedModel *types.Model, technicalA
 	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
 		impact = types.HighImpact
 	}
-	likelihood := computeLikelihood(types.Likely, technicalAsset)
+	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

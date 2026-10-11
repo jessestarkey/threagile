@@ -77,12 +77,12 @@ func TestContainerPlatformEscapeRuleGenerateRisksTechAssetContainerPlatformRisks
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Container Platform Escape</b> risk at <b>Docker</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 	assert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)
 	assert.Equal(t, "ta1", risks[0].DataBreachTechnicalAssetIDs[0])
 }
 
-func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedConfidentialityStrictlyConfidentialDataAssetHighImpactRiskCreated(t *testing.T) {
+func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedConfidentialityStrictlyConfidentialDataAssetVeryHighImpactRiskCreated(t *testing.T) {
 	rule := NewContainerPlatformEscapeRule()
 
 	risks, err := rule.GenerateRisks(&types.Model{
@@ -112,12 +112,12 @@ func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedConfidentiali
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Container Platform Escape</b> risk at <b>Docker</b>", risks[0].Title)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 	assert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)
 	assert.Equal(t, "ta1", risks[0].DataBreachTechnicalAssetIDs[0])
 }
 
-func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedIntegrityMissionCriticalDataAssetHighImpactRiskCreated(t *testing.T) {
+func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedIntegrityMissionCriticalDataAssetVeryHighImpactRiskCreated(t *testing.T) {
 	rule := NewContainerPlatformEscapeRule()
 
 	risks, err := rule.GenerateRisks(&types.Model{
@@ -147,12 +147,12 @@ func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedIntegrityMiss
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Container Platform Escape</b> risk at <b>Docker</b>", risks[0].Title)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 	assert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)
 	assert.Equal(t, "ta1", risks[0].DataBreachTechnicalAssetIDs[0])
 }
 
-func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedAvailabilityMissionCriticalDataAssetHighImpactRiskCreated(t *testing.T) {
+func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedAvailabilityMissionCriticalDataAssetVeryHighImpactRiskCreated(t *testing.T) {
 	rule := NewContainerPlatformEscapeRule()
 
 	risks, err := rule.GenerateRisks(&types.Model{
@@ -182,7 +182,7 @@ func TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessedAvailabilityM
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Container Platform Escape</b> risk at <b>Docker</b>", risks[0].Title)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 	assert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)
 	assert.Equal(t, "ta1", risks[0].DataBreachTechnicalAssetIDs[0])
 }

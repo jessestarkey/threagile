@@ -77,7 +77,7 @@ func (r *XmlExternalEntityRule) createRisk(parsedModel *types.Model, technicalAs
 	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
 		impact = types.HighImpact
 	}
-	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

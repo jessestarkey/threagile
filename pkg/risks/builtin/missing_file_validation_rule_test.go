@@ -80,11 +80,11 @@ func TestMissingFileValidationRuleGenerateRisksFileDataFormatsAcceptedRisksCreat
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
-func TestMissingFileValidationRuleGenerateRisksProcessStrictlyConfidentialDataRisksCreatedWithMediumImpact(t *testing.T) {
+func TestMissingFileValidationRuleGenerateRisksProcessStrictlyConfidentialDataRisksCreatedWithHighImpact(t *testing.T) {
 	rule := NewMissingFileValidationRule()
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
@@ -106,11 +106,11 @@ func TestMissingFileValidationRuleGenerateRisksProcessStrictlyConfidentialDataRi
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
-func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalIntegrityDataRisksCreatedWithMediumImpact(t *testing.T) {
+func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalIntegrityDataRisksCreatedWithHighImpact(t *testing.T) {
 	rule := NewMissingFileValidationRule()
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
@@ -132,11 +132,11 @@ func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalIntegrityDa
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
-func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalAvailabilityDataRisksCreatedWithMediumImpact(t *testing.T) {
+func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalAvailabilityDataRisksCreatedWithHighImpact(t *testing.T) {
 	rule := NewMissingFileValidationRule()
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
@@ -158,7 +158,7 @@ func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalAvailabilit
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -181,7 +181,7 @@ func TestMissingFileValidationRuleGenerateRisksAssetAcceptsCSVFileXMLOnlyOneRisk
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
-func TestMissingFileValidationRuleGenerateRisksAllThreeSensitivityConditionsMediumImpact(t *testing.T) {
+func TestMissingFileValidationRuleGenerateRisksAllThreeSensitivityConditionsHighImpact(t *testing.T) {
 	rule := NewMissingFileValidationRule()
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
@@ -206,7 +206,7 @@ func TestMissingFileValidationRuleGenerateRisksAllThreeSensitivityConditionsMedi
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -235,7 +235,7 @@ func TestMissingFileValidationRuleGenerateRisksMultipleCustomDevelopedFileAccept
 	assert.Len(t, risks, 2)
 }
 
-func TestMissingFileValidationRuleGenerateRisksOnlyMissionCriticalAvailabilityMediumImpact(t *testing.T) {
+func TestMissingFileValidationRuleGenerateRisksOnlyMissionCriticalAvailabilityHighImpact(t *testing.T) {
 	rule := NewMissingFileValidationRule()
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
@@ -258,6 +258,6 @@ func TestMissingFileValidationRuleGenerateRisksOnlyMissionCriticalAvailabilityMe
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }

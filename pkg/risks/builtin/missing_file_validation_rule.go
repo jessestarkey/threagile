@@ -74,13 +74,13 @@ func (r *MissingFileValidationRule) createRisk(input *types.Model, technicalAsse
 	// just Integrity (this category's own STRIDE value): a malicious uploaded file can carry
 	// malware (an availability/integrity threat) or be crafted to exfiltrate data via a
 	// processing vulnerability (a confidentiality threat), not just one.
-	impact := types.LowImpact
+	impact := types.MediumImpact
 	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
 		input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
 		input.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.MediumImpact
+		impact = types.HighImpact
 	}
-	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

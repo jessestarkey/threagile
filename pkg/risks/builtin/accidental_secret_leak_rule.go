@@ -103,7 +103,7 @@ func (r *AccidentalSecretLeakRule) createRisk(parsedModel *types.Model, technica
 		impact = types.HighImpact
 	}
 	// create risk
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

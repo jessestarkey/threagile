@@ -95,7 +95,7 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

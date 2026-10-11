@@ -77,11 +77,11 @@ func (asl ContainerPlatformEscapeRule) skipAsset(techAsset *types.TechnicalAsset
 
 func (r *ContainerPlatformEscapeRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Container Platform Escape</b> risk at <b>" + technicalAsset.Title + "</b>"
-	impact := types.MediumImpact
+	impact := types.HighImpact
 	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
 		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
 		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
+		impact = types.VeryHighImpact
 	}
 	// data breach at all container assets
 	dataBreachTechnicalAssetIDs := make([]string, 0)

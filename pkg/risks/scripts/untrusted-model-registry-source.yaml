@@ -66,7 +66,8 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    # Baseline is "possible" (not an edge tier), so both the upward (RAA >= 40) and downward
+    # (RAA < 15) deltas are reachable.
     get_likelihood:
       parameters:
         - tech_asset
@@ -76,9 +77,14 @@ risk:
               first: "{tech_asset.raa}"
               second: 40
             then:
-              - return: possible
-            else:
+              - return: likely
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
               - return: unlikely
+        - return: possible
 
     # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
     # downward (Integrity low) delta is reachable.

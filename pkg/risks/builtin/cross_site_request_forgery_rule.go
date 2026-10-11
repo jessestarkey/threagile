@@ -101,7 +101,7 @@ func (r *CrossSiteRequestForgeryRule) createRisk(parsedModel *types.Model, techn
 
 func (*CrossSiteRequestForgeryRule) likelihoodFromUsage(cl *types.CommunicationLink) types.RiskExploitationLikelihood {
 	if cl.Usage == types.DevOps {
-		return types.Likely
+		return types.Unlikely
 	}
-	return types.VeryLikely
+	return types.Likely
 }
