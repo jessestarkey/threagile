@@ -347,7 +347,7 @@ func findMostSensitiveTechnicalAsset(input *types.Model, techAssets map[string]s
 	})
 }
 
-func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, details string, confidentiality types.Confidentiality, integrity types.Criticality, availability types.Criticality, relatedAssets []string, likelihood types.RiskExploitationLikelihood) *types.Risk {
+func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, details, scope string, confidentiality types.Confidentiality, integrity types.Criticality, availability types.Criticality, relatedAssets []string, likelihood types.RiskExploitationLikelihood) *types.Risk {
 	suffix := ""
 	if len(prefix) > 0 {
 		suffix = "@" + strings.ToLower(prefix)
@@ -381,6 +381,18 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 		DataBreachTechnicalAssetIDs: relatedAssets,
 		SyntheticId:                 r.Category().ID + "@" + id + suffix,
 	}
+	// Anchor the finding to whichever model element it was actually scoped to -- without
+	// this, every finding from this rule (technical asset, shared runtime, or trust
+	// boundary scoped alike) left all three MostRelevant*Id fields empty, so nothing could
+	// render or group it by affected asset even though the title names one.
+	switch scope {
+	case "technical_asset":
+		risk.MostRelevantTechnicalAssetId = id
+	case "shared_runtime":
+		risk.MostRelevantSharedRuntimeId = id
+	case "trust_boundary":
+		risk.MostRelevantTrustBoundaryId = id
+	}
 	return risk
 }
 
@@ -393,6 +405,7 @@ func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 		sharedRuntime.Title,
 		prefix,
 		details,
+		"shared_runtime",
 		input.FindSharedRuntimeHighestConfidentiality(sharedRuntime),
 		input.FindSharedRuntimeHighestIntegrity(sharedRuntime),
 		input.FindSharedRuntimeHighestAvailability(sharedRuntime),
@@ -410,6 +423,7 @@ func (r *MissingCloudHardeningRule) createRiskForTrustBoundary(
 		trustBoundary.Title,
 		prefix,
 		details,
+		"trust_boundary",
 		input.FindTrustBoundaryHighestConfidentiality(trustBoundary),
 		input.FindTrustBoundaryHighestIntegrity(trustBoundary),
 		input.FindTrustBoundaryHighestAvailability(trustBoundary),
@@ -425,6 +439,7 @@ func (r *MissingCloudHardeningRule) createRiskForTechnicalAsset(
 		technicalAsset.Title,
 		prefix,
 		details,
+		"technical_asset",
 		input.HighestProcessedConfidentiality(technicalAsset),
 		input.HighestProcessedIntegrity(technicalAsset),
 		input.HighestProcessedAvailability(technicalAsset),

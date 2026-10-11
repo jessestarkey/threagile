@@ -87,9 +87,15 @@ func (r *SqlNoSqlInjectionRule) createRisk(input *types.Model, technicalAsset *t
 	}
 	likelihood := types.VeryLikely
 	if incomingFlow.Usage == types.DevOps {
+		// Same rationale as the SSRF rule's DevOps branch: the asset-level RAA/internet-
+		// reachability delta answers "is this component worth attacking in general," not
+		// "is this specific query built from caller-controlled input" -- DevOps usage already
+		// answers no to the latter, so skip the delta rather than let general attractiveness
+		// re-inflate a write that isn't an injection vector regardless of it.
 		likelihood = types.Likely
+	} else {
+		likelihood = computeLikelihood(likelihood, technicalAsset)
 	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),
