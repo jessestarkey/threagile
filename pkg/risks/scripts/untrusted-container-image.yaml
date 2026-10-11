@@ -87,9 +87,20 @@ risk:
               - return: very-likely
 
     # Mirrors compute_impact()'s CIA-rank delta on the single STRIDE-mapped dimension (Tampering
-    # -> Integrity) plus the gated Business-Criticality bump. Baseline is already the top tier
-    # (very-high), so the only visible movement is a drop to "high" when Integrity is low AND the
-    # model-level criticality bump doesn't offset it back up.
+    # -> Integrity) plus a Business-Criticality bump -- gated here not just on the model-wide
+    # flag but on THIS asset's own RAA too (pilot: see conversation history for the rationale).
+    # A blanket "the whole system is critical, so every low-integrity asset in it gets max
+    # impact" check was too coarse -- it inflated genuinely peripheral assets (low integrity,
+    # low RAA) just because they share a deployment boundary with important ones, instead of
+    # reflecting whether THIS asset is actually a plausible pivot point. RAA already captures
+    # that: Threagile's own RAA formula includes a pivoting effect where an asset inherits part
+    # of the attractiveness of whatever it can reach, so a low-integrity asset that's genuinely
+    # well-connected to high-value targets will already show it via an elevated RAA. Reusing
+    # the same RAA >= 40 threshold get_likelihood already uses (not a new, separately-tuned
+    # cutoff) for consistency. Net effect: the model-wide criticality bump now only keeps impact
+    # at the ceiling for a low-integrity asset when that asset is ALSO well-connected (RAA >=
+    # 40) -- a low-integrity, low-RAA asset (genuinely peripheral) drops to "high" even inside a
+    # critical system, which it couldn't do before this change.
     get_impact:
       parameters:
         - tech_asset
@@ -138,7 +149,11 @@ risk:
         - if:
             and:
               - true: "{integrity_low}"
-              - false: "{mission_critical}"
+              - or:
+                  - false: "{mission_critical}"
+                  - less:
+                      first: "{tech_asset.raa}"
+                      second: 40
             then:
               - return: high
             else:
