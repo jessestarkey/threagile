@@ -85,14 +85,16 @@ func (r *MissingVaultRule) GenerateRisks(input *types.Model) ([]*types.Risk, err
 func (r *MissingVaultRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
 	title := "<b>Missing Vault (Secret Storage)</b> in the threat model"
 	id := "no-components"
+	likelihood := types.Unlikely
 	if technicalAsset != nil {
 		title += " (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
 		id = technicalAsset.Id
+		likelihood = computeLikelihood(types.Unlikely, technicalAsset)
 	}
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(types.Unlikely, impact),
-		ExploitationLikelihood:       types.Unlikely,
+		Severity:                     types.CalculateSeverity(likelihood, impact),
+		ExploitationLikelihood:       likelihood,
 		ExploitationImpact:           impact,
 		Title:                        title,
 		MostRelevantTechnicalAssetId: id,
