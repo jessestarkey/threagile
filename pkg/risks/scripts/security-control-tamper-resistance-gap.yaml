@@ -25,7 +25,9 @@ mitigation: >
   itself monitoring for. Where the platform supports it, require a second approver for any change
   that weakens the control's own protective posture. Periodically verify the control is still
   actively enforcing (not silently failed open) via a synthetic test rather than assuming
-  uptime implies correct operation.
+  uptime implies correct operation. References: CWE-778 (Insufficient Logging); MITRE ATT&CK
+  T1562 (Impair Defenses), T1070 (Indicator Removal); NIST SP 800-53 AU-9 (Protection of Audit
+  Information); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity).
 check: "Is this control's own configuration-change and administrative-access audit trail forwarded to a destination it cannot itself modify, with alerting on any change to its own protective posture?"
 detection_logic: >
   Monitor for configuration changes to this control (rule/policy edits, mode changes, log

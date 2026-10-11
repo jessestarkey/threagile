@@ -24,8 +24,10 @@ mitigation: >
   revocation source itself is a DoD-approved OCSP/CRL source as required for CAC two-factor
   authentication of privileged users. Where degraded or disconnected (DDIL) operation is a
   genuine requirement, address it with a short-validity cached response signed by the
-  responder rather than an unconditional fail-open default. References: NIST SP 800-53 IA-5
-  (Authenticator Management); DoD Cloud Computing Mission Owner Network Security Requirements
+  responder rather than an unconditional fail-open default. References: CWE-299 (Improper Check for
+  Certificate Revocation); MITRE ATT&CK T1557 (Adversary-in-the-Middle); NIST SP 800-53 IA-5(2)
+  (Public Key-Based Authentication); NIST SP 800-53 SC-17 (Public Key Infrastructure
+  Certificates); DoD Cloud Computing Mission Owner Network Security Requirements
   Guide (CAC/OCSP revocation requirements).
 check: "Does revocation checking fail closed when the OCSP responder or CRL is unreachable, and does every relying system use a DoD-approved OCSP/CRL source?"
 detection_logic: >

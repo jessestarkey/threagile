@@ -24,7 +24,8 @@ mitigation: >
   trivially sniffed and replayed. Where the industrial protocol itself has no authentication
   option at all, treat network segmentation and physical access to the wiring as the only real
   controls and document them as such rather than assuming the protocol provides any assurance.
-  References: MITRE ATT&CK for ICS; UFC 4-010-06 (Cybersecurity of Facility-Related Control
+  References: CWE-306 (Missing Authentication for Critical Function); MITRE ATT&CK for ICS T0855
+  (Unauthorized Command Message), T0836 (Modify Parameter); UFC 4-010-06 (Cybersecurity of Facility-Related Control
   Systems); NIST SP 800-82 (Guide to Operational Technology Security).
 check: "Are ICS/PACS controllers segmented from the general IT network with protocol-aware filtering at the boundary, and has legacy unauthenticated access-control wiring been replaced with an authenticated protocol where supported?"
 detection_logic: >

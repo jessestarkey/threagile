@@ -25,7 +25,8 @@ mitigation: >
   video has been intercepted by adversaries in real documented incidents, and the same
   exposure applies to any unencrypted downlink regardless of platform. Define and test a
   documented lost-link failsafe behavior (e.g. return-to-home, controlled landing) so a
-  jammed or severed link does not itself become the attack. References: NIST SP 800-53 SC-8
+  jammed or severed link does not itself become the attack. References: CWE-306 (Missing Authentication for Critical
+  Function); CWE-319 (Cleartext Transmission of Sensitive Information); NIST SP 800-53 SC-8
   (Transmission Confidentiality and Integrity); NIST SP 800-53 IA-3 (Device Identification and
   Authentication); DoD UAS cybersecurity guidance.
 check: "Is the command-and-control link cryptographically authenticated, is the telemetry/sensor/video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?"

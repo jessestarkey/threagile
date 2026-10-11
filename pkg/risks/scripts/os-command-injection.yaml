@@ -20,7 +20,9 @@ mitigation: >
   interpolation into a single command line), and apply a strict allow-list to any argument that
   influences which binary or flags are invoked. Run the invoking process with the minimum OS
   privileges it needs. Apply a seccomp/AppArmor profile or equivalent to narrow the syscall
-  surface available even if an injection succeeds.
+  surface available even if an injection succeeds. References: CWE-78; CAPEC-88 (OS Command
+  Injection); MITRE ATT&CK T1059 (Command and Scripting Interpreter); OWASP Top 10:2025 A05
+  (Injection).
 check: "Does this asset avoid building shell commands from unsanitized input, using parameterized process-invocation APIs and a minimum-privilege execution context instead?"
 detection_logic: >
   Run SAST rules flagging shell/exec invocations built via string concatenation or interpolation

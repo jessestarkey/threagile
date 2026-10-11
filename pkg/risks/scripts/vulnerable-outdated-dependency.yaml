@@ -24,7 +24,9 @@ mitigation: >
   against already-deployed versions. Fail the build on Critical/High severity findings above the
   org's accepted threshold. Maintain a documented remediation SLA tied to severity. Subscribe to
   security advisories for the ecosystem's package registry (npm, PyPI, Maven Central, NuGet) used
-  by this asset.
+  by this asset. References: CWE-1104 (Use of Unmaintained Third Party Components); OWASP Top
+  10:2025 A03 (Software Supply Chain Failures); NIST SP 800-53 RA-5 (Vulnerability Monitoring
+  and Scanning); MITRE ATT&CK T1190 (Exploit Public-Facing Application).
 check: "Is an SCA tool integrated into the CI/CD pipeline, scanning this asset's full transitive dependency graph against a current known-vulnerability database on every build and on a recurring schedule?"
 detection_logic: >
   Confirm an SCA tool runs in the CI/CD pipeline for this asset's build and that its scan report

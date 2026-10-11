@@ -14,7 +14,10 @@ cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Stora
 action: "Enable disk encryption at rest."
 mitigation: >
   Enforce encryption at rest for all managed disks using platform-managed or customer-managed
-  keys stored in a hardware-backed key vault. Reference: DoD Cloud Computing SRG.
+  keys stored in a hardware-backed key vault. References: CWE-311 (Missing Encryption of
+  Sensitive Data); NIST SP 800-53 SC-28 (Protection of Information at Rest); MITRE ATT&CK
+  T1578.001 (Modify Cloud Compute Infrastructure -- Create Snapshot); OWASP Top 10:2025 A04
+  (Cryptographic Failures); DoD Cloud Computing SRG.
 check: "Is encryption at rest enabled for this VM's attached disks?"
 detection_logic: >
   Audit the disk resource's properties to confirm encryption at rest with a platform- or

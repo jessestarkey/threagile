@@ -24,7 +24,8 @@ mitigation: >
   turns at the API level (not simple string concatenation) so the model has a stronger boundary to
   preserve. Periodically red-team the production endpoint with known prompt-extraction techniques
   and treat a successful extraction as a finding requiring prompt redesign, not just a one-off
-  patch.
+  patch. References: CWE-200; OWASP Top 10 for LLM Applications LLM07:2025 (System Prompt
+  Leakage); MITRE ATLAS AML.T0056 (Extract LLM System Prompt); NIST AI RMF MANAGE 2.3.
 check: "Is the system prompt free of secrets/access-control logic, and is there an output-side filter blocking verbatim prompt-echo responses?"
 detection_logic: >
   Run a versioned suite of known prompt-extraction techniques (direct ask, roleplay, encoding

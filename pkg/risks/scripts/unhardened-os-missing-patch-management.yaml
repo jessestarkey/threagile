@@ -14,8 +14,10 @@ cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependen
 action: "Enforce STIG baselines and automated patching."
 mitigation: >
   Provision VMs exclusively from DoD-approved, STIG-compliant marketplace images and enroll them
-  in strict automated update schedules to meet SLA patching requirements. Reference: DISA OS
-  STIGs.
+  in strict automated update schedules to meet SLA patching requirements. References: CWE-1104
+  (Use of Unmaintained Third Party Components); NIST SP 800-53 SI-2 (Flaw Remediation); NIST SP
+  800-53 CM-6 (Configuration Settings); MITRE ATT&CK T1068 (Exploitation for Privilege
+  Escalation); DISA OS STIGs.
 check: "Is this VM provisioned from a STIG-compliant baseline image and enrolled in automated patching?"
 detection_logic: >
   Audit the platform's patch-management compliance logs and run automated STIG compliance scans

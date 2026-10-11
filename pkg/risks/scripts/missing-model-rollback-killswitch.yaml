@@ -19,7 +19,8 @@ mitigation: >
   (e.g., on an eval/canary failure) and a manual override -- that halts serving and falls back to
   a defined safe mode (static response, degraded functionality, or full outage, whichever is
   safer for this use case) rather than continuing to serve a known-bad model. References: NIST AI
-  RMF (MANAGE 2.2, MANAGE 4.1); MAESTRO L5 (Evaluation and Observability).
+  RMF (MANAGE 2.2, MANAGE 2.4, MANAGE 4.1); NIST SP 800-53 CP-10 (System Recovery and
+  Reconstitution); NIST SP 800-53 CM-3 (Configuration Change Control); MAESTRO L5 (Evaluation and Observability).
 check: "Is there a tested rollback-within-recovery-time path to the previous validated model version, and an independent kill switch with a defined safe-mode fallback?"
 detection_logic: >
   Confirm the previous validated model version is maintained in a ready-to-serve state (not

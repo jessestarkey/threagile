@@ -15,7 +15,9 @@ action: "Deploy EDR and centralized logging agents."
 mitigation: >
   Ensure platform policy enforces the automated deployment of an EDR agent and a centralized log
   forwarder (e.g., Microsoft Defender for Endpoint and Azure Monitor Agent, or the equivalent for
-  the hosting platform) on all VMs. Reference: DoD Zero Trust Reference Architecture.
+  the hosting platform) on all VMs. References: CWE-778 (Insufficient Logging); NIST SP 800-53
+  SI-4 (System Monitoring); NIST SP 800-53 SI-3 (Malicious Code Protection); MITRE ATT&CK
+  TA0005 (Defense Evasion); DoD Zero Trust Reference Architecture (Device pillar).
 check: "Are EDR and centralized logging agents deployed and reporting on this host?"
 detection_logic: >
   Query the cloud platform's resource inventory for missing endpoint-security VM extensions, or

@@ -26,8 +26,10 @@ mitigation: >
   cryptographic keys and sensitive mission data if the vehicle is captured or recovered by an
   unauthorized party, rather than assuming recovery will not happen. Define and test a
   documented lost-navigation failsafe behavior distinct from the ground control station's own
-  lost-link failsafe. References: DHS/CISA guidance on GPS spoofing and jamming; NIST SP
-  800-53 SC-7 (Boundary Protection); DoD anti-tamper policy for unmanned systems.
+  lost-link failsafe. References: CWE-290 (Authentication Bypass by Spoofing); Executive
+  Order 13905 (Strengthening National Resilience through Responsible Use of PNT Services); NIST
+  IR 8323 (Foundational PNT Profile); DHS Resilient PNT Conformance Framework; NIST SP 800-53
+  SR-9 (Tamper Resistance and Detection); DoD anti-tamper policy for unmanned systems.
 check: "Does the vehicle cross-check GPS/PNT against an independent navigation source to detect spoofing, and is onboard cryptographic material/mission data protected by anti-tamper or zeroization capability in the event of physical capture?"
 detection_logic: >
   Review the vehicle's navigation architecture for independent cross-checking versus sole

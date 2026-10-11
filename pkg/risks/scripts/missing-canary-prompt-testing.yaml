@@ -21,7 +21,9 @@ mitigation: >
   user traffic. Alert immediately on any canary result outside its expected class, since this is
   one of the few signals that catches a silent model swap, a disabled guardrail, or an unreviewed
   system prompt change without waiting for a user-visible incident. References: NIST AI RMF
-  (MEASURE 2.7, MANAGE 4.1); MAESTRO L5 (Evaluation and Observability).
+  (MEASURE 2.4, MEASURE 2.7, MANAGE 4.1); NIST SP 800-53 SI-6 (Security and Privacy Function
+  Verification); OWASP Top 10 for LLM Applications LLM01:2025 (Prompt Injection), LLM07:2025
+  (System Prompt Leakage); MAESTRO L5 (Evaluation and Observability).
 check: "Does a versioned canary prompt suite run against the production endpoint on a recurring schedule, independent of real traffic, with alerting on deviation?"
 detection_logic: >
   Confirm a canary suite execution schedule exists and review its recent run history for
