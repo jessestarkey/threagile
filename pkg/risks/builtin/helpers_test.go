@@ -545,17 +545,14 @@ func Test_computeImpact(t *testing.T) {
 		confidential types.Confidentiality
 		integrity    types.Criticality
 		availability types.Criticality
-		criticality  types.Criticality
 		expected     types.RiskExploitationImpact
 	}{
-		{"mid rank, no change", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.Important, types.Archive, types.MediumImpact},
-		{"low availability rank pulls DoS down despite high confidentiality", types.MediumImpact, types.DenialOfService, types.StrictlyConfidential, types.MissionCritical, types.Archive, types.Archive, types.LowImpact},
-		{"high confidentiality rank pushes information-disclosure up", types.MediumImpact, types.InformationDisclosure, types.Confidential, types.Archive, types.Archive, types.Archive, types.HighImpact},
-		{"elevation-of-privilege falls back to max(C,I,A)", types.MediumImpact, types.ElevationOfPrivilege, types.Public, types.MissionCritical, types.Archive, types.Archive, types.HighImpact},
-		{"gated criticality bump fills the gap when CIA delta didn't earn it", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.Important, types.MissionCritical, types.HighImpact},
-		{"gated criticality bump withheld when CIA delta already earned it", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.MissionCritical, types.MissionCritical, types.HighImpact},
-		{"clamps at LowImpact floor", types.LowImpact, types.DenialOfService, types.Public, types.Archive, types.Archive, types.Archive, types.LowImpact},
-		{"clamps at VeryHighImpact ceiling", types.VeryHighImpact, types.InformationDisclosure, types.StrictlyConfidential, types.Archive, types.Archive, types.MissionCritical, types.VeryHighImpact},
+		{"mid rank, no change", types.MediumImpact, types.DenialOfService, types.Restricted, types.Important, types.Important, types.MediumImpact},
+		{"low availability rank pulls DoS down despite high confidentiality", types.MediumImpact, types.DenialOfService, types.StrictlyConfidential, types.MissionCritical, types.Archive, types.LowImpact},
+		{"high confidentiality rank pushes information-disclosure up", types.MediumImpact, types.InformationDisclosure, types.Confidential, types.Archive, types.Archive, types.HighImpact},
+		{"elevation-of-privilege falls back to max(C,I,A)", types.MediumImpact, types.ElevationOfPrivilege, types.Public, types.MissionCritical, types.Archive, types.HighImpact},
+		{"clamps at LowImpact floor", types.LowImpact, types.DenialOfService, types.Public, types.Archive, types.Archive, types.LowImpact},
+		{"clamps at VeryHighImpact ceiling", types.VeryHighImpact, types.InformationDisclosure, types.StrictlyConfidential, types.Archive, types.Archive, types.VeryHighImpact},
 	}
 
 	for _, test := range tests {
@@ -565,8 +562,7 @@ func Test_computeImpact(t *testing.T) {
 				Integrity:       test.integrity,
 				Availability:    test.availability,
 			}
-			model := &types.Model{BusinessCriticality: test.criticality}
-			result := computeImpact(test.baseline, test.stride, ta, model)
+			result := computeImpact(test.baseline, test.stride, ta)
 			assert.Equal(t, test.expected, result)
 		})
 	}

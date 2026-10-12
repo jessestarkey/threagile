@@ -189,11 +189,16 @@ func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset
 
 // computeImpact nudges a rule's own baseline Impact by this specific asset's context: a -1/0/+1
 // delta from the asset's own rank on whichever single CIA dimension the finding's STRIDE category
-// actually threatens (see strideToCIADimension), plus a gated +1 if the model's overall Business
-// Criticality is Critical or Mission-Critical -- but only when this asset's own CIA-driven delta
-// hasn't already earned that +1, to avoid double-counting the same underlying fact (a Critical/
-// Mission-Critical system is almost by definition built from high-CIA components).
-func computeImpact(baseline types.RiskExploitationImpact, stride types.STRIDE, technicalAsset *types.TechnicalAsset, model *types.Model) types.RiskExploitationImpact {
+// actually threatens (see strideToCIADimension). This used to also apply a gated +1 if the
+// model's overall Business Criticality was Critical/Mission-Critical, mirroring
+// inject_risks.py's compute_impact() -- removed from here for the same reason it was removed
+// from the Python engine and every native script rule: it mostly inflated assets whose own CIA
+// rating was genuinely lower than the system around them, not the under-rated components it was
+// meant to protect, since every asset already carries an individually-justified CIA rating.
+// Dead code as of this writing -- no built-in rule currently calls this helper (each computes
+// Impact its own way; see the callers' own comments) -- but kept consistent with the other two
+// layers regardless, so it's not a landmine if a future rule is ever wired into it.
+func computeImpact(baseline types.RiskExploitationImpact, stride types.STRIDE, technicalAsset *types.TechnicalAsset) types.RiskExploitationImpact {
 	rank := int(technicalAsset.Confidentiality)
 	if int(technicalAsset.Integrity) > rank {
 		rank = int(technicalAsset.Integrity)
@@ -212,10 +217,5 @@ func computeImpact(baseline types.RiskExploitationImpact, stride types.STRIDE, t
 		}
 	}
 	ciaDelta := ciaRankToDelta[rank]
-	criticalityDelta := 0
-	missionCriticalSystem := model.BusinessCriticality == types.Critical || model.BusinessCriticality == types.MissionCritical
-	if missionCriticalSystem && ciaDelta < 1 {
-		criticalityDelta = 1
-	}
-	return clampImpact(int(baseline) + ciaDelta + criticalityDelta)
+	return clampImpact(int(baseline) + ciaDelta)
 }
