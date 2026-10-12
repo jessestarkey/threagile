@@ -1,5 +1,5 @@
 id: space-ground-station-rogue-uplink
-title: "Space Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation"
+title: "Rogue Ground Station Impersonation"
 function: operations
 stride: spoofing
 cwe: 306
@@ -60,7 +60,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>Space Ground Station Unauthorized Uplink and Rogue Ground Station Impersonation</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Rogue Ground Station Impersonation</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"

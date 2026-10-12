@@ -1,5 +1,5 @@
 id: network-encryptor-common-mode-failure
-title: "CSfC Network Encryptor Common-Mode Failure and Red/Black Boundary Collapse"
+title: "CSfC Network Encryptor Common-Mode Failure"
 function: architecture
 stride: information-disclosure
 cwe: 653
@@ -61,7 +61,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>CSfC Network Encryptor Common-Mode Failure and Red/Black Boundary Collapse</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>CSfC Network Encryptor Common-Mode Failure</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"

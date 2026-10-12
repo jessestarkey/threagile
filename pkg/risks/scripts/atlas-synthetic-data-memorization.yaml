@@ -1,5 +1,5 @@
 id: atlas-synthetic-data-memorization
-title: "ATLAS: Synthetic Data Generator Memorization and Residual Source-Data Leakage"
+title: "ATLAS: Synthetic Data Generator Memorization Leakage"
 function: architecture
 stride: information-disclosure
 cwe: 200
@@ -57,7 +57,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>ATLAS: Synthetic Data Generator Memorization and Residual Source-Data Leakage</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>ATLAS: Synthetic Data Generator Memorization Leakage</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"
