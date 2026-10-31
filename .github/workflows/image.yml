@@ -40,7 +40,7 @@ jobs:
           load: true
 
       - name: Scan image
-        uses: anchore/scan-action@v5
+        uses: anchore/scan-action@v7
         with:
           image: ${{ env.IMAGE }}:${{ github.sha }}
           fail-build: true
