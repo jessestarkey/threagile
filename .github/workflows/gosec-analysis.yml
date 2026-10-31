@@ -18,6 +18,6 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
       - name: Run Gosec
-        uses: securego/gosec@master
+        uses: securego/gosec@v2.30.0
         with:
           args: ./...

@@ -39,12 +39,11 @@ jobs:
           push: false
           load: true
 
-      # fail-build stays false until the high and critical findings in the Go dependencies are fixed
       - name: Scan image
         uses: anchore/scan-action@v5
         with:
           image: ${{ env.IMAGE }}:${{ github.sha }}
-          fail-build: false
+          fail-build: true
           severity-cutoff: high
           only-fixed: true
 

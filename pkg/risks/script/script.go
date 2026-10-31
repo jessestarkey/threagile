@@ -484,7 +484,7 @@ func (what *Script) getItem(value any, path ...string) (any, bool) {
 		return nil, false
 	}
 
-	head, rest := path[0], path[1:]
+	head, rest := path[0], path[1:] // #nosec G602 -- path is checked to be non-empty above
 
 	for name, item := range object {
 		if strings.EqualFold(head, name) {

@@ -43,9 +43,6 @@ LABEL type="threagile"
 RUN apk add --update --no-cache ca-certificates
 RUN apk add --update --no-cache graphviz ttf-freefont
 
-# add go-task for easier usage of task files
-RUN apk add --update --no-cache go-task
-
 # https://stackoverflow.com/questions/66963068/docker-alpine-executable-binary-not-found-even-if-in-path
 RUN apk add libc6-compat
 
@@ -68,7 +65,7 @@ COPY --from=build --chown=threagile:threagile /app/threagile /app/
 COPY --from=build --chown=threagile:threagile /app/risk_demo_rule /app/
 COPY --from=build --chown=threagile:threagile /app/LICENSE.txt /app/
 COPY --from=build --chown=threagile:threagile /app/report/template/background.pdf /app/
-COPY --from=build --chown=threagile:threagile /app/report/threagile-logo.png /app/
+COPY --from=build --chown=threagile:threagile /app/report/threagile-logo.png /app/report/
 COPY --from=build --chown=threagile:threagile /app/support/openapi.yaml /app/
 COPY --from=build --chown=threagile:threagile /app/support/schema.json /app/
 COPY --from=build --chown=threagile:threagile /app/support/live-templates.txt /app/
