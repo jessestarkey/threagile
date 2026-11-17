@@ -3,7 +3,7 @@ package script
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/threagile/threagile/pkg/input"
@@ -102,7 +102,10 @@ func (what *RiskRule) Load(fileSystem fs.FS, path string, entry fs.DirEntry) err
 }
 
 func (what *RiskRule) loadRiskRule(fileSystem fs.FS, filename string) error {
-	scriptFilename := filepath.Clean(filename)
+	// fs.FS paths are always slash-separated (io/fs.ValidPath), so use path, not
+	// path/filepath: filepath.Clean rewrites "/" to "\\" on Windows and every
+	// embedded script rule then fails to load with "file does not exist".
+	scriptFilename := path.Clean(filename)
 
 	ruleData, ruleReadError := fs.ReadFile(fileSystem, scriptFilename)
 	if ruleReadError != nil {
