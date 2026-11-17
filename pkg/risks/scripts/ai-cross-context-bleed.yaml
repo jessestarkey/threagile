@@ -38,10 +38,13 @@ risk_assessment: >
   without per-tenant, per-level isolation. Medium otherwise.
 false_positives: >
   Fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that is
-  multi_tenant, or that processes data assets at more than one confidentiality level. A
-  single-tenant asset handling one sensitivity level does not fire. Dispose of a
-  confirmed-compliant asset through risk_tracking: log it as mitigated once per-tenant,
-  per-sensitivity-level isolation of sessions, caches, memory, and retrieval is confirmed.
+  multi_tenant, or whose context mixes sensitivity levels: among the data it stores, the data
+  callers send into it, and the data it retrieves through outgoing links, at least one data asset
+  is rated restricted or higher and another is rated lower. Data the asset only sends out (for
+  example telemetry) does not count -- Threagile adds every sent data asset to the sender's
+  processed list, so data_assets_processed is not used. Dispose of a confirmed-compliant asset
+  through risk_tracking: log it as mitigated once per-tenant, per-sensitivity-level isolation of
+  sessions, caches, memory, and retrieval is confirmed.
 
 risk:
   id:
@@ -52,7 +55,7 @@ risk:
     parameter: tech_asset
     do:
       - assign:
-          - mixed_levels: "processes_mixed_levels({tech_asset})"
+          - mixed_levels: "context_mixes_levels({tech_asset})"
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
@@ -80,60 +83,170 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # True when the processed data assets do not all share one confidentiality value. A dropped
-    # value (public, the zero value) compares as empty, so public vs. internal still counts as
-    # two levels.
-    processes_mixed_levels:
-      parameters:
-        - tech_asset
-      do:
-        - assign:
-            - seen_one: false
-            - first_level: ""
-        - loop:
-            in: "{tech_asset.data_assets_processed}"
-            item: data_id
-            do:
-              - assign:
-                  - level: "{$model.data_assets.{data_id}.confidentiality}"
-              - if:
-                  false: "{seen_one}"
-                  then:
-                    - assign:
-                        - seen_one: true
-                        - first_level: "{level}"
-                  else:
-                    - if:
-                        not-equal:
-                          first: "{level}"
-                          second: "{first_level}"
-                        then:
-                          - return: true
-        - return: false
-
-    # Confidentiality band: high for confidential / strictly-confidential, mid for restricted,
-    # low otherwise.
-    confidentiality_band:
+    # Confidentiality rank: public 0, internal 1, restricted 2, confidential 3,
+    # strictly-confidential 4 (public is the zero value and is dropped, so it falls through).
+    confidentiality_rank:
       parameters:
         - confidentiality
       do:
         - if:
-            or:
-              - equal:
-                  first: "{confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{confidentiality}"
-                  second: strictly-confidential
+            equal:
+              first: "{confidentiality}"
+              second: strictly-confidential
             then:
-              - return: high
+              - return: 4
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: confidential
+            then:
+              - return: 3
         - if:
             equal:
               first: "{confidentiality}"
               second: restricted
             then:
-              - return: mid
-        - return: low
+              - return: 2
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: internal
+            then:
+              - return: 1
+        - return: 0
+
+    # Highest and lowest confidentiality rank among data that enters the context: data stored,
+    # data callers send in (incoming links' data_assets_sent), and data retrieved through
+    # outgoing links (data_assets_received). Returns "highest/lowest" ranks via two methods.
+    context_highest:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - highest: -1
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+              - if:
+                  greater:
+                    first: "{rank}"
+                    second: "{highest}"
+                  then:
+                    - assign:
+                        highest: "{rank}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_sent}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        greater:
+                          first: "{rank}"
+                          second: "{highest}"
+                        then:
+                          - assign:
+                              highest: "{rank}"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_received}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        greater:
+                          first: "{rank}"
+                          second: "{highest}"
+                        then:
+                          - assign:
+                              highest: "{rank}"
+        - return: "{highest}"
+
+    context_lowest:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - lowest: 5
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+              - if:
+                  less:
+                    first: "{rank}"
+                    second: "{lowest}"
+                  then:
+                    - assign:
+                        lowest: "{rank}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_sent}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        less:
+                          first: "{rank}"
+                          second: "{lowest}"
+                        then:
+                          - assign:
+                              lowest: "{rank}"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_received}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        less:
+                          first: "{rank}"
+                          second: "{lowest}"
+                        then:
+                          - assign:
+                              lowest: "{rank}"
+        - return: "{lowest}"
+
+    # True when the context holds restricted-or-higher data together with something lower.
+    context_mixes_levels:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - highest: "context_highest({tech_asset})"
+            - lowest: "context_lowest({tech_asset})"
+        - if:
+            and:
+              - equal-or-greater:
+                  first: "{highest}"
+                  second: 2
+              - less:
+                  first: "{lowest}"
+                  second: "{highest}"
+            then:
+              - return: true
+        - return: false
 
     # New category (no replaced rule). Baseline is "possible": bleed needs an isolation defect
     # (a session, cache, or memory keying bug, or an over-broad retrieval) to coincide with
@@ -160,51 +273,34 @@ risk:
                     - return: possible
 
     # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium". What can bleed
-    # is the most sensitive thing in the context, so the band is the max over this asset's own
-    # Confidentiality and every data asset it processes: "high" for a high band, "medium" for
-    # mid, otherwise "low".
+    # is the most sensitive thing in the context, so the rank is the max over this asset's own
+    # Confidentiality and the data entering its context: "high" for confidential or higher,
+    # "medium" for restricted, otherwise "low".
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - best: "confidentiality_band({tech_asset.confidentiality})"
-        - loop:
-            in: "{tech_asset.data_assets_processed}"
-            item: data_id
-            do:
-              - assign:
-                  - data_level: "{$model.data_assets.{data_id}.confidentiality}"
-              - assign:
-                  - band: "confidentiality_band({data_level})"
-              - if:
-                  equal:
-                    first: "{band}"
-                    second: high
-                  then:
-                    - assign:
-                        best: high
-              - if:
-                  and:
-                    - equal:
-                        first: "{band}"
-                        second: mid
-                    - equal:
-                        first: "{best}"
-                        second: low
-                  then:
-                    - assign:
-                        best: mid
+            - own: "confidentiality_rank({tech_asset.confidentiality})"
+            - context: "context_highest({tech_asset})"
         - if:
-            equal:
-              first: "{best}"
-              second: high
+            or:
+              - equal-or-greater:
+                  first: "{own}"
+                  second: 3
+              - equal-or-greater:
+                  first: "{context}"
+                  second: 3
             then:
               - return: high
         - if:
-            equal:
-              first: "{best}"
-              second: mid
+            or:
+              - equal:
+                  first: "{own}"
+                  second: 2
+              - equal:
+                  first: "{context}"
+                  second: 2
             then:
               - return: medium
         - return: low

@@ -41,13 +41,15 @@ risk_assessment: >
   important-or-higher integrity/availability with no human confirmation gate. High when every
   reachable asset is low-value.
 false_positives: >
-  Fires on any in-scope asset with the ai-agent-orchestrator or ai-tool-server technology that
-  has at least one outgoing communication link not marked readonly. Model each tool an agent
-  calls as a link from the agent (or from the ai-tool-server hosting it) to the asset the tool
-  acts on, and mark a link readonly: true when the tool can only read; an agent whose tools are
-  all read-only does not fire. Dispose of a confirmed-compliant asset through risk_tracking: log
-  it as mitigated once every write-capable tool is confirmed necessary, minimally scoped, and
-  gated by human confirmation for consequential actions.
+  Fires on any in-scope asset with the ai-agent-orchestrator or ai-tool-server technology that has
+  at least one outgoing communication link that is not readonly and does not go to model or
+  operational infrastructure (an LLM endpoint, model serving, AI gateway, guardrail, AI
+  observability stack, or monitoring -- calls to the model or telemetry are not tool actions).
+  Model each tool an agent calls as a link from the agent (or from the ai-tool-server hosting it)
+  to the asset the tool acts on, and mark a link readonly: true when the tool can only read; an
+  agent whose tools are all read-only does not fire. Dispose of a confirmed-compliant asset
+  through risk_tracking: log it as mitigated once every write-capable tool is confirmed necessary,
+  minimally scoped, and gated by human confirmation for consequential actions.
 
 risk:
   id:
@@ -89,6 +91,27 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True for a target that is model or operational infrastructure rather than a tool or data
+    # asset: an LLM endpoint, model serving, AI gateway, guardrail, AI observability stack, or
+    # monitoring. Calls to these are not tool actions and are ignored.
+    is_infra_target:
+      parameters:
+        - target_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-llm-endpoint}"
+                - true: "{.attributes.ai-model-serving}"
+                - true: "{.attributes.ai-gateway}"
+                - true: "{.attributes.ai-guardrails}"
+                - true: "{.attributes.ai-observability-stack}"
+                - true: "{.attributes.monitoring}"
+            then:
+              - return: true
+        - return: false
+
     # True when any outgoing link is not marked readonly. readonly: false is the zero value and
     # is dropped on re-serialization, so a missing readonly evaluates false here -- the same
     # behaviour every rule's out_of_scope check already relies on.
@@ -100,8 +123,12 @@ risk:
             in: "{tech_asset.communication_links}"
             item: link
             do:
+              - assign:
+                  - infra: "is_infra_target({link.target_id})"
               - if:
-                  false: "{link.readonly}"
+                  and:
+                    - false: "{link.readonly}"
+                    - false: "{infra}"
                   then:
                     - return: true
         - return: false
@@ -188,8 +215,12 @@ risk:
             in: "{tech_asset.communication_links}"
             item: link
             do:
+              - assign:
+                  - infra: "is_infra_target({link.target_id})"
               - if:
-                  false: "{link.readonly}"
+                  and:
+                    - false: "{link.readonly}"
+                    - false: "{infra}"
                   then:
                     - assign:
                         - target_confidentiality: "{$model.technical_assets.{link.target_id}.confidentiality}"

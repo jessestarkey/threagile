@@ -22,8 +22,9 @@ func generateExcessiveAgencyRisks(t *testing.T, model *types.Model) []*types.Ris
 	return risks
 }
 
-// agencyAsset builds an asset of the given technology, rated low on every CIA dimension unless
-// overridden, with RAA 30 (mid band: baseline likelihood).
+// agencyAsset builds an in-house process asset of the given technology, rated low on every CIA
+// dimension unless overridden, with RAA 30 (mid band: baseline likelihood). Type is set explicitly:
+// the zero value is external-entity, which exposure-reading rules treat as an outside caller.
 func agencyAsset(id, technology string, links ...*types.CommunicationLink) *types.TechnicalAsset {
 	for _, link := range links {
 		link.SourceId = id
@@ -31,6 +32,7 @@ func agencyAsset(id, technology string, links ...*types.CommunicationLink) *type
 	return &types.TechnicalAsset{
 		Id:                 id,
 		Title:              id,
+		Type:               types.Process,
 		Technologies:       types.TechnologyList{{Name: technology, Attributes: map[string]bool{technology: true}}},
 		Confidentiality:    types.Internal,
 		Integrity:          types.Operational,

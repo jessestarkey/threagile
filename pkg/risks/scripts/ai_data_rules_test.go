@@ -39,23 +39,40 @@ func firedOn(risks []*types.Risk) map[string]*types.Risk {
 //go:embed ai-cross-context-bleed.yaml
 var aiCrossContextBleed string
 
-func TestCrossContextBleedFiresOnMultiTenantOrMixedLevels(t *testing.T) {
+func TestCrossContextBleedNeedsARealSensitivityMixInTheContext(t *testing.T) {
+	sending := func(id, target string, data ...string) *types.CommunicationLink {
+		return &types.CommunicationLink{Id: id, TargetId: target, DataAssetsSent: data}
+	}
+	retrieving := func(id, target string, data ...string) *types.CommunicationLink {
+		return &types.CommunicationLink{Id: id, TargetId: target, DataAssetsReceived: data, Readonly: true}
+	}
+	stores := func(asset *types.TechnicalAsset, data ...string) *types.TechnicalAsset {
+		asset.DataAssetsStored = data
+		return asset
+	}
 	multiTenant := agencyAsset("tenants", "ai-llm-endpoint")
 	multiTenant.MultiTenant = true
-	model := withData(secretsSprawlModel(
+	model := withData(boundaryModel(map[string]string{},
 		multiTenant,
-		processing(agencyAsset("mixed", "ai-rag-pipeline"), "public", "secret"),
-		processing(agencyAsset("single", "ai-agent-orchestrator"), "secret", "secret2"),
+		stores(agencyAsset("stored-mix", "ai-rag-pipeline"), "public", "secret"),
+		stores(agencyAsset("harmless-mix", "ai-rag-pipeline"), "public", "internal"),
+		// Processes confidential prompts but only *sends* public metrics out: no mix in its context.
+		processing(agencyAsset("telemetry", "ai-llm-endpoint", sending("telemetry>metrics", "metrics", "public")), "secret"),
+		agencyAsset("metrics", "monitoring"),
+		// Callers send confidential data in; it retrieves internal data through a tool.
+		agencyAsset("flow-mix", "ai-agent-orchestrator", retrieving("flow-mix>kb", "kb", "internal")),
+		agencyAsset("ui", "web-application", sending("ui>flow-mix", "flow-mix", "secret")),
+		agencyAsset("kb", "database"),
 		processing(agencyAsset("app", "web-application"), "public", "secret"),
-	), map[string]types.Confidentiality{"public": types.Public, "secret": types.Confidential, "secret2": types.Confidential})
+	), map[string]types.Confidentiality{"public": types.Public, "internal": types.Internal, "secret": types.Confidential})
 
 	fired := firedOn(generateScriptRisks(t, aiCrossContextBleed, model))
 
-	assert.Len(t, fired, 2)
-	require.Contains(t, fired, "tenants")
-	require.Contains(t, fired, "mixed")
-	assert.Equal(t, types.PossibleLikelihood, fired["mixed"].ExploitationLikelihood)
-	assert.Equal(t, types.HighImpact, fired["mixed"].ExploitationImpact, "confidential data in the context")
+	assert.ElementsMatch(t, []string{"tenants", "stored-mix", "flow-mix"}, keys(fired),
+		"harmless-mix is public plus internal; telemetry only sends data out; app is not AI")
+	assert.Equal(t, types.PossibleLikelihood, fired["stored-mix"].ExploitationLikelihood)
+	assert.Equal(t, types.HighImpact, fired["stored-mix"].ExploitationImpact, "confidential data in the context")
+	assert.Equal(t, types.HighImpact, fired["flow-mix"].ExploitationImpact)
 	assert.Equal(t, types.LowImpact, fired["tenants"].ExploitationImpact, "internal asset, no data")
 }
 
@@ -64,6 +81,7 @@ func TestCrossContextBleedFiresOnMultiTenantOrMixedLevels(t *testing.T) {
 func exposureModel(technology string, clientBoundary, llmBoundary string, data ...string) *types.Model {
 	llm := processing(agencyAsset("llm", technology), data...)
 	client := agencyAsset("client", "web-application", agencyLink("client>llm", "llm", false))
+	client.Technologies[0].Attributes["frontend_related"] = true
 	model := withData(secretsSprawlModel(client, llm), map[string]types.Confidentiality{
 		"internal": types.Internal, "secret": types.Confidential, "topsecret": types.StrictlyConfidential,
 	})

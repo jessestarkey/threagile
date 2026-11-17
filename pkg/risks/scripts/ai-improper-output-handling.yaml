@@ -39,12 +39,14 @@ risk_assessment: >
   Critical when output reaches an unsandboxed interpreter or a broadly privileged API. High for
   any sink without sink-specific encoding or validation.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint, ai-model-serving, ai-agent-orchestrator, or
-  ai-rag-pipeline whose output reaches something downstream: it has an outgoing communication
-  link, or an incoming link from a frontend-related asset (a browser or UI that renders the
-  response). An asset whose only consumers are other non-rendering callers does not fire.
-  Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once every
-  consumer is confirmed to encode, validate, or sandbox the output.
+  Fires on an in-scope ai-llm-endpoint, ai-model-serving, ai-agent-orchestrator, or ai-rag-
+  pipeline whose output is consumed by something: any asset that calls it (the caller receives the
+  response -- for a model this is where the output goes), except monitoring and AI observability
+  assets, or any outgoing link to an asset that is not model or operational infrastructure (LLM
+  endpoint, model serving, AI gateway, guardrail, observability, monitoring). An agent calling its
+  own model is the model's consumer, not a sink of the agent's output. Impact comes from the
+  integrity of those consumers. Dispose of a confirmed-compliant asset through risk_tracking: log
+  it as mitigated once every consumer is confirmed to encode, validate, or sandbox the output.
 
 risk:
   id:
@@ -82,37 +84,66 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    is_frontend:
+    # True for model or operational infrastructure: an LLM endpoint, model serving, AI gateway,
+    # guardrail, AI observability stack, or monitoring.
+    is_infra_target:
+      parameters:
+        - target_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-llm-endpoint}"
+                - true: "{.attributes.ai-model-serving}"
+                - true: "{.attributes.ai-gateway}"
+                - true: "{.attributes.ai-guardrails}"
+                - true: "{.attributes.ai-observability-stack}"
+                - true: "{.attributes.monitoring}"
+            then:
+              - return: true
+        - return: false
+
+    # True for a monitoring or AI observability caller, which reads metrics rather than
+    # consuming the output.
+    is_monitoring:
       parameters:
         - asset_id
       do:
         - if:
             any:
               in: "{$model.technical_assets.{asset_id}.technologies}"
-              true: "{.attributes.frontend_related}"
+              or:
+                - true: "{.attributes.monitoring}"
+                - true: "{.attributes.ai-observability-stack}"
             then:
               - return: true
         - return: false
 
-    # True when the output goes anywhere downstream: any outgoing link, or an incoming link from
-    # a frontend-related asset that renders the response.
+    # True when the output is consumed: a non-monitoring caller (it receives the response), or an
+    # outgoing link to an asset that is not model or operational infrastructure.
     output_reaches_sink:
       parameters:
         - tech_asset
       do:
         - loop:
-            in: "{tech_asset.communication_links}"
-            item: link
-            do:
-              - return: true
-        - loop:
             in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
             item: link
             do:
               - assign:
-                  - renders: "is_frontend({link.source_id})"
+                  - monitoring: "is_monitoring({link.source_id})"
               - if:
-                  true: "{renders}"
+                  false: "{monitoring}"
+                  then:
+                    - return: true
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - infra: "is_infra_target({link.target_id})"
+              - if:
+                  false: "{infra}"
                   then:
                     - return: true
         - return: false
@@ -160,8 +191,8 @@ risk:
 
     # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling, as in the replaced
     # rule), so only the downward step is reachable. What improper output damages is whatever
-    # consumes it, so the rank is the max Integrity over this asset, every outgoing link target,
-    # and every frontend caller: "very-high" if any is important or higher, otherwise "high".
+    # consumes it, so the rank is the max Integrity over this asset and every consumer (as in
+    # output_reaches_sink): "very-high" if any is important or higher, otherwise "high".
     get_impact:
       parameters:
         - tech_asset
@@ -173,32 +204,33 @@ risk:
             then:
               - return: very-high
         - loop:
-            in: "{tech_asset.communication_links}"
-            item: link
-            do:
-              - assign:
-                  - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
-              - assign:
-                  - target_mid: "is_integrity_at_least_mid({target_integrity})"
-              - if:
-                  true: "{target_mid}"
-                  then:
-                    - return: very-high
-        - loop:
             in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
             item: link
             do:
               - assign:
-                  - renders: "is_frontend({link.source_id})"
+                  - monitoring: "is_monitoring({link.source_id})"
+                  - caller_integrity: "{$model.technical_assets.{link.source_id}.integrity}"
+              - assign:
+                  - caller_mid: "is_integrity_at_least_mid({caller_integrity})"
               - if:
-                  true: "{renders}"
+                  and:
+                    - false: "{monitoring}"
+                    - true: "{caller_mid}"
                   then:
-                    - assign:
-                        - caller_integrity: "{$model.technical_assets.{link.source_id}.integrity}"
-                    - assign:
-                        - caller_mid: "is_integrity_at_least_mid({caller_integrity})"
-                    - if:
-                        true: "{caller_mid}"
-                        then:
-                          - return: very-high
+                    - return: very-high
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - infra: "is_infra_target({link.target_id})"
+                  - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
+              - assign:
+                  - target_mid: "is_integrity_at_least_mid({target_integrity})"
+              - if:
+                  and:
+                    - false: "{infra}"
+                    - true: "{target_mid}"
+                  then:
+                    - return: very-high
         - return: high

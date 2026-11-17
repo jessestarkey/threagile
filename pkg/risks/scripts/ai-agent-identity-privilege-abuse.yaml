@@ -41,14 +41,20 @@ risk_assessment: >
   or important-or-higher integrity/availability, especially across users or tenants. High when
   every reachable asset is low-value.
 false_positives: >
-  Fires on any in-scope asset with the ai-agent-orchestrator, ai-tool-server, ai-gateway, or
-  ai-multi-agent-gateway technology that has an authenticated outgoing link whose authorization
-  is not end-user-identity-propagation (technical-user, or none). Model a link that passes the
-  user's identity through as authorization: end-user-identity-propagation; such links do not
-  fire. A link with authentication: none is a missing-authentication problem, not this one, and
-  is ignored here. Dispose of a confirmed-compliant asset through risk_tracking: log it as
-  mitigated once every remaining service identity is confirmed agent-specific, minimally scoped,
-  vaulted, and preceded by per-user authorization.
+  Fires on any in-scope asset with the ai-agent-orchestrator, ai-tool-server, ai-gateway, or ai-
+  multi-agent-gateway technology that has an authenticated outgoing link whose authorization is
+  not end-user-identity-propagation (technical-user, or none). Links from agents and tool servers
+  to model or operational infrastructure (LLM endpoint, model serving, AI gateway, guardrail,
+  observability, monitoring) are ignored, since reaching the model as itself grants nothing; an
+  ai-gateway's links to its model backends do count, because holding those credentials is the
+  gateway's concentration risk. Model a link that passes the user's identity through as
+  authorization: end-user-identity-propagation; such links do not fire. A link with
+  authentication: none is a missing-authentication problem and is ignored here. A credentials or
+  client-certificate link also fires hardcoded-credentials-secrets-sprawl: that rule is about
+  where the secret is stored, this one about the privilege the agent acts with. Dispose of a
+  confirmed-compliant asset through risk_tracking: log it as mitigated once every remaining
+  service identity is confirmed agent-specific, minimally scoped, vaulted, and preceded by per-
+  user authorization.
 
 risk:
   id:
@@ -92,6 +98,27 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True for a target that is model or operational infrastructure rather than a tool or data
+    # asset: an LLM endpoint, model serving, AI gateway, guardrail, AI observability stack, or
+    # monitoring. Calls to these are not tool actions and are ignored.
+    is_infra_target:
+      parameters:
+        - target_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-llm-endpoint}"
+                - true: "{.attributes.ai-model-serving}"
+                - true: "{.attributes.ai-gateway}"
+                - true: "{.attributes.ai-guardrails}"
+                - true: "{.attributes.ai-observability-stack}"
+                - true: "{.attributes.monitoring}"
+            then:
+              - return: true
+        - return: false
+
     # True when the link is authenticated (any non-zero authentication value; none is dropped on
     # re-serialization and never matches) and does not propagate the end user's identity.
     is_service_identity_link:
@@ -130,14 +157,28 @@ risk:
       parameters:
         - tech_asset
       do:
+        - assign:
+            - is_gateway: false
+        - if:
+            any:
+              in: "{tech_asset.technologies}"
+              true: "{.attributes.ai-gateway}"
+            then:
+              - assign:
+                  is_gateway: true
         - loop:
             in: "{tech_asset.communication_links}"
             item: link
             do:
               - assign:
                   - service_identity: "is_service_identity_link({link})"
+                  - infra: "is_infra_target({link.target_id})"
               - if:
-                  true: "{service_identity}"
+                  and:
+                    - true: "{service_identity}"
+                    - or:
+                        - false: "{infra}"
+                        - true: "{is_gateway}"
                   then:
                     - return: true
         - return: false
@@ -213,6 +254,15 @@ risk:
         - tech_asset
       do:
         - assign:
+            - is_gateway: false
+        - if:
+            any:
+              in: "{tech_asset.technologies}"
+              true: "{.attributes.ai-gateway}"
+            then:
+              - assign:
+                  is_gateway: true
+        - assign:
             - reaches_mid: "at_least_mid({tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"
         - if:
             true: "{reaches_mid}"
@@ -224,8 +274,13 @@ risk:
             do:
               - assign:
                   - service_identity: "is_service_identity_link({link})"
+                  - infra: "is_infra_target({link.target_id})"
               - if:
-                  true: "{service_identity}"
+                  and:
+                    - true: "{service_identity}"
+                    - or:
+                        - false: "{infra}"
+                        - true: "{is_gateway}"
                   then:
                     - assign:
                         - target_confidentiality: "{$model.technical_assets.{link.target_id}.confidentiality}"

@@ -318,3 +318,27 @@ func TestChangeControlGapFiresOnPromptAndModelBearingAssets(t *testing.T) {
 		"agent":   types.LowImpact,
 	}, impact)
 }
+
+// Review finding 1: an agent calling its own model (or monitoring) is not a tool action and does
+// not act "as itself" against anything; an AI gateway holding its backends' credentials still does.
+func TestAgentLinksToModelInfrastructureAreIgnored(t *testing.T) {
+	model := secretsSprawlModel(
+		agencyAsset("agent", "ai-agent-orchestrator",
+			identityLink("agent>llm", "llm", types.Token, types.TechnicalUser),
+			identityLink("agent>metrics", "metrics", types.Token, types.TechnicalUser),
+			agencyLink("agent>kb", "kb", true)),
+		agencyAsset("gateway", "ai-gateway", identityLink("gateway>llm", "llm", types.Token, types.TechnicalUser)),
+		agencyAsset("llm", "ai-llm-endpoint"),
+		withMonitoring(agencyAsset("metrics", "monitoring")),
+		agencyAsset("kb", "database"),
+	)
+
+	assert.Empty(t, generateScriptRisks(t, aiExcessiveAgencyToolMisuse, model), "only the model, telemetry and a read-only tool")
+	identity := firedOn(generateScriptRisks(t, aiAgentIdentityPrivilegeAbuse, model))
+	assert.ElementsMatch(t, []string{"gateway"}, keys(identity), "the gateway's backend credentials still count")
+}
+
+func withMonitoring(asset *types.TechnicalAsset) *types.TechnicalAsset {
+	asset.Technologies[0].Attributes["monitoring"] = true
+	return asset
+}

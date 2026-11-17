@@ -37,11 +37,14 @@ risk_assessment: >
   High when the model was trained or fine-tuned on confidential data and its API is reachable
   from outside the boundary without per-identity budgets. Medium otherwise.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint or ai-model-serving asset that receives requests from
-  outside its trust boundary -- internet: true, or an incoming link from an asset in a different
-  directly containing trust boundary (or none). Dispose of a confirmed-compliant asset through
-  risk_tracking: log it as mitigated once authenticated, budgeted access, minimal outputs, and
-  privacy-preserving training are confirmed.
+  Fires on an in-scope ai-llm-endpoint or ai-model-serving asset that is internet-facing or has an
+  incoming link from an outside caller (an outside caller is an external entity, an internet-
+  facing or out-of-scope asset, or a frontend (web application, reverse proxy, WAF, load balancer,
+  client) in a different network boundary; execution-environment boundaries are looked through to
+  the enclosing network boundary, as in Threagile's own rules). A model reached only through
+  internal services (for example an agent orchestrator) does not fire. Dispose of a confirmed-
+  compliant asset through risk_tracking: log it as mitigated once authenticated, budgeted access,
+  minimal outputs, and privacy-preserving training are confirmed.
 
 risk:
   id:
@@ -77,9 +80,8 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # True when the asset is internet-facing, or any incoming link comes from an asset whose
-    # directly containing trust boundary differs from this asset's (a missing boundary counts as
-    # different from a present one).
+    # True when the asset is internet-facing, or an incoming link comes from an outside caller
+    # (see is_outside_caller).
     receives_from_outside:
       parameters:
         - tech_asset
@@ -89,19 +91,133 @@ risk:
             then:
               - return: true
         - assign:
-            - own_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{tech_asset.id}.id}"
+            - own_boundary: "network_boundary({tech_asset.id})"
         - loop:
             in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
             item: link
             do:
               - assign:
-                  - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.source_id}.id}"
+                  - outside: "is_outside_caller({link.source_id}, {own_boundary})"
               - if:
-                  not-equal:
-                    first: "{source_boundary}"
-                    second: "{own_boundary}"
+                  true: "{outside}"
                   then:
                     - return: true
+        - return: false
+
+    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
+    # Network boundary of an asset, following the network-only semantics of Threagile's own
+    # built-in rules: its directly containing trust boundary, or, when that is an
+    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
+    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
+    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
+    network_boundary:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - return: "{boundary}"
+
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    is_frontend_asset:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when a caller brings outside requests or content in: it is external, or it is a
+    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
+    # boundary from the given one.
+    is_outside_caller:
+      parameters:
+        - caller_id
+        - own_boundary
+      do:
+        - assign:
+            - external: "is_external({caller_id})"
+        - if:
+            true: "{external}"
+            then:
+              - return: true
+        - assign:
+            - frontend: "is_frontend_asset({caller_id})"
+            - caller_boundary: "network_boundary({caller_id})"
+        - if:
+            and:
+              - true: "{frontend}"
+              - not-equal:
+                  first: "{caller_boundary}"
+                  second: "{own_boundary}"
+            then:
+              - return: true
         - return: false
 
     # Baseline is "very-likely" (the ceiling, as in the replaced atlas-inference-api-abuse rule,

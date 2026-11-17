@@ -38,12 +38,15 @@ risk_assessment: >
   High when content from open or broadly writable sources feeds an index used for decisions or
   that retrieves sensitive data. Medium otherwise.
 false_positives: >
-  Fires on an in-scope ai-rag-ingest-pipeline or ai-rag-pipeline that brings in content from
-  outside its trust boundary: internet: true, an incoming link from an asset in a different
-  directly containing trust boundary (or none), or an outgoing readonly link (a pull) to such an
-  asset. A pipeline that only ingests from inside its own boundary does not fire. Dispose of a
-  confirmed-compliant asset through risk_tracking: log it as mitigated once approved-source
-  ingest, per-chunk provenance, validation, and trust-level separation are confirmed.
+  Fires on an in-scope ai-rag-ingest-pipeline or ai-rag-pipeline that takes content in from
+  outside: an outside caller writes into it through an incoming link that is not readonly (an
+  outside caller is an external entity, an internet-facing or out-of-scope asset, or a frontend
+  (web application, reverse proxy, WAF, load balancer, client) in a different network boundary;
+  execution-environment boundaries are looked through to the enclosing network boundary, as in
+  Threagile's own rules), or it pulls (an outgoing readonly link) from an external asset. Read-
+  only queries from users are not corpus writes and do not count. Dispose of a confirmed-compliant
+  asset through risk_tracking: log it as mitigated once approved-source ingest, per-chunk
+  provenance, validation, and trust-level separation are confirmed.
 
 risk:
   id:
@@ -79,30 +82,25 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # True when content can come in from outside the trust boundary: the asset is
-    # internet-facing, an incoming link comes from an asset in a different directly containing
-    # trust boundary, or an outgoing readonly link (a pull) goes to one. A missing boundary
-    # counts as different from a present one.
+    # True when content comes in from outside: an outside caller (see is_outside_caller) writes
+    # into this asset (an incoming link that is not readonly), or this asset pulls (an outgoing
+    # readonly link) from an external asset. Read-only queries from users are not corpus writes.
     brings_in_from_outside:
       parameters:
         - tech_asset
       do:
-        - if:
-            true: "{tech_asset.internet}"
-            then:
-              - return: true
         - assign:
-            - own_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{tech_asset.id}.id}"
+            - own_boundary: "network_boundary({tech_asset.id})"
         - loop:
             in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
             item: link
             do:
               - assign:
-                  - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.source_id}.id}"
+                  - outside: "is_outside_caller({link.source_id}, {own_boundary})"
               - if:
-                  not-equal:
-                    first: "{source_boundary}"
-                    second: "{own_boundary}"
+                  and:
+                    - false: "{link.readonly}"
+                    - true: "{outside}"
                   then:
                     - return: true
         - loop:
@@ -110,15 +108,129 @@ risk:
             item: link
             do:
               - assign:
-                  - target_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.target_id}.id}"
+                  - external_source: "is_external({link.target_id})"
               - if:
                   and:
                     - true: "{link.readonly}"
-                    - not-equal:
-                        first: "{target_boundary}"
-                        second: "{own_boundary}"
+                    - true: "{external_source}"
                   then:
                     - return: true
+        - return: false
+
+    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
+    # Network boundary of an asset, following the network-only semantics of Threagile's own
+    # built-in rules: its directly containing trust boundary, or, when that is an
+    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
+    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
+    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
+    network_boundary:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - return: "{boundary}"
+
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    is_frontend_asset:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when a caller brings outside requests or content in: it is external, or it is a
+    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
+    # boundary from the given one.
+    is_outside_caller:
+      parameters:
+        - caller_id
+        - own_boundary
+      do:
+        - assign:
+            - external: "is_external({caller_id})"
+        - if:
+            true: "{external}"
+            then:
+              - return: true
+        - assign:
+            - frontend: "is_frontend_asset({caller_id})"
+            - caller_boundary: "network_boundary({caller_id})"
+        - if:
+            and:
+              - true: "{frontend}"
+              - not-equal:
+                  first: "{caller_boundary}"
+                  second: "{own_boundary}"
+            then:
+              - return: true
         - return: false
 
     # Baseline is "likely" (both replaced rules), so all 3 outcomes (possible/likely/

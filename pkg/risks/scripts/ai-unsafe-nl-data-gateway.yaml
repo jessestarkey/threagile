@@ -38,10 +38,16 @@ risk_assessment: >
   Critical when the model writes free-form queries over a broad service connection to a
   datastore holding confidential-or-higher data. High otherwise.
 false_positives: >
-  Fires on any in-scope AI asset (any technology with the ai attribute) that has an outgoing
-  communication link to a datastore-type asset, read-only or not. Dispose of a
-  confirmed-compliant asset through risk_tracking: log it as mitigated once a parameterized,
-  allow-listed query layer running under the requesting user's identity is confirmed.
+  Fires on an in-scope ai-agent-orchestrator, ai-tool-server, ai-llm-endpoint, or ai-rag-pipeline
+  -- the assets that turn requests into queries -- with an outgoing communication link to a
+  datastore-type asset, read-only or not. Vector stores are excluded (ai-vector-store-exposure
+  covers them), and so are training, ingest, and observability pipelines, which do not compose
+  natural-language queries. On a tool server that queries a database with SQL, Threagile's built-
+  in sql-nosql-injection rule can also fire: that rule covers injection through the tool's own
+  input handling, this one the model composing the query and bypassing per-user authorization.
+  Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once a
+  parameterized, allow-listed query layer running under the requesting user's identity is
+  confirmed.
 
 risk:
   id:
@@ -57,7 +63,11 @@ risk:
       - if:
           any:
             in: "{tech_asset.technologies}"
-            true: "{.attributes.ai}"
+            or:
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-tool-server}"
+              - true: "{.attributes.ai-llm-endpoint}"
+              - true: "{.attributes.ai-rag-pipeline}"
           then:
             - assign:
                 is_ai: true
@@ -81,6 +91,31 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True for a datastore-type target that is not a vector store (vector stores are covered by
+    # ai-vector-store-exposure).
+    is_queried_store:
+      parameters:
+        - target_id
+      do:
+        - assign:
+            - vector_store: false
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              true: "{.attributes.ai-vector-store}"
+            then:
+              - assign:
+                  vector_store: true
+        - if:
+            and:
+              - equal:
+                  first: "{$model.technical_assets.{target_id}.type}"
+                  second: datastore
+              - false: "{vector_store}"
+            then:
+              - return: true
+        - return: false
+
     links_to_datastore:
       parameters:
         - tech_asset
@@ -89,10 +124,10 @@ risk:
             in: "{tech_asset.communication_links}"
             item: link
             do:
+              - assign:
+                  - queried: "is_queried_store({link.target_id})"
               - if:
-                  equal:
-                    first: "{$model.technical_assets.{link.target_id}.type}"
-                    second: datastore
+                  true: "{queried}"
                   then:
                     - return: true
         - return: false
@@ -157,10 +192,10 @@ risk:
             in: "{tech_asset.communication_links}"
             item: link
             do:
+              - assign:
+                  - queried: "is_queried_store({link.target_id})"
               - if:
-                  equal:
-                    first: "{$model.technical_assets.{link.target_id}.type}"
-                    second: datastore
+                  true: "{queried}"
                   then:
                     - assign:
                         - store_level: "{$model.technical_assets.{link.target_id}.confidentiality}"

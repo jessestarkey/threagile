@@ -45,24 +45,30 @@ func TestHiddenContextExposureFiresOnlyWhenRequestsComeFromOutside(t *testing.T)
 //go:embed ai-improper-output-handling.yaml
 var aiImproperOutputHandling string
 
-func TestImproperOutputHandlingFiresWhenOutputReachesASink(t *testing.T) {
-	browserUI := withAttributes(agencyAsset("ui", "web-application", agencyLink("ui>rendered", "rendered", false)), "frontend_related")
-	batch := agencyAsset("batch", "batch-processing", agencyLink("batch>silent", "silent", false))
+func TestImproperOutputHandlingFiresWhenOutputIsConsumed(t *testing.T) {
+	monitoringStack := withAttributes(agencyAsset("metrics", "monitoring"), "monitoring")
+	db := agencyAsset("db", "database")
+	db.Integrity = types.Critical
+	backend := agencyAsset("backend", "web-service-rest", agencyLink("backend>called", "called", false))
+	backend.Integrity = types.Critical
 	model := boundaryModel(map[string]string{},
-		browserUI,
-		batch,
-		agencyAsset("rendered", "ai-llm-endpoint"),
-		agencyAsset("silent", "ai-llm-endpoint"),
+		backend,
+		agencyAsset("called", "ai-llm-endpoint"),
+		agencyAsset("telemetry-only", "ai-llm-endpoint", agencyLink("telemetry-only>metrics", "metrics", false)),
+		monitoringStack,
+		agencyAsset("agent", "ai-agent-orchestrator", agencyLink("agent>model", "model", false)),
+		agencyAsset("model", "ai-llm-endpoint"),
 		agencyAsset("writer", "ai-agent-orchestrator", agencyLink("writer>db", "db", false)),
-		agencyAsset("db", "database"),
+		db,
 	)
-	model.TechnicalAssets["db"].Integrity = types.Critical
 
 	fired := firedOn(generateScriptRisks(t, aiImproperOutputHandling, model))
 
-	assert.ElementsMatch(t, []string{"rendered", "writer"}, keys(fired),
-		"rendered is called by a UI; writer has an outgoing link; silent is only called by a non-rendering batch job")
-	assert.Equal(t, types.HighImpact, fired["rendered"].ExploitationImpact)
+	assert.ElementsMatch(t, []string{"called", "model", "writer"}, keys(fired),
+		"called and model have callers that consume their output; writer writes to a datastore; "+
+			"telemetry-only only sends metrics; agent only calls its own model")
+	assert.Equal(t, types.VeryHighImpact, fired["called"].ExploitationImpact, "consumed by a critical-integrity backend")
+	assert.Equal(t, types.HighImpact, fired["model"].ExploitationImpact)
 	assert.Equal(t, types.VeryHighImpact, fired["writer"].ExploitationImpact, "output reaches a critical-integrity datastore")
 	assert.Equal(t, types.Likely, fired["writer"].ExploitationLikelihood)
 }
@@ -93,4 +99,25 @@ func TestUnsafeNLDataGatewayFiresOnAIAssetsLinkingToDatastores(t *testing.T) {
 		"read-only links count; rag's target is not a datastore; app is not AI")
 	assert.Equal(t, types.HighImpact, fired["sql-agent"].ExploitationImpact)
 	assert.Equal(t, types.Likely, fired["sql-agent"].ExploitationLikelihood)
+}
+
+// Review finding 6: only query-composing AI assets fire, and vector stores are left to #20.
+func TestUnsafeNLDataGatewayIgnoresPipelinesAndVectorStores(t *testing.T) {
+	datastore := func(id, technology string) *types.TechnicalAsset {
+		asset := agencyAsset(id, technology)
+		asset.Type = types.Datastore
+		return asset
+	}
+	model := secretsSprawlModel(
+		agencyAsset("train", "ai-training-pipeline", agencyLink("train>data", "data", true)),
+		agencyAsset("ingest", "ai-rag-ingest-pipeline", agencyLink("ingest>vectors", "vectors", false)),
+		agencyAsset("rag", "ai-rag-pipeline", agencyLink("rag>vectors", "vectors", true)),
+		agencyAsset("tools", "ai-tool-server", agencyLink("tools>crm", "crm", false)),
+		datastore("data", "ai-dataset-store"),
+		datastore("vectors", "ai-vector-store"),
+		datastore("crm", "database"),
+	)
+
+	assert.ElementsMatch(t, []string{"tools"}, keys(firedOn(generateScriptRisks(t, aiUnsafeNLDataGateway, model))),
+		"training and ingest pipelines do not compose queries; the RAG pipeline only reaches a vector store")
 }

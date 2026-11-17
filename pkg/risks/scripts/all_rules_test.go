@@ -161,10 +161,18 @@ func kitchenSinkModel(t *testing.T) *types.Model {
 	require.NotNil(t, llm)
 	llm.Internet = true
 
-	// An internet-facing RAG ingest pipeline, for rules gated on content from outside.
+	// An external content source the RAG ingest pipeline pulls from, for rules gated on content
+	// coming in from outside.
 	ingest := model.TechnicalAssets["ai-rag-ingest-pipeline-container"]
 	require.NotNil(t, ingest)
-	ingest.Internet = true
+	external := add("external-source", "web-server", types.Physical, types.ExternalEntity)
+	external.OutOfScope = true
+	ingest.CommunicationLinks = append(ingest.CommunicationLinks, &types.CommunicationLink{
+		Id:       "ingest>external",
+		SourceId: ingest.Id,
+		TargetId: external.Id,
+		Readonly: true,
+	})
 
 	return model
 }
