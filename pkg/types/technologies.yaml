@@ -220,6 +220,21 @@ ai-synthetic-data-pipeline:
         less_protected_type: true
         development_relevant: true
         application_logic: true
+ai-tool-server:
+    aliases:
+        - mcp-server
+        - model-context-protocol-server
+        - tool-server
+        - function-calling-server
+        - agent-tool-host
+    description: A tool or function host (e.g., a Model Context Protocol server) that exposes callable actions to AI agents and executes them against downstream systems on the agent's behalf
+    attributes:
+        ai-tool-server: true
+        ai: true
+        less_protected_type: true
+        backend_related: true
+        request_serving_api: true
+        application_logic: true
 ai-training-pipeline:
     aliases:
         - training-pipeline
