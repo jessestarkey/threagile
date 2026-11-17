@@ -1,0 +1,168 @@
+id: ai-training-data-model-poisoning
+title: "Training and Fine-Tuning Data and Model Poisoning"
+function: architecture
+stride: tampering
+cwe: 345
+description: >
+  Whatever shapes a model during training decides how it behaves afterwards: training and
+  fine-tuning data, curated features, training configuration and hyperparameters, and the
+  evaluation data and scoring that gate promotion. Anyone who can write to those -- an outside
+  data source, a compromised account, an insider -- can plant a backdoor, bias the model, or
+  quietly degrade it, and a poisoned evaluation lets the result through.
+impact: >
+  If this risk remains unmitigated, a model can ship with a backdoor or bias that passes its own
+  evaluation and persists until the model is retrained from clean inputs, steering every
+  decision it makes in production.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Control and verify everything that feeds training and evaluation -- data, features, configuration, and scoring -- and diff each training run against an approved baseline."
+mitigation: >
+  Restrict write access to training and evaluation data, feature stores, and training
+  configuration to named identities, and record provenance for every dataset and feature
+  (source, version, hash). Validate and filter incoming training data for anomalies and known
+  poisoning patterns, and quarantine data from outside sources until reviewed. Version training
+  configuration and hyperparameters and diff every run against the approved baseline before its
+  output is used. Keep evaluation data and scoring code separate from training, access-controlled,
+  and versioned, and add held-out canary tests for backdoor triggers. Keep lineage from each
+  model back to its exact inputs so a poisoned model can be traced and rebuilt. References:
+  OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning); OWASP GenAI Data Security 2026 DSGAI04
+  (Data, Model and Artifact Poisoning), DSGAI05 (Data Integrity and Validation Failures), DSGAI21
+  (Disinformation via Data Poisoning); MITRE ATLAS AML.T0020 (Poison Training Data), AML.T0018.000
+  (Poison AI Model), AML.T0043.004 (Insert Backdoor Trigger); MAESTRO layers 1, 2 and 5; CWE-345, CWE-346, CWE-20; NIST SP
+  800-53 SI-7, SR-3, CM-3 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
+  https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is write access to training and evaluation data, features, and configuration restricted and logged, with provenance recorded, outside data quarantined, every run diffed against an approved baseline, and evaluation kept separate from training?"
+detection_logic: >
+  Review who can write to training data, feature stores, training configuration, and evaluation
+  assets. Confirm provenance records and run-to-baseline diffs exist for recent training runs.
+  Test evaluation for backdoor canaries, and look for training inputs with no recorded source.
+risk_assessment: >
+  High for a model gating important decisions whose training or evaluation inputs accept writes
+  from outside its trust boundary without provenance and validation. Medium for curated internal
+  inputs.
+false_positives: >
+  Fires on every in-scope ai-training-pipeline, ai-dataset-store, ai-feature-store, and
+  ai-eval-pipeline asset, because insider or compromised-account poisoning needs nothing the
+  model records. Likelihood steps up one level when the asset receives written data from outside
+  its trust boundary -- internet: true, or an incoming link that is not readonly from an asset in
+  a different directly containing trust boundary (or none). Dispose of a confirmed-compliant
+  asset through risk_tracking: log it as mitigated once restricted write access, provenance,
+  validation, baseline diffing, and a separate evaluation are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-training-pipeline}"
+                  - true: "{.attributes.ai-dataset-store}"
+                  - true: "{.attributes.ai-feature-store}"
+                  - true: "{.attributes.ai-eval-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Training and Fine-Tuning Data and Model Poisoning</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when the asset is internet-facing, or an incoming link that is not readonly (the
+    # source writes into this asset) comes from an asset in a different directly containing
+    # trust boundary (a missing boundary counts as different from a present one).
+    written_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            true: "{tech_asset.internet}"
+            then:
+              - return: true
+        - assign:
+            - own_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{tech_asset.id}.id}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.source_id}.id}"
+              - if:
+                  and:
+                    - false: "{link.readonly}"
+                    - not-equal:
+                        first: "{source_boundary}"
+                        second: "{own_boundary}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Baseline is "unlikely", the middle value of the five replaced rules (unlikely x3, likely
+    # x2). Two independent one-level steps up: written data from outside the trust boundary,
+    # and RAA >= 40. RAA < 15 steps down, floored at "unlikely".
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - outside: "written_from_outside({tech_asset})"
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - if:
+                  true: "{outside}"
+                  then:
+                    - return: likely
+              - return: possible
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: unlikely
+        - if:
+            true: "{outside}"
+            then:
+              - return: possible
+        - return: unlikely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium" (all five replaced rules). Impact
+    # follows this asset's own Integrity: "high" for critical or higher, "medium" for important,
+    # otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - return: medium
+        - return: low

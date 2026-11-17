@@ -1,5 +1,5 @@
-id: atlas-adversarial-evasion-attack
-title: "ATLAS: Adversarial Evasion Attack Against Model Decision Boundary"
+id: ai-adversarial-evasion
+title: "Adversarial Evasion Against Model Decision Boundary"
 function: architecture
 stride: tampering
 cwe: 20
@@ -26,7 +26,10 @@ mitigation: >
   a second signal, a different model, or human review -- rather than trusting a single
   model's output alone for a high-consequence decision. Monitor confidence-score
   distributions for the unusual patterns adversarial examples often produce near the decision
-  boundary. References: MITRE ATLAS AML.T0015 (Evade ML Model); NIST AI RMF MANAGE 2.3; NIST
+  boundary. This targets classic ML models (classifiers, detectors, vision and identity models),
+  which no OWASP GenAI list covers; evasion of LLMs is prompt injection and jailbreak, covered
+  separately. References: MITRE ATLAS AML.T0015 (Evade AI Model), AML.T0043 (Craft Adversarial
+  Data); NIST AI RMF MANAGE 2.3; NIST
   SP 800-53 SI-10 (Information Input Validation).
 check: "Is adversarial training or input-space defense applied to the model, and does any security- or safety-consequential decision require independent confirmation rather than trusting the model's output alone?"
 detection_logic: >
@@ -39,8 +42,9 @@ risk_assessment: >
   Critical for any model whose decision gates a security or safety consequence with no
   adversarial training, input-space defense, or independent confirmation step in place.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope AI model-serving/
-  LLM-endpoint asset, by design). Dispose of a confirmed-compliant asset through risk_tracking
+  Not applicable via tag (this rule fires unconditionally for every in-scope ai-model-serving
+  asset, by design; LLM endpoints are excluded because LLM evasion is prompt injection and
+  jailbreak, covered by the prompt-injection categories). Dispose of a confirmed-compliant asset through risk_tracking
   instead: log it as mitigated once adversarial training/input-space defenses and independent
   confirmation for high-consequence decisions are confirmed.
 
@@ -57,15 +61,13 @@ risk:
             - false: "{tech_asset.out_of_scope}"
             - any:
                 in: "{tech_asset.technologies}"
-                or:
-                  - true: "{.attributes.ai-model-serving}"
-                  - true: "{.attributes.ai-llm-endpoint}"
+                true: "{.attributes.ai-model-serving}"
           then:
             return: true
 
   data:
     parameter: tech_asset
-    title: "<b>ATLAS: Adversarial Evasion Attack Against Model Decision Boundary</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Adversarial Evasion Against Model Decision Boundary</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"

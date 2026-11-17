@@ -1,0 +1,169 @@
+id: ai-rag-corpus-poisoning
+title: "RAG Corpus Poisoning"
+function: architecture
+stride: tampering
+cwe: 349
+description: >
+  A RAG pipeline or its ingest path brings in content from outside its own trust boundary --
+  web pages, email, shared drives, tickets, partner feeds -- and indexes it as knowledge the model
+  then treats as authoritative. Anyone who can write to one of those sources can plant false
+  entries that redirect answers, or instructions that the model follows when the entry is
+  retrieved, and a handful of planted documents is enough.
+impact: >
+  If this risk remains unmitigated, retrieved answers can be silently redirected for every user
+  who asks a targeted question, and a planted entry can make the model exfiltrate other retrieved
+  data, until the poisoned content is found and removed from the index.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat content from outside the trust boundary as untrusted when indexing it: verify its source, keep provenance per chunk, and keep untrusted content out of indexes that serve high-trust answers."
+mitigation: >
+  Ingest only from approved sources, and record provenance (source, author, time, hash) for every
+  indexed chunk so poisoned content can be found and purged. Separate indexes by trust level and
+  never let content from open sources (public pages, inbound email, broadly writable shares) feed
+  an index that answers high-trust questions. Validate and sanitize content at ingest, including
+  hidden text and embedded instructions. Show sources with answers so users can see where a claim
+  came from. Re-validate the corpus periodically and alert on sudden bulk additions from one
+  source. References: OWASP LLM Top 10 2026 LLM09 (Vector and Embedding Weaknesses); OWASP Top 10
+  for Agentic Applications 2026 ASI06 (Memory and Context Poisoning); OWASP GenAI Data Security
+  2026 DSGAI04 (Data, Model and Artifact Poisoning); MITRE ATLAS AML.T0070 (RAG Poisoning),
+  AML.T0071 (False RAG Entry Injection), AML.T0059 (Erode Dataset Integrity); MAESTRO layers 2 and
+  4; CWE-349, CWE-345; NIST SP 800-53 SI-7, SI-10, SR-3 (mappings via the OWASP GenAI Security
+  Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is content from outside the trust boundary ingested only from approved sources, with per-chunk provenance, ingest-time validation, and separation from indexes that serve high-trust answers?"
+detection_logic: >
+  List every source the ingest path reads from and who can write to each. Plant a canary
+  document in a writable source in a test environment and see whether it is indexed and
+  retrieved. Review per-chunk provenance and how quickly a poisoned chunk can be purged.
+risk_assessment: >
+  High when content from open or broadly writable sources feeds an index used for decisions or
+  that retrieves sensitive data. Medium otherwise.
+false_positives: >
+  Fires on an in-scope ai-rag-ingest-pipeline or ai-rag-pipeline that brings in content from
+  outside its trust boundary: internet: true, an incoming link from an asset in a different
+  directly containing trust boundary (or none), or an outgoing readonly link (a pull) to such an
+  asset. A pipeline that only ingests from inside its own boundary does not fire. Dispose of a
+  confirmed-compliant asset through risk_tracking: log it as mitigated once approved-source
+  ingest, per-chunk provenance, validation, and trust-level separation are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - ingests_outside: "brings_in_from_outside({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-rag-ingest-pipeline}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+            - true: "{ingests_outside}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>RAG Corpus Poisoning</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when content can come in from outside the trust boundary: the asset is
+    # internet-facing, an incoming link comes from an asset in a different directly containing
+    # trust boundary, or an outgoing readonly link (a pull) goes to one. A missing boundary
+    # counts as different from a present one.
+    brings_in_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            true: "{tech_asset.internet}"
+            then:
+              - return: true
+        - assign:
+            - own_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{tech_asset.id}.id}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.source_id}.id}"
+              - if:
+                  not-equal:
+                    first: "{source_boundary}"
+                    second: "{own_boundary}"
+                  then:
+                    - return: true
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - target_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.target_id}.id}"
+              - if:
+                  and:
+                    - true: "{link.readonly}"
+                    - not-equal:
+                        first: "{target_boundary}"
+                        second: "{own_boundary}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Baseline is "likely" (both replaced rules), so all 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium" (both replaced rules). Impact
+    # follows this asset's own Integrity: "high" for critical or higher, "medium" for important,
+    # otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - return: medium
+        - return: low

@@ -161,6 +161,11 @@ func kitchenSinkModel(t *testing.T) *types.Model {
 	require.NotNil(t, llm)
 	llm.Internet = true
 
+	// An internet-facing RAG ingest pipeline, for rules gated on content from outside.
+	ingest := model.TechnicalAssets["ai-rag-ingest-pipeline-container"]
+	require.NotNil(t, ingest)
+	ingest.Internet = true
+
 	return model
 }
 

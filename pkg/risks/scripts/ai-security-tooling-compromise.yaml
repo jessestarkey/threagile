@@ -1,5 +1,5 @@
-id: maestro-l6-security-ai-compromise
-title: "MAESTRO L6: AI-Powered Security Tooling Compromise"
+id: ai-security-tooling-compromise
+title: "AI-Powered Security Tooling Compromise"
 function: architecture
 stride: elevation-of-privilege
 cwe: 269
@@ -21,7 +21,9 @@ mitigation: >
   advisory-only -- alert generation, not automated response -- unless human-in-the-loop approval
   is enforced for all response actions. References: MAESTRO L6 (Security and Compliance --
   Vertical Layer) -- Security Agent Data Poisoning, Evasion of Security AI Agents, Compromised
-  Security AI Agents; NIST SP 800-53 SI-3, SI-7.
+  Security AI Agents; OWASP Top 10 for Agentic Applications 2026 ASI10 (Rogue Agents) and OWASP
+  LLM Top 10 2026 LLM01 (Prompt Injection), as they apply to security AI (no OWASP GenAI entry is
+  specific to it); NIST SP 800-53 SI-3, SI-7.
 check: "Does an independent, non-AI detection layer exist that the security AI tool cannot disable, and is its agent permission scope limited to advisory-only unless human-in-the-loop approval is enforced?"
 detection_logic: >
   Implement a parallel rule-based detection layer that operates independently of the AI security
@@ -56,7 +58,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>MAESTRO L6: AI-Powered Security Tooling Compromise</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>AI-Powered Security Tooling Compromise</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"
