@@ -145,6 +145,17 @@ func kitchenSinkModel(t *testing.T) *types.Model {
 		TargetId: "database-physical",
 	})
 
+	// An agent-to-agent link under the agent's own identity over an unencrypted protocol, for
+	// rules that read delegation, authorization, and protocol.
+	agent.CommunicationLinks = append(agent.CommunicationLinks, &types.CommunicationLink{
+		Id:             "agent>multi-agent-gateway",
+		SourceId:       agent.Id,
+		TargetId:       "ai-multi-agent-gateway-container",
+		Authentication: types.Token,
+		Authorization:  types.TechnicalUser,
+		Protocol:       types.HTTP,
+	})
+
 	return model
 }
 

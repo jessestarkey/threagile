@@ -1,0 +1,152 @@
+id: ai-rogue-agent-containment-gap
+title: "Rogue Agent and Missing Kill Switch"
+function: operations
+stride: tampering
+cwe: 693
+description: >
+  An AI agent or model-serving asset can start acting outside its intended behaviour -- through
+  goal hijack, poisoning, misalignment, or compromise -- and there is no independent way to
+  detect that and stop it: no behavioural monitoring of what it actually does, and no kill switch
+  that halts it without a full redeployment.
+impact: >
+  If this risk remains unmitigated, a rogue agent or model keeps acting -- calling tools, changing
+  data, answering users -- for as long as it takes someone to notice from downstream effects and
+  push a redeployment, with nothing to cut it off sooner.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Monitor the agent's actual behaviour against its intended scope, and provide a tested kill switch that halts it immediately with a defined safe-mode fallback."
+mitigation: >
+  Send the agent's or model's actions, tool calls, and outputs to an AI-aware observability stack
+  and alert on behaviour outside its declared scope (unexpected tools, targets, volumes, or
+  goals). Provide a kill switch independent of the normal deployment pipeline, with both an
+  automated trigger (on a monitoring or canary alert) and a manual override, that halts the agent
+  or stops serving the model and falls back to a defined safe mode. Test both regularly and
+  record the time to halt. Revoke the agent's credentials as part of the kill path so a halted
+  agent cannot keep acting through cached sessions. References: OWASP Top 10 for Agentic
+  Applications 2026 ASI10 (Rogue Agents); MITRE ATLAS AML.T0053 (AI Agent Tool Invocation),
+  AML.T0054 (LLM Jailbreak); MAESTRO layers 1, 5 and 6; CWE-693, CWE-284; NIST SP 800-53 SI-4,
+  IR-4, CP-10; NIST AI RMF MANAGE 2.4 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
+  https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is the agent's actual behaviour monitored against its intended scope, and is there a tested kill switch, independent of the deployment pipeline, with automated and manual triggers and a defined safe mode?"
+detection_logic: >
+  Confirm the asset's actions and tool calls reach an AI-aware monitoring stack with alerting on
+  out-of-scope behaviour. Request evidence of a kill-switch drill with a recorded time to halt,
+  and confirm the kill path revokes the agent's credentials.
+risk_assessment: >
+  High for a production agent with write-capable tools, or a model serving consequential output,
+  that has neither behavioural monitoring nor an independent, tested kill switch.
+false_positives: >
+  Fires on every in-scope asset with the ai-agent-orchestrator, ai-llm-endpoint, or
+  ai-model-serving technology, because whether a kill switch exists is not something the model
+  can record. Likelihood steps down one level when the asset has an outgoing link to an
+  ai-observability-stack asset (its behaviour is monitored). Dispose of a confirmed-compliant
+  asset through risk_tracking: log it as mitigated once behavioural monitoring and a tested,
+  independent kill switch are both confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-agent-orchestrator}"
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-model-serving}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Rogue Agent and Missing Kill Switch</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    has_observability_link:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - if:
+                  any:
+                    in: "{$model.technical_assets.{link.target_id}.technologies}"
+                    true: "{.attributes.ai-observability-stack}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Baseline is "likely" (the baseline the replaced missing-model-rollback-killswitch rule
+    # used). Two independent one-level steps: RAA (+1 at >= 40, -1 below 15) and a monitoring
+    # link (-1), giving unlikely..very-likely.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - monitored: "has_observability_link({tech_asset})"
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - if:
+                  true: "{monitored}"
+                  then:
+                    - return: unlikely
+              - return: possible
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - if:
+                  true: "{monitored}"
+                  then:
+                    - return: likely
+              - return: very-likely
+        - if:
+            true: "{monitored}"
+            then:
+              - return: possible
+        - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "medium" (as in the replaced rule). Impact
+    # follows this asset's own Integrity rank: "high" for critical or higher, "medium" for
+    # important, otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: critical
+              - equal:
+                  first: "{tech_asset.integrity}"
+                  second: mission-critical
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{tech_asset.integrity}"
+              second: important
+            then:
+              - return: medium
+        - return: low
