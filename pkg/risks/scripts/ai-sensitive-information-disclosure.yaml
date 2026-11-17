@@ -1,0 +1,184 @@
+id: ai-sensitive-information-disclosure
+title: "Sensitive Information Disclosure via Model Output"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  An LLM endpoint, RAG pipeline, or agent has confidential-or-higher data in reach -- in its
+  prompts, retrieved documents, tools, or training -- and answers requests that come from
+  outside its own trust boundary. A model does not reliably keep what it can see to itself:
+  crafted questions, prompt injection, or plain over-sharing can put that data into a response
+  to a requester who was never authorized for it.
+impact: >
+  If this risk remains unmitigated, confidential data the model can reach leaves the trust
+  boundary inside ordinary-looking responses, bypassing the access controls that protect the
+  same data everywhere else.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Keep sensitive data out of what the model can reach unless the requester is authorized for it, and filter outputs for sensitive content before they leave the boundary."
+mitigation: >
+  Give the model only data the requesting user is entitled to see: enforce authorization when
+  documents are retrieved and tools are called, not by instructing the model to withhold
+  content. Minimize, mask, or tokenize sensitive fields before they enter prompts or retrieval
+  indexes, and keep confidential data out of training and fine-tuning sets unless the model is
+  confined to users cleared for it. Scan outputs for sensitive patterns and classification
+  markings before they cross the boundary, and block or redact matches. Log responses for
+  review. References: OWASP LLM Top 10 2026 LLM02 (Sensitive Information Disclosure); OWASP
+  GenAI Data Security 2026 DSGAI01 (Sensitive Data Leakage), DSGAI09 (Multimodal Cross-Channel
+  Leakage); MITRE ATLAS AML.T0057, AML.T0024; MAESTRO layers 1, 2 and 5; CWE-200, CWE-201,
+  CWE-359; NIST SP 800-53 AC-3, AC-4, SC-28, SI-4 (mappings via the OWASP GenAI Security
+  Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is the model limited to data each requester is authorized for, with authorization at retrieval and tool time, sensitive fields minimized before they enter the context, and outputs scanned before they leave the boundary?"
+detection_logic: >
+  Inventory what confidential data the model can reach through prompts, retrieval, tools, and
+  training. From outside the trust boundary, attempt to elicit that data with direct questions
+  and prompt-injection payloads. Review output-filtering coverage and response logs.
+risk_assessment: >
+  Critical when strictly-confidential data is reachable by a model answering requesters outside
+  its trust boundary with no output filtering. High for confidential data.
+false_positives: >
+  Fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that processes
+  a data asset rated confidential or higher and receives requests from outside its trust boundary
+  -- internet: true, or an incoming link from an asset in a different directly containing trust
+  boundary (or none). Dispose of a confirmed-compliant asset through risk_tracking: log it as
+  mitigated once retrieval-time authorization, input minimization, and output filtering are
+  confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - holds_sensitive: "processes_confidential({tech_asset})"
+          - exposed: "receives_from_outside({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+            - true: "{holds_sensitive}"
+            - true: "{exposed}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Sensitive Information Disclosure via Model Output</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    processes_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - if:
+                  or:
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: confidential
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: strictly-confidential
+                  then:
+                    - return: true
+        - return: false
+
+    processes_strictly_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - if:
+                  equal:
+                    first: "{$model.data_assets.{data_id}.confidentiality}"
+                    second: strictly-confidential
+                  then:
+                    - return: true
+        - return: false
+
+    # True when the asset is internet-facing, or any incoming link comes from an asset whose
+    # directly containing trust boundary differs from this asset's (a missing boundary counts as
+    # different from a present one).
+    receives_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            true: "{tech_asset.internet}"
+            then:
+              - return: true
+        - assign:
+            - own_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{tech_asset.id}.id}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.source_id}.id}"
+              - if:
+                  not-equal:
+                    first: "{source_boundary}"
+                    second: "{own_boundary}"
+                  then:
+                    - return: true
+        - return: false
+
+    # New category (no replaced rule). Baseline is "likely": OWASP keeps Sensitive Information
+    # Disclosure at LLM02 in both the 2025 and 2026 LLM Top 10, and this rule only fires where
+    # confidential data is in reach and requests arrive from outside the boundary. All three
+    # outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. The rule only fires with confidential
+    # data in reach, so the baseline is "high"; it rises to "very-high" when strictly-
+    # confidential data is in reach.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - strict: "processes_strictly_confidential({tech_asset})"
+        - if:
+            true: "{strict}"
+            then:
+              - return: very-high
+        - return: high

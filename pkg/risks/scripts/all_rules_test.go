@@ -156,6 +156,11 @@ func kitchenSinkModel(t *testing.T) *types.Model {
 		Protocol:       types.HTTP,
 	})
 
+	// An internet-facing LLM endpoint, for rules gated on exposure outside the trust boundary.
+	llm := model.TechnicalAssets["ai-llm-endpoint-container"]
+	require.NotNil(t, llm)
+	llm.Internet = true
+
 	return model
 }
 

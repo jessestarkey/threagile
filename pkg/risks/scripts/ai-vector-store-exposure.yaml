@@ -1,0 +1,197 @@
+id: ai-vector-store-exposure
+title: "Vector Store Exposure and Embedding Inversion"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  A vector store holds embeddings of source content, and embeddings are not anonymous: the
+  original text can be largely reconstructed from them (embedding inversion), and similarity
+  queries can surface or confirm records the querier should never see. The store is
+  unencrypted, shared across tenants, or holds embeddings of confidential-or-higher data, so a
+  leaked dump or over-broad query access exposes the underlying content.
+impact: >
+  If this risk remains unmitigated, an attacker with query access or a copy of the index can
+  recover sensitive source content, or another tenant's records, that was never directly
+  retrievable as plaintext.
+asvs: "V14 - Data Protection"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat embeddings as the data they encode: encrypt the store, partition it per tenant and sensitivity level, and enforce authorization on every similarity query."
+mitigation: >
+  Protect the vector store to the classification of the source content it embeds -- never lower
+  because the data is "just vectors". Encrypt it at rest with keys held outside the store.
+  Partition indexes per tenant and per sensitivity level rather than filtering a shared index by
+  metadata, and enforce the requesting user's authorization on every similarity query. Restrict
+  and log bulk export and raw-vector reads, and alert on enumeration-style query patterns. Where
+  inversion risk is high, avoid embedding the most sensitive fields at all. References: OWASP
+  LLM Top 10 2026 LLM09 (Vector and Embedding Weaknesses); OWASP GenAI Data Security 2026
+  DSGAI13 (Vector Store Platform Security); MITRE ATLAS AML.T0025 (Exfiltration via Cyber
+  Means), AML.T0024 (Exfiltration via AI Inference API); MAESTRO layers 2, 4 and 6; CWE-200,
+  CWE-284, CWE-327; NIST SP 800-53 AC-3, SC-28, AU-2 (mappings via the OWASP GenAI Security
+  Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is the vector store encrypted at rest, partitioned per tenant and sensitivity level, protected to the classification of its source content, and enforcing per-user authorization on every query?"
+detection_logic: >
+  Review the store's encryption, index partitioning, and query authorization. Attempt
+  cross-tenant and above-clearance similarity queries. Check that bulk export and raw-vector
+  reads are restricted and logged.
+risk_assessment: >
+  High for an unencrypted or multi-tenant store holding embeddings of confidential-or-higher
+  data. Medium otherwise.
+false_positives: >
+  Fires on an in-scope ai-vector-store asset that has no encryption at rest (encryption: none),
+  is multi_tenant, or stores or processes a data asset rated confidential or higher. An
+  encrypted, single-tenant store of lower-sensitivity data does not fire. Dispose of a
+  confirmed-compliant asset through risk_tracking: log it as mitigated once encryption,
+  per-tenant partitioning, and per-query authorization are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - encrypted: false
+          - holds_sensitive: "holds_confidential({tech_asset})"
+      # encryption: none is the zero value and is dropped on re-serialization, so "encrypted"
+      # means any of the four non-zero values.
+      - if:
+          or:
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: transparent
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: data-with-symmetric-shared-key
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: data-with-asymmetric-shared-key
+            - equal:
+                first: "{tech_asset.encryption}"
+                second: data-with-end-user-individual-key
+          then:
+            - assign:
+                encrypted: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-vector-store}"
+            - or:
+                - false: "{encrypted}"
+                - true: "{tech_asset.multi_tenant}"
+                - true: "{holds_sensitive}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Vector Store Exposure and Embedding Inversion</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    is_confidential_or_higher:
+      parameters:
+        - confidentiality
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{confidentiality}"
+                  second: strictly-confidential
+            then:
+              - return: true
+        - return: false
+
+    # True when the store itself, or any data asset it stores or processes, is rated
+    # confidential or higher.
+    holds_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - own: "is_confidential_or_higher({tech_asset.confidentiality})"
+        - if:
+            true: "{own}"
+            then:
+              - return: true
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - stored_level: "{$model.data_assets.{data_id}.confidentiality}"
+              - assign:
+                  - stored_high: "is_confidential_or_higher({stored_level})"
+              - if:
+                  true: "{stored_high}"
+                  then:
+                    - return: true
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - assign:
+                  - processed_level: "{$model.data_assets.{data_id}.confidentiality}"
+              - assign:
+                  - processed_high: "is_confidential_or_higher({processed_level})"
+              - if:
+                  true: "{processed_high}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Baseline is "likely" (as in the replaced atlas-vector-store-inversion rule), so all 3
+    # outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium" (as in the
+    # replaced rule). What an inversion or leaked dump exposes is the embedded content, so
+    # impact is "high" when the store or anything it holds is confidential or higher, "medium"
+    # when the store is restricted, otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - high: "holds_confidential({tech_asset})"
+        - if:
+            true: "{high}"
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - return: medium
+        - return: low

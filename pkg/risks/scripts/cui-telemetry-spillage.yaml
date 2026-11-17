@@ -31,7 +31,8 @@ risk_assessment: >
   periodic DLP validation.
 false_positives: >
   Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
+  design), except AI assets (any technology with the ai attribute), which
+  ai-telemetry-prompt-log-leakage covers instead. Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
   mitigated once all log emission points are confirmed to emit only redacted/non-CUI content.
 
 risk:
@@ -45,6 +46,15 @@ risk:
   match:
     parameter: tech_asset
     do:
+      - assign:
+          - is_ai: false
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            true: "{.attributes.ai}"
+          then:
+            - assign:
+                is_ai: true
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
@@ -54,6 +64,9 @@ risk:
                   - true: "{.attributes.frontend_related}"
                   - true: "{.attributes.backend_related}"
                   - true: "{.attributes.application_logic}"
+            # AI assets are covered by ai-telemetry-prompt-log-leakage, which fires on the
+            # telemetry link actually carrying confidential data rather than unconditionally.
+            - false: "{is_ai}"
           then:
             return: true
 

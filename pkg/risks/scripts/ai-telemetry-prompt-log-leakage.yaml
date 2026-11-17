@@ -1,0 +1,297 @@
+id: ai-telemetry-prompt-log-leakage
+title: "AI Telemetry and Prompt-Log Leakage"
+function: operations
+stride: information-disclosure
+cwe: 532
+description: >
+  AI tracing and monitoring capture far more than ordinary application logs: full prompts,
+  retrieved documents, tool inputs and outputs, and model responses, often by default. When an
+  AI asset sends that telemetry -- carrying confidential-or-higher data -- to a monitoring or AI
+  observability stack, or the observability stack itself holds such data, the telemetry becomes
+  a second copy of the sensitive data with weaker access control, longer retention, and a wider
+  audience than the system it came from.
+impact: >
+  If this risk remains unmitigated, confidential prompts, documents, and responses accumulate in
+  a monitoring system readable by operators, vendors, and integrations without need-to-know, and
+  a compromise of that system exposes all of it at once. For CUI or classified data, the
+  telemetry copy is itself a spill.
+asvs: "V16 - Security Logging and Error Handling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+action: "Redact or exclude sensitive content from AI telemetry before it leaves the asset, and protect and retain the observability stack at the classification of what it still holds."
+mitigation: >
+  Configure AI tracing and logging to record metadata (model, latency, token counts, tool names,
+  decision outcomes) rather than full prompt and response bodies by default, and redact or
+  tokenize sensitive fields before telemetry leaves the asset. Where full content must be kept
+  for evaluation or incident response, send it to a store accredited for that classification,
+  restrict it to named roles, and apply short, enforced retention. Review third-party
+  observability vendors' data handling before sending AI telemetry to them. Alert on access to
+  and bulk export of stored prompts. Tampering with the observability stack itself (blinding it
+  to hide activity) is covered separately by the security-control tamper-resistance rule.
+  References: OWASP GenAI Data Security 2026 DSGAI14 (Excessive Telemetry and Monitoring
+  Leakage); MITRE ATLAS AML.T0024, AML.T0025, AML.T0036; MAESTRO layers 2, 5 and 6; CWE-532,
+  CWE-312, CWE-200; NIST SP 800-53 AU-9, AU-11, AC-3, SI-12 (mappings via the OWASP GenAI
+  Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is sensitive content redacted or excluded from AI telemetry before it leaves the asset, and is any retained full content held in a store accredited for its classification, with restricted access and enforced retention?"
+detection_logic: >
+  Inspect a sample of traces and logs in the monitoring or observability stack for prompt,
+  document, and response content. Review tracing configuration for full-body capture defaults,
+  redaction coverage, retention settings, and who can read stored traces.
+risk_assessment: >
+  Critical when strictly-confidential data reaches telemetry stored outside an environment
+  accredited for it. High for confidential data.
+false_positives: >
+  Fires on an in-scope AI asset (any technology with the ai attribute) that has an outgoing
+  link to a monitoring or ai-observability-stack asset carrying a data asset rated confidential
+  or higher (data_assets_sent), and on an in-scope ai-observability-stack asset that itself
+  stores or processes such data. Model which data each telemetry link actually sends; a link
+  carrying only redacted or non-sensitive data does not fire. Dispose of a confirmed-compliant
+  asset through risk_tracking: log it as mitigated once redaction and accredited, restricted,
+  retention-limited storage are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_ai: false
+          - is_observability: false
+          - sends_sensitive: "sends_sensitive_telemetry({tech_asset})"
+          - holds_sensitive: "holds_confidential({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            true: "{.attributes.ai}"
+          then:
+            - assign:
+                is_ai: true
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            true: "{.attributes.ai-observability-stack}"
+          then:
+            - assign:
+                is_observability: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - or:
+                - and:
+                    - true: "{is_ai}"
+                    - true: "{sends_sensitive}"
+                - and:
+                    - true: "{is_observability}"
+                    - true: "{holds_sensitive}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>AI Telemetry and Prompt-Log Leakage</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Returns "strict" / "confidential" / "" for a data asset id.
+    data_level:
+      parameters:
+        - data_id
+      do:
+        - if:
+            equal:
+              first: "{$model.data_assets.{data_id}.confidentiality}"
+              second: strictly-confidential
+            then:
+              - return: strict
+        - if:
+            equal:
+              first: "{$model.data_assets.{data_id}.confidentiality}"
+              second: confidential
+            then:
+              - return: confidential
+        - return: none
+
+    # Highest level ("strict" / "confidential" / "none") of data sent on any outgoing link to a
+    # monitoring or AI observability asset.
+    telemetry_level:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: none
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - if:
+                  any:
+                    in: "{$model.technical_assets.{link.target_id}.technologies}"
+                    or:
+                      - true: "{.attributes.monitoring}"
+                      - true: "{.attributes.ai-observability-stack}"
+                  then:
+                    - loop:
+                        in: "{link.data_assets_sent}"
+                        item: data_id
+                        do:
+                          - assign:
+                              - level: "data_level({data_id})"
+                          - if:
+                              equal:
+                                first: "{level}"
+                                second: strict
+                              then:
+                                - assign:
+                                    best: strict
+                          - if:
+                              and:
+                                - equal:
+                                    first: "{level}"
+                                    second: confidential
+                                - equal:
+                                    first: "{best}"
+                                    second: none
+                              then:
+                                - assign:
+                                    best: confidential
+        - return: "{best}"
+
+    sends_sensitive_telemetry:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - level: "telemetry_level({tech_asset})"
+        - if:
+            equal:
+              first: "{level}"
+              second: none
+            then:
+              - return: false
+        - return: true
+
+    # Highest level of data the asset itself stores or processes.
+    held_level:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: none
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - level: "data_level({data_id})"
+              - if:
+                  equal:
+                    first: "{level}"
+                    second: strict
+                  then:
+                    - assign:
+                        best: strict
+              - if:
+                  and:
+                    - equal:
+                        first: "{level}"
+                        second: confidential
+                    - equal:
+                        first: "{best}"
+                        second: none
+                  then:
+                    - assign:
+                        best: confidential
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - assign:
+                  - level: "data_level({data_id})"
+              - if:
+                  equal:
+                    first: "{level}"
+                    second: strict
+                  then:
+                    - assign:
+                        best: strict
+              - if:
+                  and:
+                    - equal:
+                        first: "{level}"
+                        second: confidential
+                    - equal:
+                        first: "{best}"
+                        second: none
+                  then:
+                    - assign:
+                        best: confidential
+        - return: "{best}"
+
+    holds_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - level: "held_level({tech_asset})"
+        - if:
+            equal:
+              first: "{level}"
+              second: none
+            then:
+              - return: false
+        - return: true
+
+    # Baseline is "likely", the middle of the two rules whose ground this covers: the replaced
+    # MAESTRO L5 observability rule ("unlikely") and the generic CUI telemetry spillage rule
+    # ("very-likely"), which no longer fires on AI assets. All 3 outcomes (possible/likely/
+    # very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high", the middle of the
+    # same two rules ("very-high" and "medium"). The rule only fires with confidential data in
+    # telemetry, so impact is "high", rising to "very-high" when strictly-confidential data is
+    # sent or held.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - sent: "telemetry_level({tech_asset})"
+            - held: "held_level({tech_asset})"
+        - if:
+            or:
+              - equal:
+                  first: "{sent}"
+                  second: strict
+              - equal:
+                  first: "{held}"
+                  second: strict
+            then:
+              - return: very-high
+        - return: high

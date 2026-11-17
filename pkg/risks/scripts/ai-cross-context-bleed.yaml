@@ -1,0 +1,210 @@
+id: ai-cross-context-bleed
+title: "Cross-Context Bleed and Over-Broad Context"
+function: architecture
+stride: information-disclosure
+cwe: 488
+description: >
+  An LLM endpoint, RAG pipeline, or agent serves more than one tenant, or handles data at more
+  than one sensitivity level. Whatever enters its context window -- conversation history, cached
+  sessions, retrieved documents, memory, tool results -- can then surface in a response to a
+  different user, tenant, or clearance than the one it belongs to, through session or cache
+  mix-ups, shared memory, or a context assembled more broadly than the request needs.
+impact: >
+  If this risk remains unmitigated, one user or tenant can receive another's conversation
+  content or retrieved data, or a lower-sensitivity request can be answered with
+  higher-sensitivity material, with nothing in the response marking it as out of place.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Isolate every session, cache, memory store, and retrieval index per tenant and per sensitivity level, and build each context from only what the requesting user is entitled to."
+mitigation: >
+  Partition conversation history, caches, agent memory, and retrieval indexes by tenant and by
+  sensitivity level, keyed to the authenticated user -- never a shared store filtered after the
+  fact. Assemble each request's context from only the documents and history the requesting user
+  is authorized for, applying authorization at retrieval time rather than relying on the model to
+  withhold content. Keep context windows to the minimum the task needs. Run separate model
+  instances or deployments for materially different sensitivity levels where data must not mix.
+  Test for cross-session and cross-tenant leakage, including under concurrency and cache reuse.
+  References: OWASP GenAI Data Security 2026 DSGAI11 (Cross-Context Conversation Bleed), DSGAI15
+  (Over-Broad Context Windows); MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API);
+  MAESTRO layers 2 and 6; CWE-488, CWE-200, CWE-285; NIST SP 800-53 AC-3, AC-4, SC-4 (mappings via
+  the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Are sessions, caches, memory, and retrieval partitioned per tenant and sensitivity level, with each request's context built from only what the requesting user is authorized to see?"
+detection_logic: >
+  Review how sessions, caches, memory, and retrieval indexes are keyed and partitioned. Run
+  cross-tenant and cross-session leakage tests, including concurrent sessions and cache reuse,
+  and try to retrieve another user's or a higher sensitivity level's content.
+risk_assessment: >
+  High when the asset mixes tenants or sensitivity levels that include confidential-or-higher data
+  without per-tenant, per-level isolation. Medium otherwise.
+false_positives: >
+  Fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that is
+  multi_tenant, or that processes data assets at more than one confidentiality level. A
+  single-tenant asset handling one sensitivity level does not fire. Dispose of a
+  confirmed-compliant asset through risk_tracking: log it as mitigated once per-tenant,
+  per-sensitivity-level isolation of sessions, caches, memory, and retrieval is confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - mixed_levels: "processes_mixed_levels({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+            - or:
+                - true: "{tech_asset.multi_tenant}"
+                - true: "{mixed_levels}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Cross-Context Bleed and Over-Broad Context</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when the processed data assets do not all share one confidentiality value. A dropped
+    # value (public, the zero value) compares as empty, so public vs. internal still counts as
+    # two levels.
+    processes_mixed_levels:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - seen_one: false
+            - first_level: ""
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - assign:
+                  - level: "{$model.data_assets.{data_id}.confidentiality}"
+              - if:
+                  false: "{seen_one}"
+                  then:
+                    - assign:
+                        - seen_one: true
+                        - first_level: "{level}"
+                  else:
+                    - if:
+                        not-equal:
+                          first: "{level}"
+                          second: "{first_level}"
+                        then:
+                          - return: true
+        - return: false
+
+    # Confidentiality band: high for confidential / strictly-confidential, mid for restricted,
+    # low otherwise.
+    confidentiality_band:
+      parameters:
+        - confidentiality
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{confidentiality}"
+                  second: strictly-confidential
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: restricted
+            then:
+              - return: mid
+        - return: low
+
+    # New category (no replaced rule). Baseline is "possible": bleed needs an isolation defect
+    # (a session, cache, or memory keying bug, or an over-broad retrieval) to coincide with
+    # another user's request, and no prevalence statistic was found, so this is analyst
+    # judgment. All three outcomes (unlikely/possible/likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: unlikely
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: likely
+                  else:
+                    - return: possible
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium". What can bleed
+    # is the most sensitive thing in the context, so the band is the max over this asset's own
+    # Confidentiality and every data asset it processes: "high" for a high band, "medium" for
+    # mid, otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: "confidentiality_band({tech_asset.confidentiality})"
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - assign:
+                  - data_level: "{$model.data_assets.{data_id}.confidentiality}"
+              - assign:
+                  - band: "confidentiality_band({data_level})"
+              - if:
+                  equal:
+                    first: "{band}"
+                    second: high
+                  then:
+                    - assign:
+                        best: high
+              - if:
+                  and:
+                    - equal:
+                        first: "{band}"
+                        second: mid
+                    - equal:
+                        first: "{best}"
+                        second: low
+                  then:
+                    - assign:
+                        best: mid
+        - if:
+            equal:
+              first: "{best}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{best}"
+              second: mid
+            then:
+              - return: medium
+        - return: low

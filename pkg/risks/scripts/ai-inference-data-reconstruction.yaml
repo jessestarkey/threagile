@@ -1,0 +1,147 @@
+id: ai-inference-data-reconstruction
+title: "Inference and Training-Data Reconstruction"
+function: architecture
+stride: information-disclosure
+cwe: 200
+description: >
+  A model's inference API answers requests from outside its own trust boundary. Systematic
+  querying of that API can reconstruct what the model learned from -- membership inference
+  (whether a given record was in the training set), model inversion (recovering training
+  examples), and model extraction (training a functional copy from its answers) -- without ever
+  touching the training data or weights directly.
+impact: >
+  If this risk remains unmitigated, an outside party can confirm or recover sensitive records
+  the model was trained on, which can itself be a data breach, and can replicate the model's
+  capability from its outputs.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Limit what the inference API reveals and how fast it can be queried, and train sensitive models with privacy protections that resist reconstruction."
+mitigation: >
+  Authenticate and rate-limit every inference caller, with per-identity query budgets, and alert
+  on systematic or high-volume querying patterns typical of extraction and membership inference.
+  Return only what the use case needs: no logits or full probability vectors, and rounded or
+  top-k confidence scores at most. Train or fine-tune models on sensitive data with
+  privacy-preserving techniques (differential privacy, deduplication, removing rare records) and
+  test them for memorization before release. Watermark outputs where model extraction is a
+  concern. References: OWASP GenAI Data Security 2026 DSGAI18 (Inference and Data
+  Reconstruction); MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API: Infer Training Data
+  Membership, Invert AI Model, Extract AI Model); MAESTRO layers 1, 2 and 5; CWE-200, CWE-327;
+  NIST SP 800-53 AC-3, SI-4, RA-3 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
+  https://github.com/GenAI-Security-Project/crosswalk).
+check: "Are inference callers authenticated and rate-limited with per-identity budgets and extraction monitoring, are outputs limited to what the use case needs, and were sensitive models trained with privacy protections and memorization testing?"
+detection_logic: >
+  Review inference API authentication, rate limits, and what each response returns. Run
+  membership-inference and extraction tests against a staging copy. Monitor query logs for
+  high-volume, systematic, or boundary-probing patterns from a single identity.
+risk_assessment: >
+  High when the model was trained or fine-tuned on confidential data and its API is reachable
+  from outside the boundary without per-identity budgets. Medium otherwise.
+false_positives: >
+  Fires on an in-scope ai-llm-endpoint or ai-model-serving asset that receives requests from
+  outside its trust boundary -- internet: true, or an incoming link from an asset in a different
+  directly containing trust boundary (or none). Dispose of a confirmed-compliant asset through
+  risk_tracking: log it as mitigated once authenticated, budgeted access, minimal outputs, and
+  privacy-preserving training are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - exposed: "receives_from_outside({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-model-serving}"
+            - true: "{exposed}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Inference and Training-Data Reconstruction</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when the asset is internet-facing, or any incoming link comes from an asset whose
+    # directly containing trust boundary differs from this asset's (a missing boundary counts as
+    # different from a present one).
+    receives_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            true: "{tech_asset.internet}"
+            then:
+              - return: true
+        - assign:
+            - own_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{tech_asset.id}.id}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.source_id}.id}"
+              - if:
+                  not-equal:
+                    first: "{source_boundary}"
+                    second: "{own_boundary}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Baseline is "very-likely" (the ceiling, as in the replaced atlas-inference-api-abuse rule,
+    # which fired on every LLM endpoint; this one fires only when the API is reachable from
+    # outside the boundary), so only the downward (RAA < 15) delta is reachable.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: likely
+            else:
+              - return: very-likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium" (as in the
+    # replaced rule). Impact follows this asset's own Confidentiality, which should reflect the
+    # data it was trained on: "high" for confidential or higher, "medium" for restricted,
+    # otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{tech_asset.confidentiality}"
+              second: restricted
+            then:
+              - return: medium
+        - return: low
