@@ -40,11 +40,13 @@ risk_assessment: >
   Critical when strictly-confidential data reaches telemetry stored outside an environment
   accredited for it. High for confidential data.
 false_positives: >
-  Fires on an in-scope AI asset (any technology with the ai attribute) that has an outgoing
-  link to a monitoring or ai-observability-stack asset carrying a data asset rated confidential
-  or higher (data_assets_sent), and on an in-scope ai-observability-stack asset that itself
-  stores or processes such data. Model which data each telemetry link actually sends; a link
-  carrying only redacted or non-sensitive data does not fire. Dispose of a confirmed-compliant
+  Fires on any in-scope AI asset (any technology with the ai attribute, including an ai-
+  observability-stack) that stores or processes a data asset rated confidential or higher, or
+  sends one over a telemetry link -- AI tracing captures full prompts and responses by default, so
+  the telemetry link does not have to be drawn for the risk to exist. Likelihood steps up one
+  level when an outgoing link to a monitoring or ai-observability-stack asset is modeled carrying
+  such data. Note that Threagile adds every data asset an asset sends to its processed list, so
+  the data on a modeled telemetry link counts as processed too. Dispose of a confirmed-compliant
   asset through risk_tracking: log it as mitigated once redaction and accredited, restricted,
   retention-limited storage are confirmed.
 
@@ -58,7 +60,6 @@ risk:
     do:
       - assign:
           - is_ai: false
-          - is_observability: false
           - sends_sensitive: "sends_sensitive_telemetry({tech_asset})"
           - holds_sensitive: "holds_confidential({tech_asset})"
       - if:
@@ -68,23 +69,16 @@ risk:
           then:
             - assign:
                 is_ai: true
-      - if:
-          any:
-            in: "{tech_asset.technologies}"
-            true: "{.attributes.ai-observability-stack}"
-          then:
-            - assign:
-                is_observability: true
+      # AI tracing captures full prompts and responses by default, so any AI asset handling
+      # confidential data is in scope whether or not its telemetry link is drawn; a drawn link that
+      # carries the data raises likelihood (see get_likelihood).
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
+            - true: "{is_ai}"
             - or:
-                - and:
-                    - true: "{is_ai}"
-                    - true: "{sends_sensitive}"
-                - and:
-                    - true: "{is_observability}"
-                    - true: "{holds_sensitive}"
+                - true: "{holds_sensitive}"
+                - true: "{sends_sensitive}"
           then:
             return: true
 
@@ -251,27 +245,35 @@ risk:
 
     # Baseline is "likely", the middle of the two rules whose ground this covers: the replaced
     # MAESTRO L5 observability rule ("unlikely") and the generic CUI telemetry spillage rule
-    # ("very-likely"), which no longer fires on AI assets. All 3 outcomes (possible/likely/
-    # very-likely) are reachable via the RAA delta.
+    # ("very-likely"), which no longer fires on AI assets. Two independent steps: a modeled
+    # telemetry link carrying confidential data (+1), and RAA (+1 at >= 40, -1 below 15).
     get_likelihood:
       parameters:
         - tech_asset
       do:
+        - assign:
+            - drawn: "sends_sensitive_telemetry({tech_asset})"
         - if:
             less:
               first: "{tech_asset.raa}"
               second: 15
             then:
-              - return: possible
-            else:
               - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
+                  true: "{drawn}"
                   then:
-                    - return: very-likely
-                  else:
                     - return: likely
+              - return: possible
+        - if:
+            equal-or-greater:
+              first: "{tech_asset.raa}"
+              second: 40
+            then:
+              - return: very-likely
+        - if:
+            true: "{drawn}"
+            then:
+              - return: very-likely
+        - return: likely
 
     # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high", the middle of the
     # same two rules ("very-high" and "medium"). The rule only fires with confidential data in

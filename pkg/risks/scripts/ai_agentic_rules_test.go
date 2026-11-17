@@ -237,29 +237,40 @@ func TestCascadingAgentFailuresImpactFromChainAvailability(t *testing.T) {
 	}
 }
 
-// --- #11 Rogue Agent and Missing Kill Switch ---
+// --- #11 + #12 merged: AI Operational Control Gap ---
 
-//go:embed ai-rogue-agent-containment-gap.yaml
-var aiRogueAgentContainmentGap string
+//go:embed ai-operational-control-gap.yaml
+var aiOperationalControlGap string
 
-func TestRogueAgentFiresOnAgentsAndModelsOnly(t *testing.T) {
+func TestOperationalControlGapFiresOnPromptAndModelBearingAssets(t *testing.T) {
+	critical := agencyAsset("llm", "ai-llm-endpoint")
+	critical.Integrity = types.Critical
+	outOfScope := agencyAsset("ignored", "ai-model-serving")
+	outOfScope.OutOfScope = true
 	model := secretsSprawlModel(
-		agencyAsset("agent", "ai-agent-orchestrator"),
-		agencyAsset("llm", "ai-llm-endpoint"),
+		critical,
 		agencyAsset("serving", "ai-model-serving"),
+		agencyAsset("rag", "ai-rag-pipeline"),
+		agencyAsset("agent", "ai-agent-orchestrator"),
+		agencyAsset("vectors", "ai-vector-store"),
 		agencyAsset("gateway", "ai-gateway"),
-		agencyAsset("app", "web-application"),
+		outOfScope,
 	)
 
-	fired := map[string]bool{}
-	for _, risk := range generateScriptRisks(t, aiRogueAgentContainmentGap, model) {
-		fired[risk.MostRelevantTechnicalAssetId] = true
+	impact := map[string]types.RiskExploitationImpact{}
+	for _, risk := range generateScriptRisks(t, aiOperationalControlGap, model) {
+		impact[risk.MostRelevantTechnicalAssetId] = risk.ExploitationImpact
 	}
 
-	assert.Equal(t, map[string]bool{"agent": true, "llm": true, "serving": true}, fired)
+	assert.Equal(t, map[string]types.RiskExploitationImpact{
+		"llm":     types.HighImpact,
+		"serving": types.LowImpact,
+		"rag":     types.LowImpact,
+		"agent":   types.LowImpact,
+	}, impact)
 }
 
-func TestRogueAgentLikelihoodStepsDownWhenMonitored(t *testing.T) {
+func TestOperationalControlGapLikelihoodStepsDownWhenMonitored(t *testing.T) {
 	tests := []struct {
 		raa       float64
 		monitored bool
@@ -280,43 +291,11 @@ func TestRogueAgentLikelihoodStepsDownWhenMonitored(t *testing.T) {
 		}
 		model := secretsSprawlModel(agent, agencyAsset("obs", "ai-observability-stack"))
 
-		risks := generateScriptRisks(t, aiRogueAgentContainmentGap, model)
+		risks := generateScriptRisks(t, aiOperationalControlGap, model)
 
 		require.Len(t, risks, 1)
 		assert.Equal(t, test.expected, risks[0].ExploitationLikelihood, "RAA %v, monitored %v", test.raa, test.monitored)
 	}
-}
-
-// --- #12 AI Change Control Gap ---
-
-//go:embed ai-change-control-gap.yaml
-var aiChangeControlGap string
-
-func TestChangeControlGapFiresOnPromptAndModelBearingAssets(t *testing.T) {
-	critical := agencyAsset("llm", "ai-llm-endpoint")
-	critical.Integrity = types.Critical
-	outOfScope := agencyAsset("ignored", "ai-model-serving")
-	outOfScope.OutOfScope = true
-	model := secretsSprawlModel(
-		critical,
-		agencyAsset("serving", "ai-model-serving"),
-		agencyAsset("rag", "ai-rag-pipeline"),
-		agencyAsset("agent", "ai-agent-orchestrator"),
-		agencyAsset("vectors", "ai-vector-store"),
-		outOfScope,
-	)
-
-	impact := map[string]types.RiskExploitationImpact{}
-	for _, risk := range generateScriptRisks(t, aiChangeControlGap, model) {
-		impact[risk.MostRelevantTechnicalAssetId] = risk.ExploitationImpact
-	}
-
-	assert.Equal(t, map[string]types.RiskExploitationImpact{
-		"llm":     types.HighImpact,
-		"serving": types.LowImpact,
-		"rag":     types.LowImpact,
-		"agent":   types.LowImpact,
-	}, impact)
 }
 
 // Review finding 1: an agent calling its own model (or monitoring) is not a tool action and does

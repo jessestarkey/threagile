@@ -5,13 +5,15 @@ stride: denial-of-service
 cwe: 400
 description: >
   An AI agent hands work to another agent -- an outgoing link from an agent orchestrator or
-  multi-agent gateway to another one. In a chain of agents, one agent's error, hallucinated
-  result, runaway loop, or compromised output becomes the next agent's trusted input, so a single
-  fault propagates and amplifies across the chain instead of staying contained where it started.
+  multi-agent gateway to another one. In a chain of agents, one agent's runaway loop, retry storm,
+  unbounded delegation, or stall becomes load on every agent downstream, so a single fault
+  amplifies across the chain and takes the workflow down instead of staying contained where it
+  started. (Manipulated output spreading between agents is an integrity risk, covered by the
+  indirect prompt injection and insecure inter-agent communication categories.)
 impact: >
-  If this risk remains unmitigated, one failing or manipulated agent can exhaust the resources,
-  corrupt the work, or stall the operation of every agent downstream of it, taking out the whole
-  agent workflow rather than one step of it.
+  If this risk remains unmitigated, one failing or overloaded agent can exhaust the shared
+  resources, budgets, and rate limits of every agent downstream of it, taking out the whole agent
+  workflow rather than one step of it.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: "Contain faults at every agent-to-agent hand-off with validation, bounded retries and recursion, timeouts, and circuit breakers."

@@ -296,3 +296,51 @@ func TestCuiTelemetrySpillageSkipsAIAssets(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"app"}, keys(fired))
 }
+
+// Limits round: an AI asset handling confidential data is in scope without a drawn telemetry
+// link (tracing captures prompts by default); a drawn link carrying the data raises likelihood.
+func TestTelemetryLeakageFiresWithoutADrawnLinkAndRisesWithOne(t *testing.T) {
+	ai := func(asset *types.TechnicalAsset) *types.TechnicalAsset {
+		asset.Technologies[0].Attributes["ai"] = true
+		return asset
+	}
+	undrawn := processing(ai(agencyAsset("undrawn", "ai-llm-endpoint")), "secret")
+	drawn := processing(ai(agencyAsset("drawn", "ai-llm-endpoint",
+		&types.CommunicationLink{Id: "drawn>obs", TargetId: "obs", DataAssetsSent: []string{"secret"}})), "secret")
+	internalOnly := processing(ai(agencyAsset("internal-only", "ai-llm-endpoint")), "internal")
+	observability := ai(agencyAsset("obs", "ai-observability-stack"))
+	model := withData(secretsSprawlModel(undrawn, drawn, internalOnly, observability),
+		map[string]types.Confidentiality{"internal": types.Internal, "secret": types.Confidential})
+
+	fired := firedOn(generateScriptRisks(t, aiTelemetryPromptLogLeakage, model))
+
+	assert.ElementsMatch(t, []string{"undrawn", "drawn"}, keys(fired), "internal-only has nothing confidential")
+	assert.Equal(t, types.Likely, fired["undrawn"].ExploitationLikelihood)
+	assert.Equal(t, types.VeryLikely, fired["drawn"].ExploitationLikelihood)
+}
+
+// --- DSGAI17 AI Retrieval and Index Resilience Gap ---
+
+//go:embed ai-retrieval-resilience-gap.yaml
+var aiRetrievalResilienceGap string
+
+func TestRetrievalResilienceFiresOnCriticalRetrievalCapabilitiesOnly(t *testing.T) {
+	rated := func(id, technology string, availability types.Criticality) *types.TechnicalAsset {
+		asset := agencyAsset(id, technology)
+		asset.Availability = availability
+		return asset
+	}
+	model := secretsSprawlModel(
+		rated("vectors", "ai-vector-store", types.MissionCritical),
+		rated("features", "ai-feature-store", types.Critical),
+		rated("rag", "ai-rag-pipeline", types.Critical),
+		rated("minor-rag", "ai-rag-pipeline", types.Important),
+		rated("db", "database", types.MissionCritical),
+	)
+
+	fired := firedOn(generateScriptRisks(t, aiRetrievalResilienceGap, model))
+
+	assert.ElementsMatch(t, []string{"vectors", "features", "rag"}, keys(fired))
+	assert.Equal(t, types.PossibleLikelihood, fired["rag"].ExploitationLikelihood)
+	assert.Equal(t, types.HighImpact, fired["vectors"].ExploitationImpact)
+}

@@ -1,0 +1,116 @@
+id: ai-retrieval-resilience-gap
+title: "AI Retrieval and Index Resilience Gap"
+function: operations
+stride: denial-of-service
+cwe: 636
+description: >
+  A vector store, feature store, or RAG pipeline that a mission-critical AI capability depends on
+  can fail quietly: an index is corrupted or poisoned and must be rebuilt, a replica serves stale
+  embeddings, a rebuild takes far longer than anyone planned for, or retrieval silently returns
+  nothing and the system falls back to answering without its grounding data. Unlike an outage,
+  these failures often keep the AI answering -- just wrongly or ungrounded.
+impact: >
+  If this risk remains unmitigated, a critical AI capability is unavailable for the length of an
+  untested index rebuild, or keeps producing ungrounded or stale answers that users cannot tell
+  apart from grounded ones.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Back up and version the index and its source data, test the rebuild against a recovery time objective, monitor retrieval health, and fail closed rather than answering ungrounded."
+mitigation: >
+  Keep versioned, restorable snapshots of the index (or the source data and embedding model
+  version needed to rebuild it), and test a full rebuild against a defined recovery time
+  objective. Monitor index health: document counts, staleness against the source, replica lag,
+  and retrieval hit rates, and alert on sudden drops. When retrieval fails or returns nothing for
+  a query that should match, fail closed -- tell the user grounding is unavailable -- rather than
+  letting the model answer from its own weights. Capacity-plan the store for peak query and
+  re-index load, and keep a warm standby for mission-critical use. References: OWASP GenAI Data
+  Security 2026 DSGAI17 (Data Availability and Resilience Failures); MITRE ATLAS AML.T0029 (Denial
+  of AI Service), AML.T0034, AML.T0036; MAESTRO layers 4, 5 and 7; CWE-636, CWE-400, CWE-770;
+  NIST SP 800-53 CP-9, CP-10, SI-4, CA-7; NIST CSF 2.0 PR.IR-01, RC.RP-01 (mappings via the OWASP
+  GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is the index backed up or rebuildable within a tested recovery time, is retrieval health monitored for staleness and silent failure, and does the system fail closed when grounding is unavailable?"
+detection_logic: >
+  Request evidence of a tested index rebuild with a recorded time against the recovery time
+  objective. Review retrieval-health monitoring and alerting. In a test environment, break
+  retrieval and confirm the system reports grounding as unavailable instead of answering.
+risk_assessment: >
+  High for a mission-critical retrieval capability with no tested rebuild, no retrieval-health
+  monitoring, or a fallback that answers without grounding.
+false_positives: >
+  Fires on an in-scope ai-vector-store, ai-feature-store, or ai-rag-pipeline whose availability is
+  rated critical or mission-critical -- the retrieval capabilities a mission depends on. Lower
+  availability ratings do not fire; generic backup and recovery for them is covered by the backup
+  and recovery categories. Dispose of a confirmed-compliant asset through risk_tracking: log it as
+  mitigated once a tested rebuild, retrieval-health monitoring, and fail-closed behaviour are
+  confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-vector-store}"
+                  - true: "{.attributes.ai-feature-store}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+            - or:
+                - equal:
+                    first: "{tech_asset.availability}"
+                    second: critical
+                - equal:
+                    first: "{tech_asset.availability}"
+                    second: mission-critical
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>AI Retrieval and Index Resilience Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # New category (no replaced rule). Baseline is "possible": index corruption, staleness, and
+    # fail-open fallbacks are operational failures rather than attacks, and no prevalence
+    # statistic was found, so this is analyst judgment. All three outcomes
+    # (unlikely/possible/likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: unlikely
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: likely
+                  else:
+                    - return: possible
+
+    # STRIDE is Denial-of-Service -> Availability. Baseline is "medium"; the rule only fires on
+    # critical-or-higher availability, so the +1 availability step always applies: "high".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: high
