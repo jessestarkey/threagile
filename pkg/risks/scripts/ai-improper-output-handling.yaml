@@ -1,0 +1,204 @@
+id: ai-improper-output-handling
+title: "Improper Output Handling"
+function: architecture
+stride: tampering
+cwe: 74
+description: >
+  Model output leaves this AI asset for something that interprets it: a browser or front end
+  that renders it, a database query, a shell or code interpreter, a template engine, or another
+  service's API. Output that is steered by prompt injection -- or is simply wrong, including
+  generated code -- is consumed there without the encoding or validation that untrusted input
+  would get, so it acts on the downstream system exactly as attacker input would.
+impact: >
+  If this risk remains unmitigated, any upstream prompt manipulation turns directly into XSS,
+  SQL or command injection, SSRF, or unauthorized API calls on whatever consumes the output, and
+  insecure generated code ships into the systems that run it.
+asvs: "V1 - Encoding and Sanitization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: "Treat model output as untrusted input at every place it is consumed, with the encoding, validation, or sandboxing that specific sink needs."
+mitigation: >
+  Apply to model output exactly what you would apply to untrusted user input at the same sink:
+  HTML/markdown-escape anything rendered in a browser and block raw HTML, scripts, and
+  auto-loading images or links; use parameterized queries, never string-built SQL from model
+  text; run any model-produced code or commands in a sandbox with no ambient credentials;
+  enable auto-escaping in template engines; and validate output against an allow-listed schema
+  before forwarding it to another API. Review and scan generated code before it is merged or
+  run. Never trust output because it came from your own model -- it is the product of whatever
+  input, including an indirect injection, the model was given. References: OWASP LLM Top 10 2026
+  LLM10 (Improper Output Handling, widened to cover generated code); OWASP GenAI Data Security
+  2026 DSGAI05 (Data Integrity and Validation Failures); MITRE ATLAS AML.T0037, AML.T0040,
+  AML.T0077 (LLM Response Rendering); MAESTRO layers 1, 3 and 4; CWE-74, CWE-79, CWE-89,
+  CWE-78, CWE-94; NIST SP 800-53 SI-10, SI-15 (mappings via the OWASP GenAI Security Crosswalk
+  2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
+check: "Is context-appropriate encoding, validation, or sandboxing applied at every place this asset's model output is consumed, and is generated code reviewed and scanned before it runs?"
+detection_logic: >
+  Trace every consumer of this asset's output -- callers that render it and every outgoing link
+  -- and confirm sink-specific encoding, parameterization, sandboxing, or schema validation.
+  Send injection payloads through the model in a test environment and watch each sink.
+risk_assessment: >
+  Critical when output reaches an unsandboxed interpreter or a broadly privileged API. High for
+  any sink without sink-specific encoding or validation.
+false_positives: >
+  Fires on an in-scope ai-llm-endpoint, ai-model-serving, ai-agent-orchestrator, or
+  ai-rag-pipeline whose output reaches something downstream: it has an outgoing communication
+  link, or an incoming link from a frontend-related asset (a browser or UI that renders the
+  response). An asset whose only consumers are other non-rendering callers does not fire.
+  Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once every
+  consumer is confirmed to encode, validate, or sandbox the output.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - reaches_sink: "output_reaches_sink({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+            - true: "{reaches_sink}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Improper Output Handling</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    is_frontend:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when the output goes anywhere downstream: any outgoing link, or an incoming link from
+    # a frontend-related asset that renders the response.
+    output_reaches_sink:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - return: true
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - renders: "is_frontend({link.source_id})"
+              - if:
+                  true: "{renders}"
+                  then:
+                    - return: true
+        - return: false
+
+    is_integrity_at_least_mid:
+      parameters:
+        - integrity
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{integrity}"
+                  second: important
+              - equal:
+                  first: "{integrity}"
+                  second: critical
+              - equal:
+                  first: "{integrity}"
+                  second: mission-critical
+            then:
+              - return: true
+        - return: false
+
+    # Baseline is "likely" (as in the replaced llm-improper-output-handling rule), so all 3
+    # outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling, as in the replaced
+    # rule), so only the downward step is reachable. What improper output damages is whatever
+    # consumes it, so the rank is the max Integrity over this asset, every outgoing link target,
+    # and every frontend caller: "very-high" if any is important or higher, otherwise "high".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - own_mid: "is_integrity_at_least_mid({tech_asset.integrity})"
+        - if:
+            true: "{own_mid}"
+            then:
+              - return: very-high
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
+              - assign:
+                  - target_mid: "is_integrity_at_least_mid({target_integrity})"
+              - if:
+                  true: "{target_mid}"
+                  then:
+                    - return: very-high
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - renders: "is_frontend({link.source_id})"
+              - if:
+                  true: "{renders}"
+                  then:
+                    - assign:
+                        - caller_integrity: "{$model.technical_assets.{link.source_id}.integrity}"
+                    - assign:
+                        - caller_mid: "is_integrity_at_least_mid({caller_integrity})"
+                    - if:
+                        true: "{caller_mid}"
+                        then:
+                          - return: very-high
+        - return: high

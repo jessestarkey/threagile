@@ -1,0 +1,199 @@
+id: ai-unsafe-nl-data-gateway
+title: "Unsafe Natural-Language Data Gateway"
+function: architecture
+stride: information-disclosure
+cwe: 89
+description: >
+  An AI asset connects directly to a datastore and turns natural-language requests into queries
+  against it (NL-to-SQL, NL-to-search, or an agent tool that queries data). The model, not the
+  application, now decides what is asked of the database -- so a prompt injection, a crafted
+  question, or a plain misreading can produce queries that return far more than the user may see,
+  sidestep row- and field-level access rules, or carry injected SQL into the database.
+impact: >
+  If this risk remains unmitigated, users and anyone who can steer the model can read data they
+  are not authorized for -- often the whole table or database the model's connection can reach --
+  and, where the connection allows it, change or delete data.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
+action: "Run every model-generated query under the requesting user's own permissions through a constrained, parameterized query layer, never a broad service connection."
+mitigation: >
+  Connect the AI asset to data through a query layer, not a raw database connection: expose only
+  approved, parameterized queries or views, and let the model choose among them and fill
+  parameters rather than writing free-form SQL. Execute every query under the requesting user's
+  identity so database row- and field-level security applies, and give the AI's own connection
+  read-only access to the minimum views needed. Validate generated queries against an allow-list
+  of tables, columns, and operations before running them; cap result sizes; and block DDL, DML,
+  and multi-statement queries unless explicitly required. Log every generated query with the
+  user and prompt that produced it. References: OWASP GenAI Data Security 2026 DSGAI12 (Unsafe
+  Natural Language Data Gateways); MITRE ATLAS AML.T0049, AML.T0036 (Data from Information
+  Repositories), AML.T0024; MAESTRO layers 2, 3 and 6; CWE-89, CWE-20, CWE-284; NIST SP 800-53
+  AC-3, AC-6, AU-2 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
+  https://github.com/GenAI-Security-Project/crosswalk).
+check: "Does the AI asset reach data only through a parameterized, allow-listed query layer that executes under the requesting user's identity, with a read-only minimum-scope connection, result caps, and query logging?"
+detection_logic: >
+  Review how the AI asset connects to each datastore and which identity its queries run under.
+  From a low-privilege user, ask for data outside that user's access and try SQL-injection and
+  prompt-injection payloads through the natural-language interface. Review generated-query logs.
+risk_assessment: >
+  Critical when the model writes free-form queries over a broad service connection to a
+  datastore holding confidential-or-higher data. High otherwise.
+false_positives: >
+  Fires on any in-scope AI asset (any technology with the ai attribute) that has an outgoing
+  communication link to a datastore-type asset, read-only or not. Dispose of a
+  confirmed-compliant asset through risk_tracking: log it as mitigated once a parameterized,
+  allow-listed query layer running under the requesting user's identity is confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_ai: false
+          - queries_data: "links_to_datastore({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            true: "{.attributes.ai}"
+          then:
+            - assign:
+                is_ai: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{is_ai}"
+            - true: "{queries_data}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unsafe Natural-Language Data Gateway</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    links_to_datastore:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - if:
+                  equal:
+                    first: "{$model.technical_assets.{link.target_id}.type}"
+                    second: datastore
+                  then:
+                    - return: true
+        - return: false
+
+    # Confidentiality band of a value: high / mid / low.
+    confidentiality_band:
+      parameters:
+        - confidentiality
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{confidentiality}"
+                  second: strictly-confidential
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: restricted
+            then:
+              - return: mid
+        - return: low
+
+    # New category (no replaced rule). Baseline is "likely": the model directly composes
+    # queries, and prompt injection that steers model output is easy, so any datastore it can
+    # query is reachable. All 3 outcomes (possible/likely/very-likely) are reachable via the RAA
+    # delta.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            less:
+              first: "{tech_asset.raa}"
+              second: 15
+            then:
+              - return: possible
+            else:
+              - if:
+                  equal-or-greater:
+                    first: "{tech_asset.raa}"
+                    second: 40
+                  then:
+                    - return: very-likely
+                  else:
+                    - return: likely
+
+    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium". What leaks is
+    # whatever the datastores hold, so the band is the max Confidentiality over every datastore
+    # this asset links to: "high" for a high band, "medium" for mid, otherwise "low".
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: low
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - if:
+                  equal:
+                    first: "{$model.technical_assets.{link.target_id}.type}"
+                    second: datastore
+                  then:
+                    - assign:
+                        - store_level: "{$model.technical_assets.{link.target_id}.confidentiality}"
+                    - assign:
+                        - band: "confidentiality_band({store_level})"
+                    - if:
+                        equal:
+                          first: "{band}"
+                          second: high
+                        then:
+                          - assign:
+                              best: high
+                    - if:
+                        and:
+                          - equal:
+                              first: "{band}"
+                              second: mid
+                          - equal:
+                              first: "{best}"
+                              second: low
+                        then:
+                          - assign:
+                              best: mid
+        - if:
+            equal:
+              first: "{best}"
+              second: high
+            then:
+              - return: high
+        - if:
+            equal:
+              first: "{best}"
+              second: mid
+            then:
+              - return: medium
+        - return: low
