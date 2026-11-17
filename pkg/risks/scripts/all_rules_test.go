@@ -136,6 +136,15 @@ func kitchenSinkModel(t *testing.T) *types.Model {
 		Authentication: types.Credentials,
 	})
 
+	// A writable tool link from an agent, for rules that read link targets and readonly.
+	agent := model.TechnicalAssets["ai-agent-orchestrator-container"]
+	require.NotNil(t, agent)
+	agent.CommunicationLinks = append(agent.CommunicationLinks, &types.CommunicationLink{
+		Id:       "agent>database",
+		SourceId: agent.Id,
+		TargetId: "database-physical",
+	})
+
 	return model
 }
 
