@@ -18,7 +18,7 @@ func NewBlankProperty() *Property {
 
 func NewEqualProperty(value Value) *Property {
 	var path *Path
-	if value.Event() != nil {
+	if value != nil && value.Event() != nil {
 		path = value.Event().Path().Copy()
 	}
 
@@ -36,7 +36,7 @@ func NewFalseProperty() *Property {
 
 func NewGreaterProperty(value Value) *Property {
 	var path *Path
-	if value.Event() != nil {
+	if value != nil && value.Event() != nil {
 		path = value.Event().Path().Copy()
 	}
 
@@ -48,7 +48,7 @@ func NewGreaterProperty(value Value) *Property {
 
 func NewLessProperty(value Value) *Property {
 	var path *Path
-	if value.Event() != nil {
+	if value != nil && value.Event() != nil {
 		path = value.Event().Path().Copy()
 	}
 
@@ -60,7 +60,7 @@ func NewLessProperty(value Value) *Property {
 
 func NewNotEqualProperty(value Value) *Property {
 	var path *Path
-	if value.Event() != nil {
+	if value != nil && value.Event() != nil {
 		path = value.Event().Path().Copy()
 	}
 

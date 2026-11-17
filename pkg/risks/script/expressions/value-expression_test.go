@@ -218,9 +218,28 @@ func TestValueExpression_EvalAny_VariableNotFound_ReturnsNil(t *testing.T) {
 
 	result, _, err := expr.EvalAny(scope)
 	assert.NoError(t, err)
-	// When the variable is not found, scope.Get returns (nil, false),
-	// so evalStringReference returns a nil Value interface.
-	assert.Nil(t, result)
+	// An unresolved reference evaluates to an empty value, never a nil Value interface: a
+	// nil Value assigned to a variable made the next read of that variable panic.
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Value())
+}
+
+func TestValueExpression_UnresolvedReferenceAssignedToVariableCanBeReadBack(t *testing.T) {
+	scope := new(common.Scope)
+	_ = scope.Init(nil, nil)
+
+	assign := new(ValueExpression)
+	_, _, _ = assign.ParseAny("{nonexistent.field}")
+	value, _, err := assign.EvalAny(scope)
+	assert.NoError(t, err)
+	scope.Set("copy", value)
+
+	read := new(ValueExpression)
+	_, _, _ = read.ParseAny("{copy}")
+	result, _, err := read.EvalAny(scope)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Value())
 }
 
 func TestValueExpression_EvalAny_MethodCall(t *testing.T) {
