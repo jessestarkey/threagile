@@ -26,7 +26,7 @@ type Model struct {
 	AppDescription                                *Overview                     `yaml:"application_description,omitempty" json:"application_description,omitempty"`
 	BusinessOverview                              *Overview                     `json:"business_overview,omitempty" yaml:"business_overview,omitempty"`
 	TechnicalOverview                             *Overview                     `json:"technical_overview,omitempty" yaml:"technical_overview,omitempty"`
-	BusinessCriticality                           Criticality                   `json:"business_criticality,omitempty" yaml:"business_criticality,omitempty"`
+	MissionCriticality                            MissionCriticality            `json:"mission_criticality,omitempty" yaml:"mission_criticality,omitempty"`
 	ManagementSummaryComment                      string                        `json:"management_summary_comment,omitempty" yaml:"management_summary_comment,omitempty"`
 	SecurityRequirements                          map[string]string             `json:"security_requirements,omitempty" yaml:"security_requirements,omitempty"`
 	Questions                                     map[string]string             `json:"questions,omitempty" yaml:"questions,omitempty"`

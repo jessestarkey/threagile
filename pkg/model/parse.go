@@ -25,9 +25,22 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 
 	technologies.PropagateAttributes()
 
-	businessCriticality, err := types.ParseCriticality(modelInput.BusinessCriticality)
+	// mission_criticality is the model-level rating; business_criticality is its older name and
+	// still accepted, as are the five values it used (mapped onto the four-value scale).
+	missionCriticalityValue := modelInput.MissionCriticality
+	if missionCriticalityValue == "" {
+		missionCriticalityValue = modelInput.BusinessCriticality
+	} else if modelInput.BusinessCriticality != "" {
+		legacy, _, legacyErr := types.ParseMissionCriticality(modelInput.BusinessCriticality)
+		current, _, currentErr := types.ParseMissionCriticality(modelInput.MissionCriticality)
+		if legacyErr != nil || currentErr != nil || legacy != current {
+			return nil, fmt.Errorf("model sets both 'mission_criticality' (%v) and 'business_criticality' (%v) and they disagree: keep only mission_criticality",
+				modelInput.MissionCriticality, modelInput.BusinessCriticality)
+		}
+	}
+	missionCriticality, _, err := types.ParseMissionCriticality(missionCriticalityValue)
 	if err != nil {
-		return nil, fmt.Errorf("unknown 'business_criticality' value of application: %v", modelInput.BusinessCriticality)
+		return nil, fmt.Errorf("unknown 'mission_criticality' value of application: %v", missionCriticalityValue)
 	}
 
 	reportDate := time.Now()
@@ -48,7 +61,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		AppDescription:                 removePathElementsFromImageFiles(modelInput.AppDescription),
 		BusinessOverview:               removePathElementsFromImageFiles(modelInput.BusinessOverview),
 		TechnicalOverview:              removePathElementsFromImageFiles(modelInput.TechnicalOverview),
-		BusinessCriticality:            businessCriticality,
+		MissionCriticality:             missionCriticality,
 		ManagementSummaryComment:       modelInput.ManagementSummaryComment,
 		SecurityRequirements:           modelInput.SecurityRequirements,
 		Questions:                      modelInput.Questions,

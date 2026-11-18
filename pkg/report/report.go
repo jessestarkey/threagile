@@ -4344,71 +4344,28 @@ func (r *pdfReporter) createTargetDescription(parsedModel *types.Model, baseFold
 	var intro strings.Builder
 	html := r.pdf.HTMLBasicNew()
 
-	intro.WriteString("<b>Business Criticality</b><br><br>")
-	intro.WriteString("The overall business criticality of \"" + uni(parsedModel.Title) + "\" was rated as:<br><br>")
+	intro.WriteString("<b>Mission Criticality</b><br><br>")
+	intro.WriteString("The overall mission criticality of \"" + uni(parsedModel.Title) + "\" was rated as:<br><br>")
 	html.Write(5, intro.String())
-	criticality := parsedModel.BusinessCriticality
+	criticality := parsedModel.MissionCriticality
 	intro.Reset()
 	r.pdfColorGray()
 	intro.WriteString("(  ")
-	if criticality == types.Archive {
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorBlack()
-		intro.WriteString("<b><u>" + strings.ToUpper(types.Archive.String()) + "</u></b>")
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorGray()
-	} else {
-		intro.WriteString(types.Archive.String())
-	}
-	intro.WriteString("  |  ")
-	if criticality == types.Operational {
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorBlack()
-		intro.WriteString("<b><u>" + strings.ToUpper(types.Operational.String()) + "</u></b>")
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorGray()
-	} else {
-		intro.WriteString(types.Operational.String())
-	}
-	intro.WriteString("  |  ")
-	if criticality == types.Important {
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorBlack()
-		intro.WriteString("<b><u>" + strings.ToUpper(types.Important.String()) + "</u></b>")
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorGray()
-	} else {
-		intro.WriteString(types.Important.String())
-	}
-	intro.WriteString("  |  ")
-	if criticality == types.Critical {
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorBlack()
-		intro.WriteString("<b><u>" + strings.ToUpper(types.Critical.String()) + "</u></b>")
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorGray()
-	} else {
-		intro.WriteString(types.Critical.String())
-	}
-	intro.WriteString("  |  ")
-	if criticality == types.MissionCritical {
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorBlack()
-		intro.WriteString("<b><u>" + strings.ToUpper(types.MissionCritical.String()) + "</u></b>")
-		html.Write(5, intro.String())
-		intro.Reset()
-		r.pdfColorGray()
-	} else {
-		intro.WriteString(types.MissionCritical.String())
+	for index, value := range types.MissionCriticalityValues() {
+		if index > 0 {
+			intro.WriteString("  |  ")
+		}
+		if value == criticality {
+			html.Write(5, intro.String())
+			intro.Reset()
+			r.pdfColorBlack()
+			intro.WriteString("<b><u>" + strings.ToUpper(value.Title()) + "</u></b>")
+			html.Write(5, intro.String())
+			intro.Reset()
+			r.pdfColorGray()
+		} else {
+			intro.WriteString(value.Title())
+		}
 	}
 	intro.WriteString("  )")
 	html.Write(5, intro.String())

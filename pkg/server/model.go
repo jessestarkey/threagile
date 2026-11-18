@@ -235,7 +235,8 @@ func (s *server) getCover(ginContext *gin.Context) {
 
 type payloadOverview struct {
 	ManagementSummaryComment string         `yaml:"management_summary_comment" json:"management_summary_comment"`
-	BusinessCriticality      string         `yaml:"business_criticality" json:"business_criticality"`
+	MissionCriticality       string         `yaml:"mission_criticality" json:"mission_criticality"`
+	BusinessCriticality      string         `yaml:"business_criticality" json:"business_criticality"` // older name, still accepted
 	BusinessOverview         input.Overview `yaml:"business_overview" json:"business_overview"`
 	TechnicalOverview        input.Overview `yaml:"technical_overview" json:"technical_overview"`
 }
@@ -258,13 +259,18 @@ func (s *server) setOverview(ginContext *gin.Context) {
 			})
 			return
 		}
-		criticality, err := types.ParseCriticality(payload.BusinessCriticality)
+		requested := payload.MissionCriticality
+		if requested == "" {
+			requested = payload.BusinessCriticality
+		}
+		criticality, _, err := types.ParseMissionCriticality(requested)
 		if err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		modelInput.ManagementSummaryComment = payload.ManagementSummaryComment
-		modelInput.BusinessCriticality = criticality.String()
+		modelInput.MissionCriticality = criticality.String()
+		modelInput.BusinessCriticality = ""
 		modelInput.BusinessOverview.Description = payload.BusinessOverview.Description
 		modelInput.BusinessOverview.Images = payload.BusinessOverview.Images
 		modelInput.TechnicalOverview.Description = payload.TechnicalOverview.Description
@@ -289,7 +295,7 @@ func (s *server) getOverview(ginContext *gin.Context) {
 	if ok {
 		ginContext.JSON(http.StatusOK, gin.H{
 			"management_summary_comment": aModel.ManagementSummaryComment,
-			"business_criticality":       aModel.BusinessCriticality,
+			"mission_criticality":        aModel.MissionCriticality,
 			"business_overview":          aModel.BusinessOverview,
 			"technical_overview":         aModel.TechnicalOverview,
 		})

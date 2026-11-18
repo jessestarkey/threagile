@@ -106,15 +106,28 @@
         "null"
       ]
     },
+    "mission_criticality": {
+      "description": "Mission criticality of the target: how much the mission depends on it",
+      "type": "string",
+      "enum": [
+        "administrative",
+        "mission-support",
+        "mission-essential",
+        "mission-critical"
+      ]
+    },
     "business_criticality": {
-      "description": "Business criticality of the target",
+      "description": "Deprecated: older name for mission_criticality. The five older values map onto the four-value scale (archive and operational to administrative, important to mission-support, critical to mission-essential, mission-critical to mission-critical).",
       "type": "string",
       "enum": [
         "archive",
         "operational",
         "important",
         "critical",
-        "mission-critical"
+        "mission-critical",
+        "administrative",
+        "mission-support",
+        "mission-essential"
       ]
     },
     "application_description": {
@@ -1322,10 +1335,13 @@
     "threagile_version",
     "title",
     "author",
-    "business_criticality",
     "tags_available",
     "data_assets",
     "technical_assets",
     "shared_runtimes"
+  ],
+  "anyOf": [
+    { "required": ["mission_criticality"] },
+    { "required": ["business_criticality"] }
   ]
 }
