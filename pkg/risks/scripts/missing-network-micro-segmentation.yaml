@@ -29,9 +29,11 @@ risk_assessment: >
   cluster -- the absence of segmentation is what turns one compromised pod into unrestricted
   reach across every other workload sharing the cluster.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once a default-deny NetworkPolicy is already enforced at the namespace level.
+  Fires on every in-scope container unless it sits in a network-policy-namespace-isolation trust
+  boundary (directly or nested), which is the model showing a namespace-level default-deny
+  policy. Model namespace isolation that way rather than disposing of each container; otherwise
+  log a confirmed-compliant asset as mitigated through risk_tracking once a default-deny
+  NetworkPolicy is confirmed enforced for its namespace.
 
 risk:
   id:
@@ -41,12 +43,17 @@ risk:
   match:
     parameter: tech_asset
     do:
+      # A container inside a network-policy-namespace-isolation trust boundary is the model showing
+      # the control this rule asks about (a namespace default-deny policy), so it does not fire.
+      - assign:
+          - isolated: "in_isolated_namespace({tech_asset.id})"
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
             - equal:
                 first: "{tech_asset.machine}"
                 second: container
+            - false: "{isolated}"
           then:
             return: true
 
@@ -62,6 +69,43 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True when the asset sits in a network-policy-namespace-isolation trust boundary, directly or
+    # up to three levels of nesting above it.
+    in_isolated_namespace:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - loop:
+            in: [1, 2, 3, 4]
+            item: level
+            do:
+              - if:
+                  equal:
+                    first: "{$model.trust_boundaries.{boundary}.type}"
+                    second: network-policy-namespace-isolation
+                  then:
+                    - return: true
+              - assign:
+                  - boundary: "parent_boundary({boundary})"
+        - return: false
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
     # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:

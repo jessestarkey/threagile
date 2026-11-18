@@ -1,7 +1,7 @@
 id: security-control-tamper-resistance-gap
 title: "Security Control Tamper Resistance Gap"
 function: operations
-stride: information-disclosure
+stride: repudiation
 finding_class: control-not-evidenced
 cwe: 778
 description: >
@@ -80,9 +80,10 @@ risk:
       do:
         - return: "adjust_likelihood(unlikely, {tech_asset.raa})"
 
-    # Impact: low baseline plus the CIA step on C (STRIDE information-disclosure).
+    # Impact: low baseline plus the CIA step on I (STRIDE repudiation: a detection gap lets an
+    # attacker act without a trace, so the integrity of the asset is what goes unprotected).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - return: "adjust_impact(low, {tech_asset.confidentiality})"
+        - return: "adjust_impact(low, {tech_asset.integrity})"

@@ -291,6 +291,7 @@ func TestCuiTelemetrySpillageSkipsAIAssets(t *testing.T) {
 	llm.Technologies[0].Attributes["application_logic"] = true
 	app := agencyAsset("app", "web-application")
 	app.Technologies[0].Attributes["application_logic"] = true
+	llm.Confidentiality, app.Confidentiality = types.Confidential, types.Confidential // both handle sensitive data
 
 	fired := firedOn(generateScriptRisks(t, cuiTelemetrySpillage, secretsSprawlModel(llm, app)))
 
@@ -298,7 +299,7 @@ func TestCuiTelemetrySpillageSkipsAIAssets(t *testing.T) {
 }
 
 // Limits round: an AI asset handling confidential data is in scope without a drawn telemetry
-// link (tracing captures prompts by default); a drawn link carrying the data raises likelihood.
+// link (tracing captures prompts by default), and a drawn link no longer raises likelihood.
 func TestTelemetryLeakageFiresWithoutADrawnLinkAndSameWithOrWithoutOne(t *testing.T) {
 	ai := func(asset *types.TechnicalAsset) *types.TechnicalAsset {
 		asset.Technologies[0].Attributes["ai"] = true

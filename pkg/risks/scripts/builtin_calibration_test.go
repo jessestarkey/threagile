@@ -17,9 +17,9 @@ import (
 
 // builtinCalibratedOnProfileT is generated from the approved calibration table.
 var builtinCalibratedOnProfileT = map[string]calibratedRating{
+	"cluster-control-plane-audit-gap": {types.Likely, types.MediumImpact},
 	"accidental-secret-leak":                 {types.Likely, types.MediumImpact},
 	"code-backdooring":                       {types.PossibleLikelihood, types.HighImpact},
-	"container-baseimage-backdooring":        {types.Unlikely, types.VeryHighImpact},
 	"container-platform-escape":              {types.Unlikely, types.VeryHighImpact},
 	"cross-site-request-forgery":             {types.PossibleLikelihood, types.MediumImpact},
 	"cross-site-scripting":                   {types.Likely, types.HighImpact},
@@ -113,7 +113,7 @@ func TestBuiltinRulesMatchTheirCalibratedRatingOnProfileT(t *testing.T) {
 	// The built-ins whose rating this check actually verifies. If the set changes, the check now
 	// covers more or fewer rules: update the list deliberately.
 	assert.Equal(t, []string{
-		"accidental-secret-leak", "container-baseimage-backdooring", "container-platform-escape",
+		"accidental-secret-leak", "cluster-control-plane-audit-gap", "container-platform-escape",
 		"cross-site-scripting", "missing-authentication", "missing-identity-provider-isolation",
 		"missing-vault-isolation", "server-side-request-forgery", "service-registry-poisoning",
 		"unchecked-deployment", "unencrypted-asset", "unencrypted-communication",

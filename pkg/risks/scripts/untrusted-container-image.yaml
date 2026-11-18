@@ -6,7 +6,9 @@ finding_class: control-not-evidenced
 cwe: 1357
 description: >
   The container image's provenance is not explicitly verified as coming from a trusted, scanned
-  registry.
+  registry, so a vulnerable or backdoored base image or layer can reach production. This rule
+  also covers what Threagile's built-in container-baseimage-backdooring rule raised, which the
+  fork retired on 2026-11-18 because it fired on the same containers for the same risk.
 impact: >
   If this risk remains unmitigated, the image may introduce known CVEs or supply-chain malware
   into the ATO boundary -- the same attacker-controlled-artifact-runs-with-the-workload's-own-

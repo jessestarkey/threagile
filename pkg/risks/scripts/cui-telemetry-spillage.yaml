@@ -31,10 +31,11 @@ risk_assessment: >
   that processes CUI. Medium with structured logging and redaction controls in place but no
   periodic DLP validation.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
-  design), except AI assets (any technology with the ai attribute), which
-  ai-telemetry-prompt-log-leakage covers instead. Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once all log emission points are confirmed to emit only redacted/non-CUI content.
+  Fires on every in-scope app-tier asset that handles confidential or higher data (its own rating,
+  or a data asset it processes or stores) -- logs can only spill data the asset handles -- except
+  AI assets (any technology with the ai attribute), which ai-telemetry-prompt-log-leakage covers
+  instead. Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once
+  all log emission points are confirmed to emit only redacted/non-CUI content.
 
 risk:
   id:
@@ -49,6 +50,7 @@ risk:
     do:
       - assign:
           - is_ai: false
+          - sensitive: "handles_confidential({tech_asset})"
       - if:
           any:
             in: "{tech_asset.technologies}"
@@ -68,6 +70,9 @@ risk:
             # AI assets are covered by ai-telemetry-prompt-log-leakage, which fires on the
             # telemetry link actually carrying confidential data rather than unconditionally.
             - false: "{is_ai}"
+            # Logs can only spill data the asset handles: confidential or higher, its own rating
+            # or the data it processes or stores.
+            - true: "{sensitive}"
           then:
             return: true
 
@@ -83,6 +88,52 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True when the asset is rated confidential or higher, or processes or stores a data asset that
+    # is. Strictly-confidential and confidential are the only names compared, so the dropped zero
+    # value (public) is never a match.
+    handles_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            or:
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: confidential
+              - equal:
+                  first: "{tech_asset.confidentiality}"
+                  second: strictly-confidential
+            then:
+              - return: true
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - if:
+                  or:
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: confidential
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: strictly-confidential
+                  then:
+                    - return: true
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - if:
+                  or:
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: confidential
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: strictly-confidential
+                  then:
+                    - return: true
+        - return: false
     # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:

@@ -1,39 +1,50 @@
 id: insufficient-audit-logging
-title: "Insufficient Audit Logging (AU-2 Compliance Gap)"
+title: "Insufficient Security Event Logging (AU-2 / AU-6 Gap)"
 function: operations
 stride: repudiation
 finding_class: control-not-evidenced
 cwe: 778
 description: >
-  The asset does not generate audit records for the event types NIST SP 800-53 AU-2 requires,
-  such as authentication attempts, privilege escalation, and administrative actions.
+  The asset does not generate audit records for the event types NIST SP 800-53 AU-2 requires --
+  authentication attempts and failures, authorization denials, input-validation rejections,
+  privilege escalation, and administrative actions -- or does not forward them to the SIEM where
+  they can be correlated.
 impact: >
-  If this risk remains unmitigated, the SOC cannot detect or reconstruct an attack after the
-  fact, and the gap independently blocks ATO under DoD RMF.
+  If this risk remains unmitigated, the SOC cannot detect sustained probing, credential stuffing,
+  or authorization-bypass attempts as they build up, or reconstruct an attack after the fact, and
+  the gap independently blocks ATO under DoD RMF.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
-action: "Implement structured audit logging for all AU-2 required event types and forward to a centralized, tamper-evident SIEM."
+action: "Log every AU-2 event type, including each authentication failure, authorization denial and input-validation rejection, with the calling identity, and forward them to a centralized, tamper-evident SIEM with correlation rules."
 mitigation: >
-  Implement structured logging (JSON) capturing at minimum timestamp, event type, user identity,
-  source IP, target resource, and outcome for all AU-2 event categories. Forward logs to a
-  centralized SIEM with retention meeting the applicable data retention policy. Ensure
-  application-layer authentication events are logged in addition to infrastructure-layer events.
-  Implement log integrity protection. References: NIST SP 800-53 AU-2 (Event Logging); NIST SP
-  800-53 AU-12 (Audit Record Generation); DoD RMF Process Guide; DISA Application Security STIG.
-check: "Have AU-2 required event types been formally reviewed and confirmed logged with evidence?"
+  Implement structured logging (JSON) capturing at minimum timestamp, event type, user identity
+  (or service account, API key, or source IP where unauthenticated), target resource, and outcome
+  for all AU-2 event categories, including every authentication failure, authorization denial,
+  and input-validation rejection. Forward the events to a centralized SIEM with retention meeting
+  the applicable data retention policy, and build correlation rules that flag a single identity or
+  source crossing a threshold of failures within a rolling window. Ensure application-layer
+  authentication events are logged in addition to infrastructure-layer events, and protect log
+  integrity. References: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-6 (Audit Record
+  Review, Analysis, and Reporting); NIST SP 800-53 AU-12 (Audit Record Generation); NIST SP 800-53
+  SI-4 (System Monitoring); DoD RMF Process Guide; DISA Application Security STIG.
+check: "Have AU-2 required event types, including authentication failures, authorization denials and input-validation rejections, been confirmed logged and forwarded to the SIEM with active correlation rules, with evidence?"
 detection_logic: >
   Run automated AU-2 coverage checks by querying the SIEM for required event type presence over a
-  rolling 30-day window. Alert on gaps where expected event types show zero occurrences.
+  rolling 30-day window, and alert on gaps where expected event types show zero occurrences -- the
+  absence of expected security-event volume is itself the signal of a broken forwarding pipeline.
+  Alert when a single identity or source crosses a defined threshold of authentication failures,
+  authorization denials, or input-validation rejections within a rolling window.
 risk_assessment: >
   Medium (CAT II). Escalates to High if no application-layer security event logging exists at
-  all -- infrastructure logs alone do not satisfy AU-2 for application-level access control
-  events.
+  all, or if security events are logged but never forwarded to the SIEM -- infrastructure logs
+  alone do not satisfy AU-2 for application-level access control events.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once AU-2 event coverage has been formally reviewed and documented with log samples as
-  evidence.
-
+  Fires on every in-scope app-tier asset (frontend, backend, or application logic) by design: the
+  model can't show whether logging is in place. This rule absorbed
+  baseline-security-event-logging-gap (2026-11-18), which fired on exactly the same assets for the
+  forwarding half of the same control. Dispose of a confirmed-compliant asset through
+  risk_tracking: log it as mitigated once AU-2 event coverage and SIEM forwarding with correlation
+  rules are confirmed with log samples as evidence.
 risk:
   id:
     parameter: tech_asset
