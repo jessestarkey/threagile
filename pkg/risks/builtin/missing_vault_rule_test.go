@@ -67,13 +67,13 @@ func TestMissingVaultRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality: types.Restricted,
 			integrity:       types.Critical,
 			availability:    types.Important,
-			expectedImpact:  types.MediumImpact,
+			expectedImpact:  types.LowImpact,
 		},
 		"critical availability data processed medium impact": {
 			confidentiality: types.Restricted,
 			integrity:       types.Important,
 			availability:    types.Critical,
-			expectedImpact:  types.MediumImpact,
+			expectedImpact:  types.LowImpact,
 		},
 	}
 

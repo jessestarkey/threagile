@@ -83,7 +83,7 @@ func TestContainerBaseImageBackdooringRuleGenerateRisksTechAssetProcessedConfide
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(risks), 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 }
 
 func TestContainerBaseImageBackdooringRuleGenerateRisksTechAssetProcessedIntegrityMissionCriticalDataAssetHighImpactRiskCreated(t *testing.T) {
@@ -108,7 +108,7 @@ func TestContainerBaseImageBackdooringRuleGenerateRisksTechAssetProcessedIntegri
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(risks), 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 }
 
 func TestContainerBaseImageBackdooringRuleGenerateRisksTechAssetProcessedAvailabilityMissionCriticalDataAssetHighImpactRiskCreated(t *testing.T) {
@@ -133,7 +133,7 @@ func TestContainerBaseImageBackdooringRuleGenerateRisksTechAssetProcessedAvailab
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(risks), 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 }
 
 func TestContainerBaseImageBackdooringRuleGenerateRisksContainerWithCriticalIntegrityDataCreatesMediumImpactRisk(t *testing.T) {
@@ -155,7 +155,7 @@ func TestContainerBaseImageBackdooringRuleGenerateRisksContainerWithCriticalInte
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(risks))
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 }
 
 func TestContainerBaseImageBackdooringRuleGenerateRisksContainerWithCriticalAvailabilityDataCreatesMediumImpactRisk(t *testing.T) {
@@ -229,5 +229,5 @@ func TestContainerBaseImageBackdooringRuleGenerateRisksAllThreeSensitivityCondit
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(risks))
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 }

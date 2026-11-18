@@ -60,10 +60,7 @@ func (r *LdapInjectionRule) GenerateRisks(input *types.Model) ([]*types.Risk, er
 				continue
 			}
 			if incomingFlow.Protocol == types.LDAP || incomingFlow.Protocol == types.LDAPS {
-				likelihood := types.Likely
-				if incomingFlow.Usage == types.DevOps {
-					likelihood = types.Unlikely
-				}
+				likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, devOpsStep(incomingFlow))
 				risks = append(risks, r.createRisk(input, technicalAsset, incomingFlow, likelihood))
 			}
 		}
@@ -83,11 +80,7 @@ func (r *LdapInjectionRule) createRisk(input *types.Model, technicalAsset *types
 	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
 	// Impact text, LDAP injection lets an attacker "modify LDAP queries and access more data" --
 	// both a tampering and an information-disclosure consequence.
-	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	impact := injectionImpact(input, types.MediumImpact, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

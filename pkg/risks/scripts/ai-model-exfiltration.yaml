@@ -111,50 +111,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "likely" (both replaced rules), so all 3 outcomes (possible/likely/
-    # very-likely) are reachable via the RAA delta.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high", the middle of the
-    # two replaced rules' baselines (medium and very-high). Impact follows this asset's own
-    # Confidentiality: "very-high" for confidential or higher, "high" for restricted, otherwise
-    # "medium".
+    # Impact: medium baseline plus the CIA step on C (STRIDE information-disclosure).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - return: very-high
-        - if:
-            equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
-            then:
-              - return: high
-        - return: medium
+        - return: "adjust_impact(medium, {tech_asset.confidentiality})"

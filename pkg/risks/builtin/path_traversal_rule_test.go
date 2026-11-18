@@ -136,15 +136,15 @@ func TestPathTraversalRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality:    types.Confidential,
 			integrity:          types.Critical,
 			communicationUsage: types.Business,
-			expectedImpact:     types.MediumImpact,
-			expectedLikelihood: types.VeryLikely,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.Likely,
 		},
 		"strictly confidential high impact": {
 			confidentiality:    types.StrictlyConfidential,
 			integrity:          types.Critical,
 			communicationUsage: types.Business,
 			expectedImpact:     types.HighImpact,
-			expectedLikelihood: types.VeryLikely,
+			expectedLikelihood: types.Likely,
 		},
 		"mission critical integrity alone no longer bumps impact": {
 			// Impact narrowed to Confidentiality alone (matching this category's STRIDE value,
@@ -155,15 +155,15 @@ func TestPathTraversalRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality:    types.Confidential,
 			integrity:          types.MissionCritical,
 			communicationUsage: types.Business,
-			expectedImpact:     types.MediumImpact,
-			expectedLikelihood: types.VeryLikely,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.Likely,
 		},
 		"devops usage likelihood likely": {
 			confidentiality:    types.Confidential,
 			integrity:          types.Critical,
 			communicationUsage: types.DevOps,
-			expectedImpact:     types.MediumImpact,
-			expectedLikelihood: types.Likely,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 	}
 

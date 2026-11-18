@@ -74,53 +74,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "unlikely" (the floor) -- reaching the spacecraft's own command path
-    # requires defeating or bypassing the ground segment first -- so only the upward
-    # (RAA >= 40) delta is reachable.
+    # Likelihood: unlikely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: possible
-            else:
-              - return: unlikely
+        - return: "adjust_likelihood(unlikely, {tech_asset.raa})"
 
-    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
-    # downward (Integrity low) delta is reachable -- an accepted malicious command reaching
-    # unsegmented subsystems is a total loss-of-vehicle-level failure regardless of this
-    # asset's own rating, and the vehicle cannot be physically re-hardened after launch.
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: high baseline plus the CIA step on I (STRIDE spoofing).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - integrity_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  integrity_low: false
-        - if:
-            true: "{integrity_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(high, {tech_asset.integrity})"

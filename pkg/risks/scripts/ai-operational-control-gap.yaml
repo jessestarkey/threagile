@@ -104,62 +104,24 @@ risk:
                     - return: true
         - return: false
 
-    # Baseline is "likely", shared by both merged rules (ai-change-control-gap and
-    # ai-rogue-agent-containment-gap). Two independent one-level steps: RAA (+1 at >= 40, -1
-    # below 15) and a monitoring link (-1), giving unlikely..very-likely.
+    # Likelihood: possible baseline plus the RAA step, one level lower with a link to monitoring or an AI observability stack.
     get_likelihood:
       parameters:
         - tech_asset
       do:
         - assign:
+            - step: 0
             - monitored: "has_observability_link({tech_asset})"
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - if:
-                  true: "{monitored}"
-                  then:
-                    - return: unlikely
-              - return: possible
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - if:
-                  true: "{monitored}"
-                  then:
-                    - return: likely
-              - return: very-likely
         - if:
             true: "{monitored}"
             then:
-              - return: possible
-        - return: likely
+              - assign:
+                  step: -1
+        - return: "adjust_likelihood(possible, {tech_asset.raa}, {step})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "medium" (both merged rules). Impact follows
-    # this asset's own Integrity: "high" for critical or higher, "medium" for important,
-    # otherwise "low".
+    # Impact: low baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{tech_asset.integrity}"
-              second: important
-            then:
-              - return: medium
-        - return: low
+        - return: "adjust_impact(low, {tech_asset.integrity})"

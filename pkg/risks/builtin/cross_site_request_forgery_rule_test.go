@@ -156,7 +156,7 @@ func TestCrossSiteRequestForgeryRuleGenerateRisksTechAssetWebApplicationIncoming
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Cross-Site Request Forgery (CSRF)</b> risk at <b>Web Application</b> via <b>HTTP</b> from <b>user</b>", risks[0].Title)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
@@ -258,6 +258,6 @@ func TestCrossSiteRequestForgeryRuleGenerateRisksTechAssetWebApplicationIncoming
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Cross-Site Request Forgery (CSRF)</b> risk at <b>Web Application</b> via <b>HTTP</b> from <b>user</b>", risks[0].Title)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 }

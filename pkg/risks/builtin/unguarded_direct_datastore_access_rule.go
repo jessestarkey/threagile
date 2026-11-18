@@ -75,10 +75,8 @@ func (r *UnguardedDirectDatastoreAccessRule) GenerateRisks(input *types.Model) (
 				continue
 			}
 
-			highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-				technicalAsset.Integrity == types.MissionCritical
 			risks = append(risks, r.createRisk(technicalAsset, incomingAccess,
-				input.TechnicalAssets[incomingAccess.SourceId], highRisk))
+				input.TechnicalAssets[incomingAccess.SourceId]))
 		}
 	}
 	return risks, nil
@@ -115,18 +113,15 @@ func fileServerAccessViaFTP(technicalAsset *types.TechnicalAsset, incomingAccess
 		(incomingAccess.Protocol == types.FTP || incomingAccess.Protocol == types.FTPS || incomingAccess.Protocol == types.SFTP)
 }
 
-func (r *UnguardedDirectDatastoreAccessRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink, clientOutsideTrustBoundary *types.TechnicalAsset, moreRisky bool) *types.Risk {
+func (r *UnguardedDirectDatastoreAccessRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink, clientOutsideTrustBoundary *types.TechnicalAsset) *types.Risk {
 	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
 	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
 	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, dataStore)
 	// The GenerateRisks() checks above (trust-boundary crossing, DevOps exclusion, FTP/identity
 	// exemptions) are kept as-is -- that's the detection-logic question of whether this risk
 	// applies at all, separate from the Likelihood/Impact scoring below.
-	likelihood := computeLikelihood(types.Likely, dataStore)
+	likelihood := computeLikelihood(types.PossibleLikelihood, dataStore)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

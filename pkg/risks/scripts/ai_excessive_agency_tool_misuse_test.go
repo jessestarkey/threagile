@@ -113,7 +113,7 @@ func TestExcessiveAgencyImpactComesFromWhatWritableToolsReach(t *testing.T) {
 				agencyAsset("agent", "ai-agent-orchestrator", agencyLink("agent>db", "db", false)),
 				agencyAsset("db", "database"),
 			),
-			types.HighImpact,
+			types.LowImpact,
 		},
 		{
 			"writable link reaches a critical-integrity asset",
@@ -121,7 +121,7 @@ func TestExcessiveAgencyImpactComesFromWhatWritableToolsReach(t *testing.T) {
 				agencyAsset("agent", "ai-agent-orchestrator", agencyLink("agent>db", "db", false)),
 				valuable(),
 			),
-			types.VeryHighImpact,
+			types.HighImpact,
 		},
 		{
 			"critical asset reachable only read-only does not raise impact",
@@ -131,7 +131,7 @@ func TestExcessiveAgencyImpactComesFromWhatWritableToolsReach(t *testing.T) {
 				valuable(),
 				agencyAsset("log", "file-server"),
 			),
-			types.HighImpact,
+			types.LowImpact,
 		},
 		{
 			"agent itself holds confidential data",
@@ -140,7 +140,7 @@ func TestExcessiveAgencyImpactComesFromWhatWritableToolsReach(t *testing.T) {
 				agent.Confidentiality = types.Confidential
 				return secretsSprawlModel(agent, agencyAsset("db", "database"))
 			}(),
-			types.VeryHighImpact,
+			types.HighImpact,
 		},
 	}
 	for _, test := range tests {

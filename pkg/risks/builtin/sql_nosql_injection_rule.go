@@ -81,20 +81,16 @@ func (r *SqlNoSqlInjectionRule) createRisk(input *types.Model, technicalAsset *t
 	// confidentiality and an integrity consequence, not just the latter (see
 	// docs/risk-methodology.md's discussion of this exact category as a known multi-dimensional
 	// case in the custom engine).
-	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	}
-	likelihood := types.VeryLikely
+	impact := injectionImpact(input, types.HighImpact, technicalAsset)
+	likelihood := types.PossibleLikelihood // DevOps: one level below the baseline, with no RAA/internet step
 	if incomingFlow.Usage == types.DevOps {
 		// Same rationale as the SSRF rule's DevOps branch: the asset-level RAA/internet-
 		// reachability delta answers "is this component worth attacking in general," not
 		// "is this specific query built from caller-controlled input" -- DevOps usage already
 		// answers no to the latter, so skip the delta rather than let general attractiveness
 		// re-inflate a write that isn't an injection vector regardless of it.
-		likelihood = types.Likely
 	} else {
-		likelihood = computeLikelihood(likelihood, technicalAsset)
+		likelihood = computeLikelihood(types.Likely, technicalAsset)
 	}
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,

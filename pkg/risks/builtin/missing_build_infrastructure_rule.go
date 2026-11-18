@@ -79,7 +79,9 @@ func (r *MissingBuildInfrastructureRule) GenerateRisks(input *types.Model) ([]*t
 	}
 	hasBuildInfrastructure := hasBuildPipeline && hasSourcecodeRepo && hasDevOpsClient
 	if hasCustomDevelopedParts && !hasBuildInfrastructure {
-		risks = append(risks, r.createRisk(mostRelevantAsset, impact))
+		// impact above only steers which asset is reported as the example. The finding itself is
+		// fixed at Low: a whole-model check, exempt from the CIA step (docs/risk-methodology.md).
+		risks = append(risks, r.createRisk(mostRelevantAsset, types.LowImpact))
 	}
 	return risks, nil
 }

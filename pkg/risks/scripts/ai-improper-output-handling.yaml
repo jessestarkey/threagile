@@ -148,89 +148,60 @@ risk:
                     - return: true
         - return: false
 
-    is_integrity_at_least_mid:
-      parameters:
-        - integrity
-      do:
-        - if:
-            or:
-              - equal:
-                  first: "{integrity}"
-                  second: important
-              - equal:
-                  first: "{integrity}"
-                  second: critical
-              - equal:
-                  first: "{integrity}"
-                  second: mission-critical
-            then:
-              - return: true
-        - return: false
-
-    # Baseline is "likely" (as in the replaced llm-improper-output-handling rule), so all 3
-    # outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling, as in the replaced
-    # rule), so only the downward step is reachable. What improper output damages is whatever
-    # consumes it, so the rank is the max Integrity over this asset and every consumer (as in
-    # output_reaches_sink): "very-high" if any is important or higher, otherwise "high".
+    # Impact baseline: medium.
+    # Impact: baseline plus the integrity step for the highest rank across the asset, its
+    # non-monitoring callers and the non-infrastructure consumers of its output.
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - own_mid: "is_integrity_at_least_mid({tech_asset.integrity})"
-        - if:
-            true: "{own_mid}"
-            then:
-              - return: very-high
+            - best: "cia_rank({tech_asset.integrity})"
         - loop:
             in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
             item: link
             do:
               - assign:
                   - monitoring: "is_monitoring({link.source_id})"
-                  - caller_integrity: "{$model.technical_assets.{link.source_id}.integrity}"
-              - assign:
-                  - caller_mid: "is_integrity_at_least_mid({caller_integrity})"
               - if:
-                  and:
-                    - false: "{monitoring}"
-                    - true: "{caller_mid}"
+                  false: "{monitoring}"
                   then:
-                    - return: very-high
+                    - assign:
+                        - caller_integrity: "{$model.technical_assets.{link.source_id}.integrity}"
+                    - assign:
+                        - target_rank: "cia_rank({caller_integrity})"
+                    - if:
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{target_rank}"
         - loop:
             in: "{tech_asset.communication_links}"
             item: link
             do:
               - assign:
                   - infra: "is_infra_target({link.target_id})"
-                  - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
-              - assign:
-                  - target_mid: "is_integrity_at_least_mid({target_integrity})"
               - if:
-                  and:
-                    - false: "{infra}"
-                    - true: "{target_mid}"
+                  false: "{infra}"
                   then:
-                    - return: very-high
-        - return: high
+                    - assign:
+                        - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
+                    - assign:
+                        - target_rank: "cia_rank({target_integrity})"
+                    - if:
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

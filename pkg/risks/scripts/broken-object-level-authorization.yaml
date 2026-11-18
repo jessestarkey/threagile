@@ -66,61 +66,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
-    # reachable.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: likely
-            else:
-              - return: very-likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high" (not an edge
-    # tier), so all 3 outcomes (medium/high/very-high) are reachable.
-    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
-    # Business Criticality bump that used to apply here was removed (see git history / the
-    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
-    # already-peripheral assets rather than protecting genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on C (STRIDE information-disclosure).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: very-high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: high
-        - return: medium
+        - return: "adjust_impact(medium, {tech_asset.confidentiality})"

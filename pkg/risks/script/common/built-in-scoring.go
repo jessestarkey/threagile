@@ -15,7 +15,7 @@ import (
 //	adjust_likelihood(baseline, raa, steps...)  baseline + RAA step + each step, clamped
 //	adjust_impact(baseline, ratings...)          baseline + CIA step for the highest rating given
 //	adjust_impact_rank(baseline, rank)           baseline + CIA step for a 0-4 rank
-//	cia_rank(rating)                             0-4 rank of a confidentiality/criticality name
+//	cia_rank(ratings...)                         highest 0-4 rank among confidentiality/criticality names
 //
 // Missing values (dropped zero values such as public, archive, or RAA 0) count as 0.
 
@@ -141,8 +141,14 @@ func adjustImpactRankFunc(parameters []Value) (Value, error) {
 }
 
 func ciaRankFunc(parameters []Value) (Value, error) {
-	if len(parameters) != 1 {
-		return nil, fmt.Errorf("%s: expected one rating, got %d parameters", ciaRank, len(parameters))
+	if len(parameters) < 1 {
+		return nil, fmt.Errorf("%s: expected at least one rating", ciaRank)
 	}
-	return SomeDecimalValue(decimal.NewFromInt(int64(types.CIARank(textArg(parameters[0])))), nil), nil
+	highest := 0
+	for _, parameter := range parameters {
+		if rank := types.CIARank(textArg(parameter)); rank > highest {
+			highest = rank
+		}
+	}
+	return SomeDecimalValue(decimal.NewFromInt(int64(highest)), nil), nil
 }

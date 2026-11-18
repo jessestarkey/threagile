@@ -46,7 +46,7 @@ func TestAgentIdentityFiresOnServiceIdentityLinks(t *testing.T) {
 				require.Len(t, risks, 1)
 				assert.Equal(t, "agent", risks[0].MostRelevantTechnicalAssetId)
 				assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
-				assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+				assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 			})
 		}
 	}
@@ -93,11 +93,11 @@ func TestAgentIdentityImpactComesFromTargetsReachedAsItself(t *testing.T) {
 
 	risks := generateScriptRisks(t, aiAgentIdentityPrivilegeAbuse, propagatedOnly)
 	require.Len(t, risks, 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact, "critical target reached only with propagated identity")
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact, "critical target reached only with propagated identity")
 
 	risks = generateScriptRisks(t, aiAgentIdentityPrivilegeAbuse, asItself)
 	require.Len(t, risks, 1)
-	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 }
 
 // --- #9 Insecure Inter-Agent Communication ---
@@ -151,8 +151,8 @@ func TestInterAgentCommunicationFiringConditions(t *testing.T) {
 			}
 			require.Len(t, risks, 1)
 			assert.Equal(t, "a", risks[0].MostRelevantTechnicalAssetId)
-			assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 		})
 	}
 }
@@ -164,7 +164,7 @@ func TestInterAgentCommunicationImpactFromReceivingAgentIntegrity(t *testing.T) 
 	risks := generateScriptRisks(t, aiInsecureInterAgentCommunication, model)
 
 	require.Len(t, risks, 1)
-	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 }
 
 // Regression: a link target rated at the zero value of every CIA scale (public / archive) has
@@ -193,7 +193,7 @@ func TestLinkReadingRulesHandleZeroValueTargetRatings(t *testing.T) {
 			risks := generateScriptRisks(t, ruleYAML, secretsSprawlModel(agent, zero))
 
 			require.Len(t, risks, 1)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 		})
 	}
 }
@@ -263,7 +263,7 @@ func TestOperationalControlGapFiresOnPromptAndModelBearingAssets(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]types.RiskExploitationImpact{
-		"llm":     types.HighImpact,
+		"llm":     types.MediumImpact,
 		"serving": types.LowImpact,
 		"rag":     types.LowImpact,
 		"agent":   types.LowImpact,
@@ -276,12 +276,12 @@ func TestOperationalControlGapLikelihoodStepsDownWhenMonitored(t *testing.T) {
 		monitored bool
 		expected  types.RiskExploitationLikelihood
 	}{
-		{5, false, types.PossibleLikelihood},
+		{5, false, types.Unlikely},
 		{5, true, types.Unlikely},
-		{30, false, types.Likely},
-		{30, true, types.PossibleLikelihood},
-		{60, false, types.VeryLikely},
-		{60, true, types.Likely},
+		{30, false, types.PossibleLikelihood},
+		{30, true, types.Unlikely},
+		{60, false, types.Likely},
+		{60, true, types.PossibleLikelihood},
 	}
 	for _, test := range tests {
 		agent := agencyAsset("agent", "ai-agent-orchestrator")

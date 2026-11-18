@@ -67,7 +67,7 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 	// just Integrity (this category's own STRIDE value): an unscanned vulnerability shipped to a
 	// deployment target can threaten any of its CIA dimensions, not just integrity.
 	// impact is depending on highest rating
-	impact := types.LowImpact
+	rank := 0
 	// data breach at all deployment targets
 	uniqueDataBreachTechnicalAssetIDs := make(map[string]interface{})
 	uniqueDataBreachTechnicalAssetIDs[technicalAsset.Id] = true
@@ -81,11 +81,7 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 				// here we've got a deployment target which has its data assets at risk via deployment of backdoored code
 				uniqueDataBreachTechnicalAssetIDs[codeDeploymentTargetCommLink.TargetId] = true
 				targetTechAsset := input.TechnicalAssets[codeDeploymentTargetCommLink.TargetId]
-				if input.HighestProcessedConfidentiality(targetTechAsset) >= types.Confidential ||
-					input.HighestProcessedIntegrity(targetTechAsset) >= types.Critical ||
-					input.HighestProcessedAvailability(targetTechAsset) >= types.Critical {
-					impact = types.MediumImpact
-				}
+				rank = max(rank, processedRank(input, r.Category().STRIDE, targetTechAsset))
 				break
 			}
 		}
@@ -95,6 +91,7 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
+	impact := types.AdjustImpactForRank(types.LowImpact, rank)
 	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

@@ -69,65 +69,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Mirrors compute_likelihood()'s RAA delta in threat-modeling-2's inject_risks.py (and the
-    # equivalent computeLikelihood() helper in pkg/risks/builtin/helpers.go): baseline is already
-    # the top tier (very-likely), so a +1/0 delta clamps at the ceiling and only a genuinely
-    # low-RAA asset (RAA < 15) visibly pulls Likelihood down a notch.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: likely
-            else:
-              - return: very-likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # Mirrors compute_impact()'s CIA-rank delta on the single STRIDE-mapped dimension
-    # (Tampering -> Integrity). Baseline is already the top tier (very-high), so the only
-    # visible movement is a drop to "high" when Integrity is low. Impact is purely a function
-    # of this asset's own Integrity rank -- the model-wide Business Criticality bump that used
-    # to apply here was removed (see git history / the sibling Python engine's compute_impact()
-    # for the rationale: it mostly inflated already-peripheral assets rather than protecting
-    # genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        # NOTE on the pattern below: Threagile's own yaml marshaling (used internally to feed
-        # the model to this script engine) tags every enum field `omitempty`, which drops the
-        # key ENTIRELY whenever the field holds its zero-value tier (Confidentiality's lowest
-        # tier is "public", Criticality's is "archive") -- so `{tech_asset.integrity}` never
-        # resolves at all for an archive-rated asset, it stays literal unresolved text. Checking
-        # equality against a SPECIFIC LOW tier ("archive"/"operational") is therefore unreliable
-        # (always false, whether the real value is a genuine mid/high tier OR an unresolved
-        # archive-tier placeholder). Checking equality against a specific HIGH tier instead is
-        # safe either way: an unresolved placeholder or a genuine non-matching tier both
-        # correctly evaluate to "not equal". So this defaults to the "low" conclusion and only
-        # flips it when a known NON-ZERO tier explicitly matches, rather than the other way
-        # around.
-        - assign:
-            - integrity_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  integrity_low: false
-        - if:
-            true: "{integrity_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

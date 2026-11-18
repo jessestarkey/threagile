@@ -83,10 +83,7 @@ func (r *MixedTargetsOnSharedRuntimeRule) createRisk(input *types.Model, sharedR
 	// Likelihood stays the flat baseline rather than going through computeLikelihood(): a shared
 	// runtime is an aggregate of many assets, so there's no single asset's RAA/reachability to
 	// anchor a delta on (same reasoning as missing_cloud_hardening_rule.go's shared-runtime path).
-	impact := types.LowImpact
-	if isMoreRisky(input, sharedRuntime) {
-		impact = types.MediumImpact
-	}
+	impact := types.AdjustImpactForRank(types.LowImpact, sharedRuntimeRank(input, r.Category().STRIDE, sharedRuntime))
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(types.Unlikely, impact),
@@ -102,13 +99,13 @@ func (r *MixedTargetsOnSharedRuntimeRule) createRisk(input *types.Model, sharedR
 	return risk
 }
 
-func isMoreRisky(input *types.Model, sharedRuntime *types.SharedRuntime) bool {
+// sharedRuntimeRank is the highest STRIDE-mapped rank among the assets on a shared runtime: there
+// is no single asset to rate, so the most valuable tenant sets the impact.
+func sharedRuntimeRank(input *types.Model, stride types.STRIDE, sharedRuntime *types.SharedRuntime) int {
+	rank := 0
 	for _, techAssetId := range sharedRuntime.TechnicalAssetsRunning {
 		techAsset := input.TechnicalAssets[techAssetId]
-		if techAsset.Confidentiality == types.StrictlyConfidential || techAsset.Integrity == types.MissionCritical ||
-			techAsset.Availability == types.MissionCritical {
-			return true
-		}
+		rank = max(rank, rankForStride(stride, techAsset.Confidentiality, techAsset.Integrity, techAsset.Availability))
 	}
-	return false
+	return rank
 }

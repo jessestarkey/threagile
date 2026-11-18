@@ -73,11 +73,8 @@ func (r *CrossSiteScriptingRule) createRisk(parsedModel *types.Model, technicalA
 	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
 	// Impact text, a successful XSS lets an attacker "steal or modify" victim data -- both a
 	// confidentiality and an integrity consequence, not just the latter.
-	impact := types.MediumImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	}
-	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
+	impact := injectionImpact(parsedModel, types.MediumImpact, technicalAsset)
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

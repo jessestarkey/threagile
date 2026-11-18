@@ -67,12 +67,7 @@ func (r *ContainerBaseImageBackdooringRule) createRisk(parsedModel *types.Model,
 	// just Integrity (this category's own STRIDE value): a backdoored base image grants code
 	// execution inside the container, which can read, modify, or deny whatever that container
 	// handles regardless of which single dimension is highest-rated.
-	impact := types.MediumImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	}
+	impact := processedImpact(parsedModel, types.HighImpact, r.Category().STRIDE, technicalAsset)
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

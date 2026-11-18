@@ -62,10 +62,7 @@ func (r *PathTraversalRule) GenerateRisks(input *types.Model) ([]*types.Risk, er
 			if input.TechnicalAssets[incomingFlow.SourceId].OutOfScope {
 				continue
 			}
-			likelihood := types.VeryLikely
-			if incomingFlow.Usage == types.DevOps {
-				likelihood = types.Likely
-			}
+			likelihood := computeLikelihood(types.Likely, technicalAsset, devOpsStep(incomingFlow))
 			risks = append(risks, r.createRisk(input, technicalAsset, incomingFlow, likelihood))
 		}
 	}
@@ -80,11 +77,7 @@ func (r *PathTraversalRule) createRisk(input *types.Model, technicalAsset *types
 	// (InformationDisclosure): this category's own Impact text is purely about reading sensitive
 	// files, not modifying them, so the Integrity check an earlier version of this rule also had
 	// no longer applies -- unlike categories whose own Impact text genuinely spans both.
-	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
-		impact = types.HighImpact
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	impact := processedImpact(input, types.MediumImpact, r.Category().STRIDE, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

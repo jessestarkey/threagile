@@ -38,6 +38,9 @@ func TestCIARankBuiltIn(t *testing.T) {
 	result, err := CallBuiltIn(ciaRank, str("mission-critical"))
 	require.NoError(t, err)
 	assert.True(t, decimal.NewFromInt(4).Equal(result.Value().(decimal.Decimal)))
+	result, err = CallBuiltIn(ciaRank, str("internal"), str("critical"), str(""))
+	require.NoError(t, err)
+	assert.True(t, decimal.NewFromInt(3).Equal(result.Value().(decimal.Decimal)), "highest of several ratings")
 }
 
 func TestScoringBuiltInsRejectBadInput(t *testing.T) {

@@ -160,12 +160,12 @@ func clampImpact(idx int) types.RiskExploitationImpact { return types.ClampImpac
 // DMZ-tagged assets instead of reading an explicit tag; it was replaced after producing real false
 // positives through shared infrastructure hops with multiple independent inbound paths -- see
 // inject_risks.py's own history for compute_internet_reachable_ids().)
-func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset *types.TechnicalAsset) types.RiskExploitationLikelihood {
+func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset *types.TechnicalAsset, steps ...int) types.RiskExploitationLikelihood {
 	exposedDelta := 0
 	if technicalAsset.Internet || contains(technicalAsset.Tags, "net:internet-reachable") {
 		exposedDelta = 1
 	}
-	return types.AdjustLikelihood(baseline, technicalAsset.RAA, exposedDelta)
+	return types.AdjustLikelihood(baseline, technicalAsset.RAA, append([]int{exposedDelta}, steps...)...)
 }
 
 // computeImpact nudges a rule's own baseline Impact by this specific asset's context: a -1/0/+1
@@ -180,22 +180,82 @@ func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset
 // Impact its own way; see the callers' own comments) -- but kept consistent with the other two
 // layers regardless, so it's not a landmine if a future rule is ever wired into it.
 func computeImpact(baseline types.RiskExploitationImpact, stride types.STRIDE, technicalAsset *types.TechnicalAsset) types.RiskExploitationImpact {
-	rank := int(technicalAsset.Confidentiality)
-	if int(technicalAsset.Integrity) > rank {
-		rank = int(technicalAsset.Integrity)
+	return impactForRatings(baseline, stride, technicalAsset.Confidentiality, technicalAsset.Integrity, technicalAsset.Availability)
+}
+
+// rankForStride is the CIA rank (0-4) a finding's STRIDE category threatens: its mapped
+// dimension (see strideToCIADimension), or the highest of the three for elevation of privilege
+// and anything unmapped.
+func rankForStride(stride types.STRIDE, confidentiality types.Confidentiality, integrity, availability types.Criticality) int {
+	switch strideToCIADimension[stride] {
+	case "confidentiality":
+		return int(confidentiality)
+	case "integrity":
+		return int(integrity)
+	case "availability":
+		return int(availability)
 	}
-	if int(technicalAsset.Availability) > rank {
-		rank = int(technicalAsset.Availability)
-	}
-	if dimension, ok := strideToCIADimension[stride]; ok {
-		switch dimension {
-		case "confidentiality":
-			rank = int(technicalAsset.Confidentiality)
-		case "integrity":
-			rank = int(technicalAsset.Integrity)
-		case "availability":
-			rank = int(technicalAsset.Availability)
+	return max(int(confidentiality), int(integrity), int(availability))
+}
+
+// impactForRatings applies the symmetric CIA step for the given ratings to a baseline.
+func impactForRatings(baseline types.RiskExploitationImpact, stride types.STRIDE, confidentiality types.Confidentiality, integrity, availability types.Criticality) types.RiskExploitationImpact {
+	return types.AdjustImpactForRank(baseline, rankForStride(stride, confidentiality, integrity, availability))
+}
+
+// processedRank is the highest STRIDE-mapped rank across the given assets, counting the data
+// they process as well as their own ratings.
+func processedRank(input *types.Model, stride types.STRIDE, assets ...*types.TechnicalAsset) int {
+	rank := 0
+	for _, asset := range assets {
+		if asset == nil {
+			continue
 		}
+		rank = max(rank, rankForStride(stride, input.HighestProcessedConfidentiality(asset),
+			input.HighestProcessedIntegrity(asset), input.HighestProcessedAvailability(asset)))
 	}
-	return types.AdjustImpactForRank(baseline, rank)
+	return rank
+}
+
+// processedImpact applies the symmetric CIA step for processedRank to a baseline.
+func processedImpact(input *types.Model, baseline types.RiskExploitationImpact, stride types.STRIDE, assets ...*types.TechnicalAsset) types.RiskExploitationImpact {
+	return types.AdjustImpactForRank(baseline, processedRank(input, stride, assets...))
+}
+
+// injectionImpact applies the symmetric CIA step for the higher of the processed confidentiality
+// and integrity ranks. Injection both reads and alters what the asset handles, so a
+// strictly-confidential but low-integrity asset is not rated down just because the category is
+// filed under Tampering. Availability is left out: it is not what injection mainly threatens.
+func injectionImpact(input *types.Model, baseline types.RiskExploitationImpact, asset *types.TechnicalAsset) types.RiskExploitationImpact {
+	return types.AdjustImpactForRank(baseline, max(int(input.HighestProcessedConfidentiality(asset)), int(input.HighestProcessedIntegrity(asset))))
+}
+
+// linkRank is the highest STRIDE-mapped rank of the data carried on the given links.
+func linkRank(input *types.Model, stride types.STRIDE, links ...*types.CommunicationLink) int {
+	rank := 0
+	for _, link := range links {
+		if link == nil {
+			continue
+		}
+		rank = max(rank, rankForStride(stride, input.HighestCommunicationLinkConfidentiality(link),
+			input.HighestCommunicationLinkIntegrity(link), input.HighestCommunicationLinkAvailability(link)))
+	}
+	return rank
+}
+
+// devOpsStep is the -1 likelihood step for a DevOps-usage link: a build or deployment path is
+// reachable by fewer, more trusted callers than a business one.
+func devOpsStep(link *types.CommunicationLink) int {
+	if link != nil && link.Usage == types.DevOps {
+		return -1
+	}
+	return 0
+}
+
+// stepIf returns step when condition holds, else 0.
+func stepIf(condition bool, step int) int {
+	if condition {
+		return step
+	}
+	return 0
 }

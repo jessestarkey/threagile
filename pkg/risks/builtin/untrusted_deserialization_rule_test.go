@@ -63,8 +63,8 @@ func TestUntrustedDeserializationRuleGenerateRiskAcceptSerializationRisksCreated
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Untrusted Deserialization</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -89,8 +89,8 @@ func TestUntrustedDeserializationRuleGenerateRiskEJBRisksCreated(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Untrusted Deserialization</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -116,8 +116,8 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			protocol:              types.IIOP,
 			isAcrossTrustBoundary: false,
 
-			expectedImpact:     types.HighImpact,
-			expectedLikelihood: types.Likely,
+			expectedImpact:     types.VeryHighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"IiopEncrypted": {
 			confidentiality:       types.Confidential,
@@ -126,8 +126,8 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			protocol:              types.IiopEncrypted,
 			isAcrossTrustBoundary: false,
 
-			expectedImpact:     types.HighImpact,
-			expectedLikelihood: types.Likely,
+			expectedImpact:     types.VeryHighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"JRMP": {
 			confidentiality:       types.Confidential,
@@ -136,8 +136,8 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			protocol:              types.JRMP,
 			isAcrossTrustBoundary: false,
 
-			expectedImpact:     types.HighImpact,
-			expectedLikelihood: types.Likely,
+			expectedImpact:     types.VeryHighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"JrmpEncrypted": {
 			confidentiality:       types.Confidential,
@@ -146,8 +146,8 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			protocol:              types.JrmpEncrypted,
 			isAcrossTrustBoundary: false,
 
-			expectedImpact:     types.HighImpact,
-			expectedLikelihood: types.Likely,
+			expectedImpact:     types.VeryHighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"strictly confidential": {
 			confidentiality:       types.StrictlyConfidential,
@@ -157,7 +157,7 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			isAcrossTrustBoundary: false,
 
 			expectedImpact:     types.VeryHighImpact,
-			expectedLikelihood: types.Likely,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"mission critical integrity": {
 			confidentiality:       types.Confidential,
@@ -167,7 +167,7 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			isAcrossTrustBoundary: false,
 
 			expectedImpact:     types.VeryHighImpact,
-			expectedLikelihood: types.Likely,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"mission critical availability": {
 			confidentiality:       types.Confidential,
@@ -177,7 +177,7 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			isAcrossTrustBoundary: false,
 
 			expectedImpact:     types.VeryHighImpact,
-			expectedLikelihood: types.Likely,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"across trust boundary": {
 			confidentiality:       types.Confidential,
@@ -186,8 +186,8 @@ func TestUntrustedDeserializationRuleGenerateRisks(t *testing.T) {
 			protocol:              types.IIOP,
 			isAcrossTrustBoundary: true,
 
-			expectedImpact:      types.HighImpact,
-			expectedLikelihood:  types.VeryLikely,
+			expectedImpact:      types.VeryHighImpact,
+			expectedLikelihood:  types.Likely,
 			expectedSuffixTitle: " across a trust boundary (at least via communication link <b>Test Communication Link</b>)",
 		},
 	}

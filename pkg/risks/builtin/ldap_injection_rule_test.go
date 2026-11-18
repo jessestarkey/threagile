@@ -106,8 +106,8 @@ func TestLdapInjectionRuleIncomingLdapFlowRisksCreated(t *testing.T) {
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, "<b>LDAP-Injection</b> risk at <b>LDAP Server</b> against LDAP server <b>Test Technical Asset</b> via <b>LDAP Communication</b>", risks[0].Title)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestLdapInjectionRuleIncomingLdapFlowDevOpsUsageRisksCreated_WithUnlikelyLikelihood(t *testing.T) {
@@ -141,7 +141,7 @@ func TestLdapInjectionRuleIncomingLdapFlowDevOpsUsageRisksCreated_WithUnlikelyLi
 	assert.Len(t, risks, 1)
 	assert.Equal(t, "<b>LDAP-Injection</b> risk at <b>LDAP Server</b> against LDAP server <b>Test Technical Asset</b> via <b>LDAP Communication</b>", risks[0].Title)
 	assert.Equal(t, types.Unlikely, risks[0].ExploitationLikelihood)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestLdapInjectionRuleIncomingLdapFlowProcessStrictlyConfidentialDataAssetsRisksCreated(t *testing.T) {
@@ -182,6 +182,6 @@ func TestLdapInjectionRuleIncomingLdapFlowProcessStrictlyConfidentialDataAssetsR
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, "<b>LDAP-Injection</b> risk at <b>LDAP Server</b> against LDAP server <b>Test Technical Asset</b> via <b>LDAP Communication</b>", risks[0].Title)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 }

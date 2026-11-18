@@ -72,7 +72,7 @@ func TestSqlNoSqlInjectionRuleCreateRisks(t *testing.T) {
 			protocol:                     types.HTTP,
 			isVulnerableToQueryInjection: false,
 			expectRiskCreated:            true,
-			expectedLikelihood:           types.VeryLikely,
+			expectedLikelihood:           types.Likely,
 			expectedImpact:               types.MediumImpact,
 		},
 		"no datastore": {
@@ -86,7 +86,7 @@ func TestSqlNoSqlInjectionRuleCreateRisks(t *testing.T) {
 			protocol:                     types.JdbcEncrypted,
 			expectRiskCreated:            true,
 			isVulnerableToQueryInjection: true,
-			expectedLikelihood:           types.VeryLikely,
+			expectedLikelihood:           types.Likely,
 			expectedImpact:               types.MediumImpact,
 		},
 		"strictly confidential tech asset high impact": {
@@ -96,8 +96,8 @@ func TestSqlNoSqlInjectionRuleCreateRisks(t *testing.T) {
 			isVulnerableToQueryInjection: true,
 			confidentiality:              types.StrictlyConfidential,
 			integrity:                    types.Critical,
-			expectedLikelihood:           types.VeryLikely,
-			expectedImpact:               types.HighImpact,
+			expectedLikelihood:           types.Likely,
+			expectedImpact:               types.VeryHighImpact,
 		},
 		"mission critical integrity tech asset high impact": {
 			assetType:                    types.Datastore,
@@ -106,8 +106,8 @@ func TestSqlNoSqlInjectionRuleCreateRisks(t *testing.T) {
 			isVulnerableToQueryInjection: true,
 			confidentiality:              types.Confidential,
 			integrity:                    types.MissionCritical,
-			expectedLikelihood:           types.VeryLikely,
-			expectedImpact:               types.HighImpact,
+			expectedLikelihood:           types.Likely,
+			expectedImpact:               types.VeryHighImpact,
 		},
 		"devops usage likely likelihood": {
 			assetType:                    types.Datastore,
@@ -117,8 +117,8 @@ func TestSqlNoSqlInjectionRuleCreateRisks(t *testing.T) {
 			usage:                        types.DevOps,
 			confidentiality:              types.Confidential,
 			integrity:                    types.Critical,
-			expectedLikelihood:           types.Likely,
-			expectedImpact:               types.MediumImpact,
+			expectedLikelihood:           types.PossibleLikelihood,
+			expectedImpact:               types.VeryHighImpact,
 		},
 	}
 
@@ -344,7 +344,7 @@ func TestSqlNoSqlInjectionRuleGenerateRisksLaxDatabaseProtocolNotVulnerableAttri
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	// Lax protocol always triggers regardless of IsVulnerableToQueryInjection attribute
-	assert.Equal(t, types.VeryLikely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
 	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 }
 
@@ -388,7 +388,7 @@ func TestSqlNoSqlInjectionRuleGenerateRisksNonDevOpsUsageVeryLikelyLikelihood(t 
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.VeryLikely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
 }
 
 func TestSqlNoSqlInjectionRuleGenerateRisksDevOpsUsageLikelyLikelihood(t *testing.T) {
@@ -431,10 +431,10 @@ func TestSqlNoSqlInjectionRuleGenerateRisksDevOpsUsageLikelyLikelihood(t *testin
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 }
 
-func TestSqlNoSqlInjectionRuleGenerateRisksConfidentialDataNotStrictlyConfidentialMediumImpact(t *testing.T) {
+func TestSqlNoSqlInjectionRuleGenerateRisksConfidentialDataStepsImpactUp(t *testing.T) {
 	rule := NewSqlNoSqlInjectionRule()
 	risks, err := rule.GenerateRisks(&types.Model{
 		TechnicalAssets: map[string]*types.TechnicalAsset{
@@ -475,5 +475,5 @@ func TestSqlNoSqlInjectionRuleGenerateRisksConfidentialDataNotStrictlyConfidenti
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	// Confidential is not StrictlyConfidential, so impact is MediumImpact (not HighImpact)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
 }

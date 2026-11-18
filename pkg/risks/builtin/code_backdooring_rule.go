@@ -85,13 +85,10 @@ func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *typ
 	// narrowing to just Integrity (this category's own STRIDE value): backdoored code shipped
 	// into production can just as easily exfiltrate data as corrupt it, so a deployment target
 	// with high Confidentiality data deserves the same bump as one with high Integrity data.
-	impact := types.LowImpact
-	if !technicalAsset.Technologies.GetAttribute(types.CodeInspectionPlatform) {
-		impact = types.MediumImpact
-		if input.HighestProcessedConfidentiality(technicalAsset) >= types.Confidential || input.HighestProcessedIntegrity(technicalAsset) >= types.Critical {
-			impact = types.HighImpact
-		}
-	}
+	// Medium baseline plus the symmetric CIA step; one level lower when the asset is itself a
+	// code-inspection platform, the mitigation the model can show.
+	impact := types.ClampImpact(int(processedImpact(input, types.MediumImpact, r.Category().STRIDE, technicalAsset)) +
+		stepIf(technicalAsset.Technologies.GetAttribute(types.CodeInspectionPlatform), -1))
 	// data breach at all deployment targets
 	uniqueDataBreachTechnicalAssetIDs := make(map[string]interface{})
 	uniqueDataBreachTechnicalAssetIDs[technicalAsset.Id] = true
@@ -113,7 +110,7 @@ func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *typ
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

@@ -62,7 +62,7 @@ func TestMissingIdentityPropagationRuleRisksCreated(t *testing.T) {
 			communicationLinkAuthentication: types.ClientCertificate,
 			communicationLinkAuthorization:  types.NoneAuthorization,
 			communicationLinkUsage:          types.DevOps,
-			expectedImpact:                  types.LowImpact,
+			expectedImpact:                  types.MediumImpact,
 		},
 		"strictly confidential tech asset called from not data store": {
 			multitenant:                     false,
@@ -101,7 +101,7 @@ func TestMissingIdentityPropagationRuleRisksCreated(t *testing.T) {
 			communicationLinkAuthentication: types.ClientCertificate,
 			communicationLinkAuthorization:  types.NoneAuthorization,
 			communicationLinkUsage:          types.DevOps,
-			expectedImpact:                  types.LowImpact,
+			expectedImpact:                  types.MediumImpact,
 		},
 		"mission critically integrity tech asset called from not data store": {
 			multitenant:                     false,
@@ -140,7 +140,7 @@ func TestMissingIdentityPropagationRuleRisksCreated(t *testing.T) {
 			communicationLinkAuthentication: types.ClientCertificate,
 			communicationLinkAuthorization:  types.NoneAuthorization,
 			communicationLinkUsage:          types.DevOps,
-			expectedImpact:                  types.LowImpact,
+			expectedImpact:                  types.MediumImpact,
 		},
 		"mission critically availability tech asset called from not data store": {
 			multitenant:                     false,

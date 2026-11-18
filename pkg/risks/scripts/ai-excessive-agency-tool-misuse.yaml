@@ -133,84 +133,22 @@ risk:
                     - return: true
         - return: false
 
-    # True when any one of the three CIA values is rank 2 or higher (restricted / important).
-    at_least_mid:
-      parameters:
-        - confidentiality
-        - integrity
-        - availability
-      do:
-        - if:
-            or:
-              - equal:
-                  first: "{confidentiality}"
-                  second: restricted
-              - equal:
-                  first: "{confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{confidentiality}"
-                  second: strictly-confidential
-              - equal:
-                  first: "{integrity}"
-                  second: important
-              - equal:
-                  first: "{integrity}"
-                  second: critical
-              - equal:
-                  first: "{integrity}"
-                  second: mission-critical
-              - equal:
-                  first: "{availability}"
-                  second: important
-              - equal:
-                  first: "{availability}"
-                  second: critical
-              - equal:
-                  first: "{availability}"
-                  second: mission-critical
-            then:
-              - return: true
-        - return: false
-
-    # Baseline is "likely" (the baseline both replaced rules used), so all 3 outcomes
-    # (possible/likely/very-likely) are reachable via the RAA delta.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Elevation-of-Privilege, which takes the max rank across all three CIA
-    # dimensions. Baseline is "very-high" (the ceiling, as in both replaced rules), so only the
-    # downward step is reachable. What an agent can damage is what its write-capable tools
-    # reach, so the rank is the max over the agent itself and the target of every outgoing link
-    # that isn't readonly: "very-high" if any of them is at rank 2 or higher in any dimension,
-    # otherwise "high".
+    # Impact baseline: medium.
+    # Impact: baseline plus the CIA step for the highest rank across the agent and every
+    # writable, non-infrastructure tool it calls (max of C, I, A).
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - reaches_mid: "at_least_mid({tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"
-        - if:
-            true: "{reaches_mid}"
-            then:
-              - return: very-high
+            - best: "cia_rank({tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"
         - loop:
             in: "{tech_asset.communication_links}"
             item: link
@@ -227,9 +165,12 @@ risk:
                         - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
                         - target_availability: "{$model.technical_assets.{link.target_id}.availability}"
                     - assign:
-                        - target_mid: "at_least_mid({target_confidentiality}, {target_integrity}, {target_availability})"
+                        - target_rank: "cia_rank({target_confidentiality}, {target_integrity}, {target_availability})"
                     - if:
-                        true: "{target_mid}"
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
                         then:
-                          - return: very-high
-        - return: high
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

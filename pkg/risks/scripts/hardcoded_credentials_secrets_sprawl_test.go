@@ -78,7 +78,7 @@ func TestHardcodedCredentialsFiresOnStaticSecretAuthentication(t *testing.T) {
 			require.Len(t, risks, 1)
 			assert.Equal(t, "app", risks[0].MostRelevantTechnicalAssetId)
 			assert.Equal(t, types.VeryLikely, risks[0].ExploitationLikelihood)
-			assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
 		})
 	}
 }
@@ -126,9 +126,9 @@ func TestHardcodedCredentialsLikelihoodStepsDownForVaultLinkAndLowRAA(t *testing
 		expected types.RiskExploitationLikelihood
 	}{
 		{"no vault, normal RAA", 50, false, types.VeryLikely},
-		{"no vault, low RAA", 5, false, types.Likely},
+		{"no vault, low RAA", 5, false, types.PossibleLikelihood},
 		{"vault, normal RAA", 50, true, types.Likely},
-		{"vault, low RAA", 5, true, types.PossibleLikelihood},
+		{"vault, low RAA", 5, true, types.Unlikely},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

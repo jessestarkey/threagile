@@ -59,80 +59,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
-    # reachable -- see untrusted-container-image.yaml for the general pattern.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: likely
-            else:
-              - return: very-likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Elevation-of-Privilege, which falls back to the max rank across all three CIA
-    # dimensions.
-    # Impact is purely a function of this asset's own max CIA rank across all three dimensions
-    # -- the model-wide Business Criticality bump that used to apply here was removed (see git
-    # history / the sibling Python engine's compute_impact() for the rationale: it mostly
-    # inflated already-peripheral assets rather than protecting genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on max(C,I,A) (STRIDE elevation-of-privilege).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: restricted
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.availability}"
-                  second: important
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-              - equal:
-                  first: "{tech_asset.availability}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.availability}"
-                  second: mission-critical
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: very-high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: high
-        - return: medium
+        - return: "adjust_impact(medium, {tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"

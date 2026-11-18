@@ -112,7 +112,7 @@ func TestSensitiveDisclosureNeedsConfidentialDataAndOutsideRequests(t *testing.T
 		impact                      types.RiskExploitationImpact
 	}{
 		{"confidential, request from another boundary", "dmz", "core", []string{"secret"}, false, true, types.HighImpact},
-		{"strictly confidential raises impact", "dmz", "core", []string{"internal", "topsecret"}, false, true, types.VeryHighImpact},
+		{"strictly confidential gets the same +1 step", "dmz", "core", []string{"internal", "topsecret"}, false, true, types.HighImpact},
 		{"confidential, internet-facing", "core", "core", []string{"secret"}, true, true, types.HighImpact},
 		{"confidential, caller outside any boundary", "", "core", []string{"secret"}, false, true, types.HighImpact},
 		{"confidential, same boundary only", "core", "core", []string{"secret"}, false, false, 0},
@@ -151,7 +151,7 @@ func TestInferenceReconstructionFiresOnExposedInferenceAPIs(t *testing.T) {
 			risks := generateScriptRisks(t, aiInferenceDataReconstruction, exposed)
 			require.Len(t, risks, 1)
 			assert.Equal(t, types.VeryLikely, risks[0].ExploitationLikelihood)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 
 			assert.Empty(t, generateScriptRisks(t, aiInferenceDataReconstruction, exposureModel(technology, "core", "core")))
 		})
@@ -185,8 +185,8 @@ func TestModelExfiltrationFiresOnStoresAlwaysAndServingOnlyWhenPhysical(t *testi
 	fired := firedOn(generateScriptRisks(t, aiModelExfiltration, model))
 
 	assert.ElementsMatch(t, []string{"registry", "training", "edge", "box"}, keys(fired))
-	assert.Equal(t, types.VeryHighImpact, fired["registry"].ExploitationImpact)
-	assert.Equal(t, types.MediumImpact, fired["edge"].ExploitationImpact, "internal-rated asset")
+	assert.Equal(t, types.HighImpact, fired["registry"].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, fired["edge"].ExploitationImpact, "internal-rated asset")
 	assert.Equal(t, types.Likely, fired["edge"].ExploitationLikelihood)
 }
 
@@ -240,7 +240,7 @@ func TestSyntheticDataLeakageNeedsConfidentialSource(t *testing.T) {
 	fired := firedOn(generateScriptRisks(t, aiSyntheticDataLeakage, model))
 
 	assert.ElementsMatch(t, []string{"from-secret"}, keys(fired))
-	assert.Equal(t, types.HighImpact, fired["from-secret"].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, fired["from-secret"].ExploitationImpact)
 }
 
 // --- #22 AI Telemetry and Prompt-Log Leakage ---
@@ -279,7 +279,7 @@ func TestTelemetryLeakageFiresOnSensitiveTelemetryLinksAndStores(t *testing.T) {
 	assert.ElementsMatch(t, []string{"llm", "obs"}, keys(fired),
 		"llm sends confidential telemetry; obs holds strictly confidential data; agent sends only internal; rag's link is not telemetry; app is not AI")
 	assert.Equal(t, types.HighImpact, fired["llm"].ExploitationImpact)
-	assert.Equal(t, types.VeryHighImpact, fired["obs"].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, fired["obs"].ExploitationImpact)
 }
 
 //go:embed cui-telemetry-spillage.yaml
@@ -299,7 +299,7 @@ func TestCuiTelemetrySpillageSkipsAIAssets(t *testing.T) {
 
 // Limits round: an AI asset handling confidential data is in scope without a drawn telemetry
 // link (tracing captures prompts by default); a drawn link carrying the data raises likelihood.
-func TestTelemetryLeakageFiresWithoutADrawnLinkAndRisesWithOne(t *testing.T) {
+func TestTelemetryLeakageFiresWithoutADrawnLinkAndSameWithOrWithoutOne(t *testing.T) {
 	ai := func(asset *types.TechnicalAsset) *types.TechnicalAsset {
 		asset.Technologies[0].Attributes["ai"] = true
 		return asset
@@ -316,7 +316,7 @@ func TestTelemetryLeakageFiresWithoutADrawnLinkAndRisesWithOne(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"undrawn", "drawn"}, keys(fired), "internal-only has nothing confidential")
 	assert.Equal(t, types.Likely, fired["undrawn"].ExploitationLikelihood)
-	assert.Equal(t, types.VeryLikely, fired["drawn"].ExploitationLikelihood)
+	assert.Equal(t, types.Likely, fired["drawn"].ExploitationLikelihood, "a drawn link does not raise it: the baseline already sits at the cap")
 }
 
 // --- DSGAI17 AI Retrieval and Index Resilience Gap ---
@@ -341,6 +341,6 @@ func TestRetrievalResilienceFiresOnCriticalRetrievalCapabilitiesOnly(t *testing.
 	fired := firedOn(generateScriptRisks(t, aiRetrievalResilienceGap, model))
 
 	assert.ElementsMatch(t, []string{"vectors", "features", "rag"}, keys(fired))
-	assert.Equal(t, types.PossibleLikelihood, fired["rag"].ExploitationLikelihood)
-	assert.Equal(t, types.HighImpact, fired["vectors"].ExploitationImpact)
+	assert.Equal(t, types.Unlikely, fired["rag"].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, fired["vectors"].ExploitationImpact)
 }

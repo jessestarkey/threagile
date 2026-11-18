@@ -73,58 +73,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
-    # very-likely) are reachable via the RAA delta.
+    # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset.raa})"
 
-    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
-    # downward (Integrity low) delta is reachable -- a revocation check that fails open
-    # defeats the entire purpose of revocation regardless of this asset's own rating.
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on I (STRIDE spoofing).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - integrity_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  integrity_low: false
-        - if:
-            true: "{integrity_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

@@ -70,10 +70,7 @@ func (r *MissingIdentityPropagationRule) GenerateRisks(input *types.Model) ([]*t
 				continue
 			}
 
-			highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-				technicalAsset.Integrity == types.MissionCritical ||
-				technicalAsset.Availability == types.MissionCritical
-			risks = append(risks, r.createRisk(input, technicalAsset, commLink, highRisk))
+			risks = append(risks, r.createRisk(input, technicalAsset, commLink))
 		}
 	}
 	return risks, nil
@@ -108,12 +105,9 @@ func (r *MissingIdentityPropagationRule) skipAsset(technicalAsset *types.Technic
 	return false
 }
 
-func (r *MissingIdentityPropagationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingAccess *types.CommunicationLink, moreRisky bool) *types.Risk {
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+func (r *MissingIdentityPropagationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingAccess *types.CommunicationLink) *types.Risk {
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, technicalAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

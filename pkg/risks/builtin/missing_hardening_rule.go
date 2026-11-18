@@ -78,10 +78,7 @@ func (r *MissingHardeningRule) createRisk(input *types.Model, technicalAsset *ty
 	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
 	// narrowing to just Integrity (this category's own STRIDE value): this category's own
 	// Impact text is generically about attacking a high-value target, not a single dimension.
-	impact := types.LowImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.MediumImpact
-	}
+	impact := processedImpact(input, types.LowImpact, r.Category().STRIDE, technicalAsset)
 	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit/
 	// raaLimitReduced gate) -- that detection-logic role is kept as-is. computeLikelihood() is
 	// still applied on top of the flat baseline for consistency with every other rule's scoring:
@@ -89,7 +86,7 @@ func (r *MissingHardeningRule) createRisk(input *types.Model, technicalAsset *ty
 	// raaLikelihoodThreshold (40), every asset that reaches this point already earns the RAA
 	// Likelihood delta too, so Likely becomes VeryLikely here consistently -- the reachability
 	// delta can still vary per asset even though the RAA delta cannot.
-	likelihood := computeLikelihood(types.Likely, technicalAsset)
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

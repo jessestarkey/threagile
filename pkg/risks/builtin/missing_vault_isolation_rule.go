@@ -56,9 +56,6 @@ func (r *MissingVaultIsolationRule) GenerateRisks(input *types.Model) ([]*types.
 		if technicalAsset.OutOfScope || !technicalAsset.Technologies.GetAttribute(types.Vault) {
 			continue
 		}
-		moreImpact := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-			technicalAsset.Integrity == types.MissionCritical ||
-			technicalAsset.Availability == types.MissionCritical
 		sameExecutionEnv := false
 		createRiskEntry := false
 		// now check for any other same-network assets of non-vault-related types
@@ -79,7 +76,7 @@ func (r *MissingVaultIsolationRule) GenerateRisks(input *types.Model) ([]*types.
 			}
 		}
 		if createRiskEntry {
-			risks = append(risks, r.createRisk(technicalAsset, moreImpact, sameExecutionEnv))
+			risks = append(risks, r.createRisk(technicalAsset, sameExecutionEnv))
 		}
 	}
 	return risks, nil
@@ -89,18 +86,14 @@ func isVaultStorage(parsedModel *types.Model, vault *types.TechnicalAsset, stora
 	return storage.Type == types.Datastore && parsedModel.HasDirectConnection(vault, storage.Id)
 }
 
-func (r *MissingVaultIsolationRule) createRisk(techAsset *types.TechnicalAsset, moreImpact bool, sameExecutionEnv bool) *types.Risk {
-	impact := types.MediumImpact
-	baselineLikelihood := types.Unlikely
+func (r *MissingVaultIsolationRule) createRisk(techAsset *types.TechnicalAsset, sameExecutionEnv bool) *types.Risk {
+	impact := computeImpact(types.MediumImpact, r.Category().STRIDE, techAsset)
 	others := "<b>in the same network segment</b>"
-	if moreImpact {
-		impact = types.HighImpact
-	}
 	if sameExecutionEnv {
-		baselineLikelihood = types.Likely
 		others = "<b>in the same execution environment</b>"
 	}
-	likelihood := computeLikelihood(baselineLikelihood, techAsset)
+	// One level more likely when sharing an execution environment rather than only a network segment.
+	likelihood := computeLikelihood(types.Unlikely, techAsset, stepIf(sameExecutionEnv, 1))
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

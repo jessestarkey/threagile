@@ -79,11 +79,8 @@ func (r *CrossSiteRequestForgeryRule) createRisk(parsedModel *types.Model, techn
 	// scoped to the comm link's own Integrity rating rather than the target asset's, since CSRF's
 	// real consequence is the integrity of the data sent across this specific link -- not reused
 	// via the shared computeImpact() helper, which operates on the asset's own CIA fields.
-	impact := types.LowImpact
-	if parsedModel.HighestCommunicationLinkIntegrity(incomingFlow) == types.MissionCritical {
-		impact = types.MediumImpact
-	}
-	likelihood := computeLikelihood(r.likelihoodFromUsage(incomingFlow), technicalAsset)
+	impact := types.AdjustImpactForRank(types.LowImpact, linkRank(parsedModel, r.Category().STRIDE, incomingFlow))
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, devOpsStep(incomingFlow))
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),
@@ -97,11 +94,4 @@ func (r *CrossSiteRequestForgeryRule) createRisk(parsedModel *types.Model, techn
 	}
 	risk.SyntheticId = risk.CategoryId + "@" + technicalAsset.Id + "@" + incomingFlow.Id
 	return risk
-}
-
-func (*CrossSiteRequestForgeryRule) likelihoodFromUsage(cl *types.CommunicationLink) types.RiskExploitationLikelihood {
-	if cl.Usage == types.DevOps {
-		return types.Unlikely
-	}
-	return types.Likely
 }

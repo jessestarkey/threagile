@@ -92,18 +92,12 @@ func (r *UntrustedDeserializationRule) createRisk(parsedModel *types.Model, tech
 	// just Integrity (this category's own STRIDE value): per this category's own Impact text,
 	// untrusted deserialization lets an attacker "execute code on target systems" -- full
 	// remote code execution threatens any of the three dimensions, not just tampering.
-	impact := types.HighImpact
-	likelihood := types.Likely
+	impact := processedImpact(parsedModel, types.HighImpact, r.Category().STRIDE, technicalAsset)
 	if acrossTrustBoundary {
-		likelihood = types.VeryLikely
 		title += " across a trust boundary (at least via communication link <b>" + commLinkTitle + "</b>)"
 	}
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.VeryHighImpact
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	// One level more likely when the serialized input arrives across a trust boundary.
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, stepIf(acrossTrustBoundary, 1))
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

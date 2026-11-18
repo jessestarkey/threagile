@@ -74,16 +74,15 @@ func (r *UnencryptedAssetRule) GenerateRisks(input *types.Model) ([]*types.Risk,
 
 		verySensitive := highestStoredConfidentiality == types.StrictlyConfidential || highestStoredIntegrity == types.MissionCritical
 		requiresEndUserKey := verySensitive && technicalAsset.Technologies.GetAttribute(types.IsUsuallyStoringEndUserData)
+		// Encryption at rest protects what the asset stores, so the CIA step reads the stored data.
+		storedImpact := impactForRatings(types.LowImpact, r.Category().STRIDE, highestStoredConfidentiality,
+			highestStoredIntegrity, input.HighestStoredAvailability(technicalAsset))
 		if technicalAsset.Encryption == types.NoneEncryption {
-			impact := types.MediumImpact
-			if verySensitive {
-				impact = types.HighImpact
-			}
-			risks = append(risks, r.createRisk(technicalAsset, impact, requiresEndUserKey))
+			risks = append(risks, r.createRisk(technicalAsset, storedImpact, requiresEndUserKey))
 			continue
 		}
 		if requiresEndUserKey && technicalAsset.Encryption != types.DataWithEndUserIndividualKey {
-			risks = append(risks, r.createRisk(technicalAsset, types.MediumImpact, requiresEndUserKey))
+			risks = append(risks, r.createRisk(technicalAsset, storedImpact, requiresEndUserKey))
 			continue
 		}
 	}

@@ -98,25 +98,24 @@ func (r *DosRiskyAccessAcrossTrustBoundaryRule) potentiallyAddRisk(
 		return risks
 	}
 
-	highRisk := technicalAsset.Availability == types.MissionCritical && !incomingAccess.VPN && !incomingAccess.IpFiltered && !technicalAsset.Redundant
-	risks = append(risks, r.createRisk(technicalAsset, incomingAccess, linkId, hopBetween, input.TechnicalAssets[incomingAccess.SourceId], highRisk))
+	mitigated := incomingAccess.VPN || incomingAccess.IpFiltered || technicalAsset.Redundant
+	risks = append(risks, r.createRisk(technicalAsset, incomingAccess, linkId, hopBetween, input.TechnicalAssets[incomingAccess.SourceId], mitigated))
 	return risks
 }
 
 func (r *DosRiskyAccessAcrossTrustBoundaryRule) createRisk(techAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, linkId string, hopBetween string,
-	clientOutsideTrustBoundary *types.TechnicalAsset, moreRisky bool) *types.Risk {
+	clientOutsideTrustBoundary *types.TechnicalAsset, mitigated bool) *types.Risk {
 	// Already single-dimension (Availability, matching this category's STRIDE value) and
 	// asset-scoped, but not reused via the shared computeImpact() helper: moreRisky folds in
 	// rule-specific mitigating factors (VPN, IP filtering, redundancy) the generic helper has no
 	// way to know about, not just the asset's own Availability rank.
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+	// Low baseline plus the availability step; one level lower when the link is VPN- or
+	// IP-filtered or the target is redundant, the mitigations the model can show.
+	impact := types.ClampImpact(int(computeImpact(types.LowImpact, r.Category().STRIDE, techAsset)) + stepIf(mitigated, -1))
 	if len(hopBetween) > 0 {
 		hopBetween = " forwarded via <b>" + hopBetween + "</b>"
 	}
-	likelihood := computeLikelihood(types.Unlikely, techAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

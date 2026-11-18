@@ -299,7 +299,7 @@ func TestPushInsteadOfPullRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality: types.Confidential,
 			integrity:       types.Important,
 			availability:    types.Important,
-			expectedImpact:  types.MediumImpact,
+			expectedImpact:  types.LowImpact,
 		},
 		"critical integrity medium impact": {
 			confidentiality: types.Restricted,
@@ -311,7 +311,7 @@ func TestPushInsteadOfPullRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality: types.Restricted,
 			integrity:       types.Important,
 			availability:    types.Critical,
-			expectedImpact:  types.MediumImpact,
+			expectedImpact:  types.LowImpact,
 		},
 	}
 

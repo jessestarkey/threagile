@@ -71,11 +71,8 @@ func (r *ServerSideRequestForgeryRule) createRisk(input *types.Model, technicalA
 	target := input.TechnicalAssets[outgoingFlow.TargetId]
 	title := "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>" + technicalAsset.Title + "</b> server-side web-requesting " +
 		"the target <b>" + target.Title + "</b> via <b>" + outgoingFlow.Title + "</b>"
-	impact := types.LowImpact
 	// check by the target itself (can be in another trust-boundary)
-	if input.HighestProcessedConfidentiality(target) == types.StrictlyConfidential {
-		impact = types.MediumImpact
-	}
+	rank := processedRank(input, r.Category().STRIDE, target)
 	// check all potential attack targets within the same trust boundary (accessible via web protocols)
 	uniqueDataBreachTechnicalAssetIDs := make(map[string]interface{})
 	uniqueDataBreachTechnicalAssetIDs[technicalAsset.Id] = true
@@ -88,13 +85,14 @@ func (r *ServerSideRequestForgeryRule) createRisk(input *types.Model, technicalA
 				continue
 			}
 			uniqueDataBreachTechnicalAssetIDs[potentialTargetAsset.Id] = true
-			if input.HighestProcessedConfidentiality(potentialTargetAsset) == types.StrictlyConfidential {
-				impact = types.MediumImpact
-			}
+			rank = max(rank, processedRank(input, r.Category().STRIDE, potentialTargetAsset))
 		}
 	}
 	// adjust for cloud-based special risks
 	trustBoundaryId := input.GetTechnicalAssetTrustBoundaryId(technicalAsset)
+	// Low baseline plus the confidentiality step for the most confidential reachable target; at
+	// least Medium inside a cloud boundary, where the metadata endpoint is always a target.
+	impact := types.AdjustImpactForRank(types.LowImpact, rank)
 	if impact == types.LowImpact && len(trustBoundaryId) > 0 && input.TrustBoundaries[input.GetTechnicalAssetTrustBoundaryId(technicalAsset)].Type.IsWithinCloud() {
 		impact = types.MediumImpact
 	}
@@ -102,7 +100,7 @@ func (r *ServerSideRequestForgeryRule) createRisk(input *types.Model, technicalA
 	for key := range uniqueDataBreachTechnicalAssetIDs {
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
-	likelihood := types.Likely
+	likelihood := types.PossibleLikelihood
 	if outgoingFlow.Usage == types.DevOps {
 		// The asset-level RAA/internet-reachability delta below answers "is this component
 		// worth attacking in general" -- a different question from "is this specific link's

@@ -176,15 +176,15 @@ func TestMissingAuthenticationRuleGenerateRisksWithParameterisedAuthenticationAn
 						MultiTenant: true, // require less code instead of adding processed data
 					},
 					"ta2": {
-						Id:    "ta2",
-						Title: "Test Technical Asset 2",
+						Id:          "ta2",
+						Title:       "Test Technical Asset 2",
 						MultiTenant: true, // require less code instead of adding processed data
 					},
 				},
 				IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{
 					"ta1": {
 						{
-							Title: 		    "Communication Link",
+							Title:          "Communication Link",
 							SourceId:       "ta2",
 							Authentication: tt.authentication,
 							Protocol:       tt.protocol,
@@ -229,7 +229,7 @@ func TestMissingAuthenticationRuleGenerateRisksNoneAuthenticationNonLocalProcess
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, "<b>Missing Authentication</b> covering communication link <b>User Access via Browser</b> from <b>User Interface</b> to <b>Test Technical Asset</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestMissingAuthenticationRuleGenerateRisksSendStrictlyConfidentialDataAssetRisksCreatedWithHighImpact(t *testing.T) {
@@ -351,5 +351,5 @@ func TestMissingAuthenticationRuleGenerateRisksProcessingConfidentialDataRisksCr
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, "<b>Missing Authentication</b> covering communication link <b>User Access via Browser</b> from <b>User Interface</b> to <b>Test Technical Asset</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }

@@ -90,28 +90,24 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 				continue
 			}
 
-			highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential || technicalAsset.Integrity == types.MissionCritical
-			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, input.TechnicalAssets[incomingAccess.SourceId], highRisk))
+			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, input.TechnicalAssets[incomingAccess.SourceId]))
 		}
 	}
 	return risks, nil
 }
 
 func (r *UnguardedAccessFromInternetRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink,
-	clientFromInternet *types.TechnicalAsset, moreRisky bool) *types.Risk {
+	clientFromInternet *types.TechnicalAsset) *types.Risk {
 	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
 	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
 	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, dataStore)
 	// The GenerateRisks() check that the caller (clientFromInternet) itself carries
 	// Internet: true is kept as-is -- that's the detection-logic question of whether this risk
 	// applies at all (is this genuinely internet-originated traffic), separate from the
 	// Likelihood/Impact scoring below. computeLikelihood() separately checks dataStore's own
 	// reachability signals, which can differ from the caller's.
-	likelihood := computeLikelihood(types.VeryLikely, dataStore)
+	likelihood := computeLikelihood(types.Likely, dataStore)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

@@ -243,57 +243,18 @@ risk:
                     - return: true
         - return: false
 
-    processes_strictly_confidential:
-      parameters:
-        - tech_asset
-      do:
-        - loop:
-            in: "{tech_asset.data_assets_processed}"
-            item: data_id
-            do:
-              - if:
-                  equal:
-                    first: "{$model.data_assets.{data_id}.confidentiality}"
-                    second: strictly-confidential
-                  then:
-                    - return: true
-        - return: false
-
-    # New category (no replaced rule). Baseline is "likely": OWASP keeps Sensitive Information
-    # Disclosure at LLM02 in both the 2025 and 2026 LLM Top 10, and this rule only fires where
-    # confidential data is in reach and requests arrive from outside the boundary. All three
-    # outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. The rule only fires with confidential
-    # data in reach, so the baseline is "high"; it rises to "very-high" when strictly-
-    # confidential data is in reach.
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step. The rule fires only when confidential
+    # or higher data is involved, so that data sets the floor for the step.
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - strict: "processes_strictly_confidential({tech_asset})"
-        - if:
-            true: "{strict}"
-            then:
-              - return: very-high
-        - return: high
+        - return: "adjust_impact(medium, {tech_asset.confidentiality}, confidential)"

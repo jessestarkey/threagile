@@ -32,7 +32,7 @@ func TestHiddenContextExposureFiresOnlyWhenRequestsComeFromOutside(t *testing.T)
 			risks := generateScriptRisks(t, aiHiddenContextExposure, exposed)
 			require.Len(t, risks, 1)
 			assert.Equal(t, types.VeryLikely, risks[0].ExploitationLikelihood)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 
 			assert.Empty(t, generateScriptRisks(t, aiHiddenContextExposure, exposureModel(technology, "core", "core")))
 		})
@@ -67,9 +67,9 @@ func TestImproperOutputHandlingFiresWhenOutputIsConsumed(t *testing.T) {
 	assert.ElementsMatch(t, []string{"called", "model", "writer"}, keys(fired),
 		"called and model have callers that consume their output; writer writes to a datastore; "+
 			"telemetry-only only sends metrics; agent only calls its own model")
-	assert.Equal(t, types.VeryHighImpact, fired["called"].ExploitationImpact, "consumed by a critical-integrity backend")
-	assert.Equal(t, types.HighImpact, fired["model"].ExploitationImpact)
-	assert.Equal(t, types.VeryHighImpact, fired["writer"].ExploitationImpact, "output reaches a critical-integrity datastore")
+	assert.Equal(t, types.HighImpact, fired["called"].ExploitationImpact, "consumed by a critical-integrity backend")
+	assert.Equal(t, types.LowImpact, fired["model"].ExploitationImpact)
+	assert.Equal(t, types.HighImpact, fired["writer"].ExploitationImpact, "output reaches a critical-integrity datastore")
 	assert.Equal(t, types.Likely, fired["writer"].ExploitationLikelihood)
 }
 
@@ -98,7 +98,7 @@ func TestUnsafeNLDataGatewayFiresOnAIAssetsLinkingToDatastores(t *testing.T) {
 	assert.ElementsMatch(t, []string{"sql-agent"}, keys(fired),
 		"read-only links count; rag's target is not a datastore; app is not AI")
 	assert.Equal(t, types.HighImpact, fired["sql-agent"].ExploitationImpact)
-	assert.Equal(t, types.Likely, fired["sql-agent"].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, fired["sql-agent"].ExploitationLikelihood)
 }
 
 // Review finding 6: only query-composing AI assets fire, and vector stores are left to #20.

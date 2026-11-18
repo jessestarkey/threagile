@@ -138,7 +138,7 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			integrity:            types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.LowImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"high raa no longer bumps impact": {
 			// RAA was moved from an Impact bump to a Likelihood delta (see the comment in
@@ -155,7 +155,7 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			integrity:            types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.LowImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"strictly confidential medium impact risk created": {
 			outOfScope:           false,
@@ -296,5 +296,5 @@ func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) 
 	// Baseline is VeryLikely; a genuinely low-RAA target now pulls Likelihood down a notch via
 	// computeLikelihood(), which this rule didn't react to at all before this RAA/Likelihood
 	// redesign (see the comment in createRisk()).
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 }

@@ -238,62 +238,22 @@ risk:
                     - return: true
         - return: false
 
-    is_integrity_at_least_mid:
-      parameters:
-        - integrity
-      do:
-        - if:
-            or:
-              - equal:
-                  first: "{integrity}"
-                  second: important
-              - equal:
-                  first: "{integrity}"
-                  second: critical
-              - equal:
-                  first: "{integrity}"
-                  second: mission-critical
-            then:
-              - return: true
-        - return: false
-
-    # Baseline is "likely" (the baseline the replaced MAESTRO L7 rule used), so all 3 outcomes
-    # (possible/likely/very-likely) are reachable via the RAA delta.
+    # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset.raa})"
 
-    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling, as in the replaced
-    # MAESTRO L7 rule), so only the downward step is reachable. What an impersonated or injected
-    # message damages is the agent acting on it, so the rank is the max Integrity over this asset
-    # and the target of every insecure agent link: "very-high" if any is important or higher,
-    # otherwise "high".
+    # Impact baseline: medium.
+    # Impact: baseline plus the integrity step for the highest rank across the agent and
+    # the agents it reaches over an insecure link.
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - own_mid: "is_integrity_at_least_mid({tech_asset.integrity})"
-        - if:
-            true: "{own_mid}"
-            then:
-              - return: very-high
+            - best: "cia_rank({tech_asset.integrity})"
         - loop:
             in: "{tech_asset.communication_links}"
             item: link
@@ -306,9 +266,12 @@ risk:
                     - assign:
                         - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
                     - assign:
-                        - target_mid: "is_integrity_at_least_mid({target_integrity})"
+                        - target_rank: "cia_rank({target_integrity})"
                     - if:
-                        true: "{target_mid}"
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
                         then:
-                          - return: very-high
-        - return: high
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

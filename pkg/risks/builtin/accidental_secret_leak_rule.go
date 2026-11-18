@@ -88,20 +88,7 @@ func (r *AccidentalSecretLeakRule) createRisk(parsedModel *types.Model, technica
 	// threatens is bounded by what an attacker could do with it -- read, modify, or deny the
 	// data it unlocks -- not just disclose it, so a credential guarding Critical/Mission-Critical
 	// integrity or availability data deserves the same bump as one guarding Confidential data.
-	impact := types.LowImpact
-	highestProcessedConfidentiality := parsedModel.HighestProcessedConfidentiality(technicalAsset)
-	highestProcessedIntegrity := parsedModel.HighestProcessedIntegrity(technicalAsset)
-	highestProcessedAvailability := parsedModel.HighestProcessedAvailability(technicalAsset)
-	if highestProcessedConfidentiality >= types.Confidential ||
-		highestProcessedIntegrity >= types.Critical ||
-		highestProcessedAvailability >= types.Critical {
-		impact = types.MediumImpact
-	}
-	if highestProcessedConfidentiality == types.StrictlyConfidential ||
-		highestProcessedIntegrity == types.MissionCritical ||
-		highestProcessedAvailability == types.MissionCritical {
-		impact = types.HighImpact
-	}
+	impact := processedImpact(parsedModel, types.LowImpact, r.Category().STRIDE, technicalAsset)
 	// create risk
 	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
@@ -163,64 +150,9 @@ func (r *AccidentalSecretLeakRule) ExplainRisk(parsedModel *types.Model, risk st
 }
 
 func (r *AccidentalSecretLeakRule) explainRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) []string {
-	explanation := make([]string, 0)
-	impact := types.LowImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-
-		explanation = append(explanation,
-			fmt.Sprintf("    - impact is %v because", impact),
-		)
-
-		if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
-			explanation = append(explanation,
-				fmt.Sprintf("      => highest confidentiality: %v (==%v)", parsedModel.HighestProcessedConfidentiality(technicalAsset), types.StrictlyConfidential),
-			)
-		}
-
-		if parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("      => highest integrity: %v (==%v)", parsedModel.HighestProcessedIntegrity(technicalAsset), types.MissionCritical),
-			)
-		}
-
-		if parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("      => highest availability: %v (==%v)", parsedModel.HighestProcessedAvailability(technicalAsset), types.MissionCritical),
-			)
-		}
-	} else if parsedModel.HighestProcessedConfidentiality(technicalAsset) >= types.Confidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) >= types.Critical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) >= types.Critical {
-		impact = types.MediumImpact
-		explanation = append(explanation,
-			fmt.Sprintf("    - impact is %v because", impact),
-		)
-
-		if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
-			explanation = append(explanation,
-				fmt.Sprintf("     =>  highest confidentiality: %v (>=%v)", parsedModel.HighestProcessedConfidentiality(technicalAsset), types.Confidential),
-			)
-		}
-
-		if parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("     =>  highest integrity: %v (==%v)", parsedModel.HighestProcessedIntegrity(technicalAsset), types.Critical),
-			)
-		}
-
-		if parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("     =>  highest availability: %v (==%v)", parsedModel.HighestProcessedAvailability(technicalAsset), types.Critical),
-			)
-		}
-	} else {
-		explanation = append(explanation,
-			fmt.Sprintf("     - impact is %v (default)", impact),
-		)
+	rank := processedRank(parsedModel, r.Category().STRIDE, technicalAsset)
+	return []string{
+		fmt.Sprintf("    - impact is %v: %v baseline plus the confidentiality step (%+d) for the most confidential data processed (%v)",
+			types.AdjustImpactForRank(types.LowImpact, rank), types.LowImpact, types.CIARankDelta(rank), types.Confidentiality(rank)),
 	}
-
-	return explanation
 }

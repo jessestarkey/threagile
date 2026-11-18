@@ -67,17 +67,14 @@ func (r *ServiceRegistryPoisoningRule) createRisk(input *types.Model, technicalA
 	// category's own STRIDE value): per this category's own Impact text, poisoned lookup data
 	// can lead to "breach of sensitive data" downstream just as much as a direct tampering
 	// consequence at the registry itself.
-	impact := types.LowImpact
-
+	// Medium baseline plus the CIA step for the highest rank across the registry, its callers and
+	// the data on their links: a poisoned entry redirects every caller.
+	rank := processedRank(input, r.Category().STRIDE, technicalAsset)
 	for _, incomingFlow := range incomingFlows {
-		caller := input.TechnicalAssets[incomingFlow.SourceId]
-		if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical || input.HighestProcessedAvailability(technicalAsset) == types.MissionCritical ||
-			input.HighestProcessedConfidentiality(caller) == types.StrictlyConfidential || input.HighestProcessedIntegrity(caller) == types.MissionCritical || input.HighestProcessedAvailability(caller) == types.MissionCritical ||
-			input.HighestCommunicationLinkConfidentiality(incomingFlow) == types.StrictlyConfidential || input.HighestCommunicationLinkIntegrity(incomingFlow) == types.MissionCritical || input.HighestCommunicationLinkAvailability(incomingFlow) == types.MissionCritical {
-			impact = types.MediumImpact
-			break
-		}
+		rank = max(rank, processedRank(input, r.Category().STRIDE, input.TechnicalAssets[incomingFlow.SourceId]),
+			linkRank(input, r.Category().STRIDE, incomingFlow))
 	}
+	impact := types.AdjustImpactForRank(types.MediumImpact, rank)
 
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{

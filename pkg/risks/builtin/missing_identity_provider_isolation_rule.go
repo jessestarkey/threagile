@@ -58,9 +58,6 @@ func (r *MissingIdentityProviderIsolationRule) GenerateRisks(input *types.Model)
 			continue
 		}
 
-		moreImpact := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-			technicalAsset.Integrity == types.MissionCritical ||
-			technicalAsset.Availability == types.MissionCritical
 		sameExecutionEnv := false
 		createRiskEntry := false
 		// now check for any other same-network assets of non-identity-related types
@@ -82,24 +79,20 @@ func (r *MissingIdentityProviderIsolationRule) GenerateRisks(input *types.Model)
 			}
 		}
 		if createRiskEntry {
-			risks = append(risks, r.createRisk(technicalAsset, moreImpact, sameExecutionEnv))
+			risks = append(risks, r.createRisk(technicalAsset, sameExecutionEnv))
 		}
 	}
 	return risks, nil
 }
 
-func (r *MissingIdentityProviderIsolationRule) createRisk(techAsset *types.TechnicalAsset, moreImpact bool, sameExecutionEnv bool) *types.Risk {
-	impact := types.HighImpact
-	baselineLikelihood := types.Unlikely
+func (r *MissingIdentityProviderIsolationRule) createRisk(techAsset *types.TechnicalAsset, sameExecutionEnv bool) *types.Risk {
+	impact := computeImpact(types.MediumImpact, r.Category().STRIDE, techAsset)
 	others := "<b>in the same network segment</b>"
-	if moreImpact {
-		impact = types.VeryHighImpact
-	}
 	if sameExecutionEnv {
-		baselineLikelihood = types.Likely
 		others = "<b>in the same execution environment</b>"
 	}
-	likelihood := computeLikelihood(baselineLikelihood, techAsset)
+	// One level more likely when sharing an execution environment rather than only a network segment.
+	likelihood := computeLikelihood(types.PossibleLikelihood, techAsset, stepIf(sameExecutionEnv, 1))
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

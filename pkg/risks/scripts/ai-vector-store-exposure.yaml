@@ -152,46 +152,24 @@ risk:
                     - return: true
         - return: false
 
-    # Baseline is "likely" (as in the replaced atlas-vector-store-inversion rule), so all 3
-    # outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    # Likelihood: unlikely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(unlikely, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium" (as in the
-    # replaced rule). What an inversion or leaked dump exposes is the embedded content, so
-    # impact is "high" when the store or anything it holds is confidential or higher, "medium"
-    # when the store is restricted, otherwise "low".
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step; confidential stored or processed data
+    # counts as confidential even when the store's own rating is lower.
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - high: "holds_confidential({tech_asset})"
+            - holds: "holds_confidential({tech_asset})"
         - if:
-            true: "{high}"
+            true: "{holds}"
             then:
-              - return: high
-        - if:
-            equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
-            then:
-              - return: medium
-        - return: low
+              - return: "adjust_impact(medium, confidential)"
+        - return: "adjust_impact(medium, {tech_asset.confidentiality})"

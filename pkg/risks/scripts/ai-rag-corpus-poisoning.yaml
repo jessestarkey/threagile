@@ -233,49 +233,16 @@ risk:
               - return: true
         - return: false
 
-    # Baseline is "likely" (both replaced rules), so all 3 outcomes (possible/likely/
-    # very-likely) are reachable via the RAA delta.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "medium" (both replaced rules). Impact
-    # follows this asset's own Integrity: "high" for critical or higher, "medium" for important,
-    # otherwise "low".
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{tech_asset.integrity}"
-              second: important
-            then:
-              - return: medium
-        - return: low
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

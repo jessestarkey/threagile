@@ -66,10 +66,7 @@ func (r *SearchQueryInjectionRule) GenerateRisks(input *types.Model) ([]*types.R
 				incomingFlow.Protocol != types.BINARY && incomingFlow.Protocol != types.BinaryEncrypted {
 				continue
 			}
-			likelihood := types.VeryLikely
-			if incomingFlow.Usage == types.DevOps {
-				likelihood = types.Likely
-			}
+			likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, devOpsStep(incomingFlow))
 			risks = append(risks, r.createRisk(input, technicalAsset, incomingFlow, likelihood))
 		}
 	}
@@ -85,13 +82,7 @@ func (r *SearchQueryInjectionRule) createRisk(input *types.Model, technicalAsset
 	// Impact text, search query injection lets an attacker "read more data ... and eventually
 	// further escalate towards a deeper system penetration" -- a disclosure consequence first,
 	// a tampering one as it escalates.
-	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	} else if input.HighestProcessedConfidentiality(technicalAsset) <= types.Internal && input.HighestProcessedIntegrity(technicalAsset) == types.Operational {
-		impact = types.LowImpact
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	impact := injectionImpact(input, types.MediumImpact, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

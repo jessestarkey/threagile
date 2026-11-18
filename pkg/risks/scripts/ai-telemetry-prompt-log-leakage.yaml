@@ -243,57 +243,20 @@ risk:
               - return: false
         - return: true
 
-    # Baseline is "likely", the middle of the two rules whose ground this covers: the replaced
-    # MAESTRO L5 observability rule ("unlikely") and the generic CUI telemetry spillage rule
-    # ("very-likely"), which no longer fires on AI assets. Two independent steps: a modeled
-    # telemetry link carrying confidential data (+1), and RAA (+1 at >= 40, -1 below 15).
+    # Likelihood: likely baseline plus the RAA step.
+    # No step for a modeled telemetry link: the baseline already sits at the cap for a
+    # control-not-evidenced finding (see docs/risk-methodology.md, Risk calibration).
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - drawn: "sends_sensitive_telemetry({tech_asset})"
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - if:
-                  true: "{drawn}"
-                  then:
-                    - return: likely
-              - return: possible
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            true: "{drawn}"
-            then:
-              - return: very-likely
-        - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "high", the middle of the
-    # same two rules ("very-high" and "medium"). The rule only fires with confidential data in
-    # telemetry, so impact is "high", rising to "very-high" when strictly-confidential data is
-    # sent or held.
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step. The rule fires only when confidential
+    # or higher data is involved, so that data sets the floor for the step.
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - sent: "telemetry_level({tech_asset})"
-            - held: "held_level({tech_asset})"
-        - if:
-            or:
-              - equal:
-                  first: "{sent}"
-                  second: strict
-              - equal:
-                  first: "{held}"
-                  second: strict
-            then:
-              - return: very-high
-        - return: high
+        - return: "adjust_impact(medium, {tech_asset.confidentiality}, confidential)"

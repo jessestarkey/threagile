@@ -73,11 +73,8 @@ func (r *XmlExternalEntityRule) createRisk(parsedModel *types.Model, technicalAs
 	// accessing services of other components, not modifying them -- the Integrity/Availability
 	// checks an earlier version of this rule also had no longer apply, the same reasoning as
 	// path_traversal_rule.go's createRisk().
-	impact := types.MediumImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
-		impact = types.HighImpact
-	}
-	likelihood := computeLikelihood(types.Likely, technicalAsset)
+	impact := processedImpact(parsedModel, types.MediumImpact, r.Category().STRIDE, technicalAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

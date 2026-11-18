@@ -54,30 +54,21 @@ func (r *MissingVaultRule) GenerateRisks(input *types.Model) ([]*types.Risk, err
 	risks := make([]*types.Risk, 0)
 	hasVault := false
 	var mostRelevantAsset *types.TechnicalAsset
-	impact := types.LowImpact
+	highestRank := 0
 	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
 		techAsset := input.TechnicalAssets[id]
 		if techAsset.Technologies.GetAttribute(types.Vault) {
 			hasVault = true
 			break
 		}
-		if input.HighestProcessedConfidentiality(techAsset) >= types.Confidential ||
-			input.HighestProcessedIntegrity(techAsset) >= types.Critical ||
-			input.HighestProcessedAvailability(techAsset) >= types.Critical {
-			impact = types.MediumImpact
-		}
-		if techAsset.Confidentiality >= types.Confidential ||
-			techAsset.Integrity >= types.Critical ||
-			techAsset.Availability >= types.Critical {
-			impact = types.MediumImpact
-		}
+		highestRank = max(highestRank, processedRank(input, r.Category().STRIDE, techAsset))
 		// just for referencing the most interesting asset
 		if mostRelevantAsset == nil || techAsset.HighestSensitivityScore() > mostRelevantAsset.HighestSensitivityScore() {
 			mostRelevantAsset = techAsset
 		}
 	}
 	if !hasVault {
-		risks = append(risks, r.createRisk(mostRelevantAsset, impact))
+		risks = append(risks, r.createRisk(mostRelevantAsset, types.AdjustImpactForRank(types.LowImpact, highestRank)))
 	}
 	return risks, nil
 }

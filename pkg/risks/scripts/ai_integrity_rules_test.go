@@ -131,7 +131,7 @@ func TestSupplyChainFiresOnLoadersAndRisesOnlyWhenPullingFromOutside(t *testing.
 	assert.Equal(t, types.PossibleLikelihood, fired["serving"].ExploitationLikelihood, "pulls from the internal registry; user callers do not count")
 	assert.Equal(t, types.PossibleLikelihood, fired["agent"].ExploitationLikelihood, "being internet-facing is not a supply-chain pull")
 	assert.Equal(t, types.VeryHighImpact, fired["serving"].ExploitationImpact)
-	assert.Equal(t, types.HighImpact, fired["agent"].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, fired["agent"].ExploitationImpact)
 }
 
 // --- #25 Unbounded Consumption ---

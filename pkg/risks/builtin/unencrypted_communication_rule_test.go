@@ -121,6 +121,7 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			riskCreated:         true,
 			expectedImpact:      types.HighImpact,
 			expectedSuffixTitle: " transferring authentication data (like credentials, token, session-id, etc.)",
+			expectedLikelihood:  types.PossibleLikelihood,
 		},
 		"send authentication data over VPN": {
 			sourceOutOfScope:                        false,
@@ -138,6 +139,7 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			riskCreated:         true,
 			expectedImpact:      types.HighImpact,
 			expectedSuffixTitle: " transferring authentication data (like credentials, token, session-id, etc.) (even VPN-protected connections need to encrypt their data in-transit when confidentiality is rated strictly-confidential or integrity is rated mission-critical)",
+			expectedLikelihood:  types.PossibleLikelihood,
 		},
 		"send high sensitive data": {
 			sourceOutOfScope:                        false,
@@ -152,8 +154,9 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			authentication:                          types.NoneAuthentication,
 			protocol:                                types.HTTP,
 
-			riskCreated:    true,
-			expectedImpact: types.HighImpact,
+			riskCreated:        true,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"send important data without VPN": {
 			sourceOutOfScope:                        false,
@@ -168,8 +171,9 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			authentication:                          types.NoneAuthentication,
 			protocol:                                types.HTTP,
 
-			riskCreated:    true,
-			expectedImpact: types.MediumImpact,
+			riskCreated:        true,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"send high sensitive data across trust boundary": {
 			sourceOutOfScope:                        false,
@@ -231,8 +235,9 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			authentication:                          types.NoneAuthentication,
 			protocol:                                types.HTTP,
 
-			riskCreated:    true,
-			expectedImpact: types.MediumImpact,
+			riskCreated:        true,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"receive authentication data": {
 			sourceOutOfScope:                        false,
@@ -250,6 +255,7 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			riskCreated:         true,
 			expectedImpact:      types.HighImpact,
 			expectedSuffixTitle: " transferring authentication data (like credentials, token, session-id, etc.)",
+			expectedLikelihood:  types.PossibleLikelihood,
 		},
 		"receive authentication data over VPN": {
 			sourceOutOfScope:                        false,
@@ -267,6 +273,7 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			riskCreated:         true,
 			expectedImpact:      types.HighImpact,
 			expectedSuffixTitle: " transferring authentication data (like credentials, token, session-id, etc.) (even VPN-protected connections need to encrypt their data in-transit when confidentiality is rated strictly-confidential or integrity is rated mission-critical)",
+			expectedLikelihood:  types.PossibleLikelihood,
 		},
 		"receive high sensitive data": {
 			sourceOutOfScope:                        false,
@@ -281,8 +288,9 @@ func TestUnencryptedCommunicationRuleGenerateRisks(t *testing.T) {
 			authentication:                          types.NoneAuthentication,
 			protocol:                                types.HTTP,
 
-			riskCreated:    true,
-			expectedImpact: types.HighImpact,
+			riskCreated:        true,
+			expectedImpact:     types.HighImpact,
+			expectedLikelihood: types.PossibleLikelihood,
 		},
 		"receive high sensitive data across trust boundary": {
 			sourceOutOfScope:                        false,

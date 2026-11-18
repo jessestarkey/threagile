@@ -76,11 +76,11 @@ func (r *UnencryptedCommunicationRule) GenerateRisks(input *types.Model) ([]*typ
 			for _, sentDataAsset := range dataAssetIds {
 				dataAsset := input.DataAssets[sentDataAsset]
 				if isHighSensitivity(dataAsset) || transferringAuthData {
-					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, true, transferringAuthData))
+					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, transferringAuthData))
 					break
 				}
 				if !dataFlow.VPN && isMediumSensitivity(dataAsset) {
-					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, false, transferringAuthData))
+					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, transferringAuthData))
 					break
 				}
 			}
@@ -89,11 +89,14 @@ func (r *UnencryptedCommunicationRule) GenerateRisks(input *types.Model) ([]*typ
 	return risks, nil
 }
 
-func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, highRisk bool, transferringAuthData bool) *types.Risk {
-	impact := types.MediumImpact
-	if highRisk {
-		impact = types.HighImpact
+func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, transferringAuthData bool) *types.Risk {
+	// Medium baseline plus the confidentiality step for the data on the link; authentication data
+	// in cleartext counts as confidential whatever the link's data assets say.
+	rank := linkRank(input, r.Category().STRIDE, dataFlow)
+	if transferringAuthData {
+		rank = max(rank, int(types.Confidential))
 	}
+	impact := types.AdjustImpactForRank(types.MediumImpact, rank)
 	target := input.TechnicalAssets[dataFlow.TargetId]
 	title := "<b>Unencrypted Communication</b> named <b>" + dataFlow.Title + "</b> between <b>" + technicalAsset.Title + "</b> and <b>" + target.Title + "</b>"
 	if transferringAuthData {
@@ -107,11 +110,8 @@ func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalA
 	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
 	// own Description already explicitly says "confidentiality and/or integrity rating," not
 	// just the former.
-	likelihood := types.Unlikely
-	if isAcrossTrustBoundaryNetworkOnly(input, dataFlow) {
-		likelihood = types.Likely
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	// One level more likely across a network trust boundary than within one.
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, stepIf(isAcrossTrustBoundaryNetworkOnly(input, dataFlow), 1))
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

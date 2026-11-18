@@ -113,63 +113,22 @@ risk:
                     - return: true
         - return: false
 
-    # Availability rank: 2 for "high" (critical / mission-critical), 1 for "mid" (important),
-    # 0 otherwise -- the same CIA-rank bands every other rule's impact delta uses.
-    availability_rank:
-      parameters:
-        - availability
-      do:
-        - if:
-            or:
-              - equal:
-                  first: "{availability}"
-                  second: critical
-              - equal:
-                  first: "{availability}"
-                  second: mission-critical
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{availability}"
-              second: important
-            then:
-              - return: mid
-        - return: low
-
-    # New category (no replaced rule to inherit from). Baseline is "possible": a cascade needs a
-    # triggering fault or manipulation at one agent plus missing containment at the hand-off, and
-    # no published statistic rates agent-chain cascades yet, so this is analyst judgment. All
-    # three outcomes (unlikely/possible/likely) are reachable via the RAA delta.
+    # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: unlikely
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: likely
-                  else:
-                    - return: possible
+        - return: "adjust_likelihood(possible, {tech_asset.raa})"
 
-    # STRIDE is Denial-of-Service -> Availability. Baseline is "medium". A cascade takes out the
-    # chain, so the rank is the max Availability over this asset and every agent it hands work
-    # to: "high" if any is critical or higher, "medium" if any is important, otherwise "low".
+    # Impact baseline: medium.
+    # Impact: baseline plus the availability step for the highest rank across the agent and
+    # the agents it calls.
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - best: "availability_rank({tech_asset.availability})"
+            - best: "cia_rank({tech_asset.availability})"
         - loop:
             in: "{tech_asset.communication_links}"
             item: link
@@ -182,35 +141,12 @@ risk:
                     - assign:
                         - target_availability: "{$model.technical_assets.{link.target_id}.availability}"
                     - assign:
-                        - target_rank: "availability_rank({target_availability})"
+                        - target_rank: "cia_rank({target_availability})"
                     - if:
-                        equal:
+                        greater:
                           first: "{target_rank}"
-                          second: high
+                          second: "{best}"
                         then:
                           - assign:
-                              best: high
-                    - if:
-                        and:
-                          - equal:
-                              first: "{target_rank}"
-                              second: mid
-                          - equal:
-                              first: "{best}"
-                              second: low
-                        then:
-                          - assign:
-                              best: mid
-        - if:
-            equal:
-              first: "{best}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{best}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

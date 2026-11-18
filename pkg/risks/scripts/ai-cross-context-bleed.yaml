@@ -248,59 +248,28 @@ risk:
               - return: true
         - return: false
 
-    # New category (no replaced rule). Baseline is "possible": bleed needs an isolation defect
-    # (a session, cache, or memory keying bug, or an over-broad retrieval) to coincide with
-    # another user's request, and no prevalence statistic was found, so this is analyst
-    # judgment. All three outcomes (unlikely/possible/likely) are reachable via the RAA delta.
+    # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: unlikely
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: likely
-                  else:
-                    - return: possible
+        - return: "adjust_likelihood(possible, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium". What can bleed
-    # is the most sensitive thing in the context, so the rank is the max over this asset's own
-    # Confidentiality and the data entering its context: "high" for confidential or higher,
-    # "medium" for restricted, otherwise "low".
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step for the most confidential data in the
+    # asset or any context it mixes.
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - own: "confidentiality_rank({tech_asset.confidentiality})"
-            - context: "context_highest({tech_asset})"
+            - own: "cia_rank({tech_asset.confidentiality})"
+            - best: "context_highest({tech_asset})"
         - if:
-            or:
-              - equal-or-greater:
-                  first: "{own}"
-                  second: 3
-              - equal-or-greater:
-                  first: "{context}"
-                  second: 3
+            greater:
+              first: "{own}"
+              second: "{best}"
             then:
-              - return: high
-        - if:
-            or:
-              - equal:
-                  first: "{own}"
-                  second: 2
-              - equal:
-                  first: "{context}"
-                  second: 2
-            then:
-              - return: medium
-        - return: low
+              - assign:
+                  best: "{own}"
+        - return: "adjust_impact_rank(medium, {best})"

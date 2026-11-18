@@ -99,9 +99,7 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 				isSameTrustBoundaryNetworkOnly(input, technicalAsset, sparringAssetCandidateId) &&
 				!input.HasDirectConnection(technicalAsset, sparringAssetCandidateId) &&
 				!sparringAssetCandidate.Technologies.GetAttribute(types.IsCloseToHighValueTargetsTolerated) {
-				highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-					technicalAsset.Integrity == types.MissionCritical || technicalAsset.Availability == types.MissionCritical
-				risks = append(risks, r.createRisk(technicalAsset, highRisk))
+				risks = append(risks, r.createRisk(technicalAsset))
 				break
 			}
 		}
@@ -109,11 +107,8 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 	return risks, nil
 }
 
-func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAsset, moreRisky bool) *types.Risk {
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAsset) *types.Risk {
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, techAsset)
 	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit gate,
 	// 50% -- already at or above raaLikelihoodThreshold's 40%) -- that detection-logic role is
 	// kept as-is. computeLikelihood() is still applied on top of the flat baseline for

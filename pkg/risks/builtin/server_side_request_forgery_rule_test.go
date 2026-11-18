@@ -159,7 +159,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksLowImpactRisksCreated(t *testi
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>Test Technical Asset</b> server-side web-requesting the target <b>Test Target Asset</b> via <b>Test Communication Link</b>", risks[0].Title)
 }
 
@@ -201,7 +201,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialMediumImpa
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>Test Technical Asset</b> server-side web-requesting the target <b>Test Target Asset</b> via <b>Test Communication Link</b>", risks[0].Title)
 }
 
@@ -256,7 +256,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksTrustBoundaryWithinCloudMedium
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>Test Technical Asset</b> server-side web-requesting the target <b>Test Target Asset</b> via <b>Test Communication Link</b>", risks[0].Title)
 }
 
@@ -312,7 +312,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialTrustBound
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>Test Technical Asset</b> server-side web-requesting the target <b>Test Target Asset</b> via <b>Test Communication Link</b>", risks[0].Title)
 }
 
@@ -373,8 +373,8 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialDifferentT
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>Test Technical Asset</b> server-side web-requesting the target <b>Test Target Asset</b> via <b>Test Communication Link</b>", risks[0].Title)
 }
 
@@ -490,7 +490,7 @@ func TestServerSideRequestForgeryRuleGenerateRisksStrictlyConfidentialNotHttpAcc
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 	assert.Equal(t, "<b>Server-Side Request Forgery (SSRF)</b> risk at <b>Test Technical Asset</b> server-side web-requesting the target <b>Test Target Asset</b> via <b>Test Communication Link</b>", risks[0].Title)
 }

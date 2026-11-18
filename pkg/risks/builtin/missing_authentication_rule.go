@@ -86,13 +86,7 @@ func (r *MissingAuthenticationRule) GenerateRisks(input *types.Model) ([]*types.
 // scoped to the comm link's own ratings rather than the target asset's -- not reused via the
 // shared computeImpact() helper, which operates on the asset's own CIA fields, not a link's.
 func (r *MissingAuthenticationRule) calculateImpact(commLink *types.CommunicationLink, input *types.Model) types.RiskExploitationImpact {
-	if input.HighestCommunicationLinkConfidentiality(commLink) == types.StrictlyConfidential || input.HighestCommunicationLinkIntegrity(commLink) == types.MissionCritical {
-		return types.HighImpact
-	}
-	if input.HighestCommunicationLinkConfidentiality(commLink) <= types.Internal && input.HighestCommunicationLinkIntegrity(commLink) == types.Operational {
-		return types.LowImpact
-	}
-	return types.MediumImpact
+	return types.AdjustImpactForRank(types.MediumImpact, linkRank(input, r.Category().STRIDE, commLink))
 }
 
 func (r *MissingAuthenticationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingAccess, incomingAccessOrigin *types.CommunicationLink, hopBetween string,

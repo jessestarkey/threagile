@@ -129,7 +129,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
+			expectedImpact:                 types.LowImpact,
 			expectedMostRelevantAssetTitle: "Test Technical Asset",
 		},
 		"medium impact critical integrity target asset": {
@@ -145,7 +145,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
+			expectedImpact:                 types.LowImpact,
 			expectedMostRelevantAssetTitle: "Test Technical Asset",
 		},
 		"medium impact critical availability target asset": {
@@ -161,7 +161,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
+			expectedImpact:                 types.LowImpact,
 			expectedMostRelevantAssetTitle: "Test Technical Asset",
 		},
 		"medium impact process confidential data asset": {
@@ -177,7 +177,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
+			expectedImpact:                 types.LowImpact,
 			expectedMostRelevantAssetTitle: "Test Technical Asset",
 		},
 		"medium impact process critical integrity data asset": {
@@ -193,7 +193,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
+			expectedImpact:                 types.LowImpact,
 			expectedMostRelevantAssetTitle: "Test Technical Asset",
 		},
 		"medium impact process critical availability data asset": {
@@ -209,7 +209,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
+			expectedImpact:                 types.LowImpact,
 			expectedMostRelevantAssetTitle: "Test Technical Asset",
 		},
 	}

@@ -100,61 +100,6 @@ risk:
                     - return: true
         - return: false
 
-    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
-    # Network boundary of an asset, following the network-only semantics of Threagile's own
-    # built-in rules: its directly containing trust boundary, or, when that is an
-    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
-    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
-    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
-    network_boundary:
-      parameters:
-        - asset_id
-      do:
-        - assign:
-            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
-        - if:
-            not-equal:
-              first: "{$model.trust_boundaries.{boundary}.type}"
-              second: execution-environment
-            then:
-              - return: "{boundary}"
-        - assign:
-            - boundary: "parent_boundary({boundary})"
-        - if:
-            not-equal:
-              first: "{$model.trust_boundaries.{boundary}.type}"
-              second: execution-environment
-            then:
-              - return: "{boundary}"
-        - assign:
-            - boundary: "parent_boundary({boundary})"
-        - if:
-            not-equal:
-              first: "{$model.trust_boundaries.{boundary}.type}"
-              second: execution-environment
-            then:
-              - return: "{boundary}"
-        - assign:
-            - boundary: "parent_boundary({boundary})"
-        - return: "{boundary}"
-
-    # Id of the trust boundary that nests the given one, or empty.
-    parent_boundary:
-      parameters:
-        - child
-      do:
-        - loop:
-            in: "{$model.trust_boundaries}"
-            item: candidate
-            do:
-              - if:
-                  contains:
-                    item: "{child}"
-                    in: "{candidate.trust_boundaries_nested}"
-                  then:
-                    - return: "{candidate.id}"
-        - return: ""
-
     # True for an asset outside the organization's own systems: internet-facing, out of scope,
     # or an external entity (the zero value of type, dropped on re-serialization, so "neither
     # process nor datastore" is tested).
@@ -177,98 +122,24 @@ risk:
               - return: true
         - return: false
 
-    is_frontend_asset:
-      parameters:
-        - asset_id
-      do:
-        - if:
-            any:
-              in: "{$model.technical_assets.{asset_id}.technologies}"
-              true: "{.attributes.frontend_related}"
-            then:
-              - return: true
-        - return: false
-
-    # True when a caller brings outside requests or content in: it is external, or it is a
-    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
-    # boundary from the given one.
-    is_outside_caller:
-      parameters:
-        - caller_id
-        - own_boundary
-      do:
-        - assign:
-            - external: "is_external({caller_id})"
-        - if:
-            true: "{external}"
-            then:
-              - return: true
-        - assign:
-            - frontend: "is_frontend_asset({caller_id})"
-            - caller_boundary: "network_boundary({caller_id})"
-        - if:
-            and:
-              - true: "{frontend}"
-              - not-equal:
-                  first: "{caller_boundary}"
-                  second: "{own_boundary}"
-            then:
-              - return: true
-        - return: false
-
-    # Baseline is "possible", shared by all four replaced rules. Two independent one-level
-    # steps up: content brought in from outside the trust boundary, and RAA >= 40. RAA < 15
-    # steps down one level.
+    # Likelihood: possible baseline plus the RAA step, one level higher when it pulls from outside the boundary.
     get_likelihood:
       parameters:
         - tech_asset
       do:
         - assign:
+            - step: 0
             - outside: "brings_in_from_outside({tech_asset})"
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - if:
-                  true: "{outside}"
-                  then:
-                    - return: very-likely
-              - return: likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - if:
-                  true: "{outside}"
-                  then:
-                    - return: possible
-              - return: unlikely
         - if:
             true: "{outside}"
             then:
-              - return: likely
-        - return: possible
+              - assign:
+                  step: 1
+        - return: "adjust_likelihood(possible, {tech_asset.raa}, {step})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling, shared by all four
-    # replaced rules), so only the downward step is reachable: "high" when this asset's own
-    # Integrity is operational or archive, otherwise "very-high".
+    # Impact: high baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - return: very-high
-        - return: high
+        - return: "adjust_impact(high, {tech_asset.integrity})"

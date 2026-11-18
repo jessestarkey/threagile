@@ -132,62 +132,22 @@ risk:
                     - return: true
         - return: false
 
-    # Confidentiality band of a value: high / mid / low.
-    confidentiality_band:
-      parameters:
-        - confidentiality
-      do:
-        - if:
-            or:
-              - equal:
-                  first: "{confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{confidentiality}"
-                  second: strictly-confidential
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{confidentiality}"
-              second: restricted
-            then:
-              - return: mid
-        - return: low
-
-    # New category (no replaced rule). Baseline is "likely": the model directly composes
-    # queries, and prompt injection that steers model output is easy, so any datastore it can
-    # query is reachable. All 3 outcomes (possible/likely/very-likely) are reachable via the RAA
-    # delta.
+    # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium". What leaks is
-    # whatever the datastores hold, so the band is the max Confidentiality over every datastore
-    # this asset links to: "high" for a high band, "medium" for mid, otherwise "low".
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step for the most confidential data store
+    # the gateway queries.
     get_impact:
       parameters:
         - tech_asset
       do:
         - assign:
-            - best: low
+            - best: "cia_rank(public)"
         - loop:
             in: "{tech_asset.communication_links}"
             item: link
@@ -200,35 +160,12 @@ risk:
                     - assign:
                         - store_level: "{$model.technical_assets.{link.target_id}.confidentiality}"
                     - assign:
-                        - band: "confidentiality_band({store_level})"
+                        - target_rank: "cia_rank({store_level})"
                     - if:
-                        equal:
-                          first: "{band}"
-                          second: high
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
                         then:
                           - assign:
-                              best: high
-                    - if:
-                        and:
-                          - equal:
-                              first: "{band}"
-                              second: mid
-                          - equal:
-                              first: "{best}"
-                              second: low
-                        then:
-                          - assign:
-                              best: mid
-        - if:
-            equal:
-              first: "{best}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{best}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

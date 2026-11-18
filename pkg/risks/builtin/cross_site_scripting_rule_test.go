@@ -76,7 +76,7 @@ func TestCrossSiteScriptingRuleGenerateRisksTechAssetWebApplicationRisksCreated(
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Cross-Site Scripting (XSS)</b> risk at <b>Web Application</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestCrossSiteScriptingRuleGenerateRisksTechAssetProcessStrictlyConfidentialDataAssetHighImpactRiskCreated(t *testing.T) {
@@ -167,7 +167,7 @@ func TestCrossSiteScriptingRuleGenerateRisksTechAssetNoDataProcessedMediumImpact
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Cross-Site Scripting (XSS)</b> risk at <b>Web Application</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestCrossSiteScriptingRuleGenerateRisksMultipleWebApplicationsEachGeneratesOwnRisk(t *testing.T) {

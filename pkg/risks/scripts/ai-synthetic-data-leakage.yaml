@@ -94,33 +94,18 @@ risk:
                     - return: true
         - return: false
 
-    # Baseline is "likely" (as in the replaced atlas-synthetic-data-memorization rule), so all
-    # 3 outcomes (possible/likely/very-likely) are reachable via the RAA delta.
+    # Likelihood: possible baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset.raa})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium" (as in the
-    # replaced rule), and the rule only fires when the source is confidential or higher, so the
-    # +1 confidentiality step always applies: "high".
+    # Impact baseline: low.
+    # Impact: baseline plus the confidentiality step. The rule fires only when confidential
+    # or higher data is involved, so that data sets the floor for the step.
     get_impact:
       parameters:
         - tech_asset
       do:
-        - return: high
+        - return: "adjust_impact(low, {tech_asset.confidentiality}, confidential)"

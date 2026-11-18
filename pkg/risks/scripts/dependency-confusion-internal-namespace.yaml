@@ -64,50 +64,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
-    # reachable.
+    # Likelihood: likely baseline plus the RAA step.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: likely
-            else:
-              - return: very-likely
+        - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
-    # downward (Integrity low) delta is reachable.
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: high baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - integrity_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  integrity_low: false
-        - if:
-            true: "{integrity_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(high, {tech_asset.integrity})"
