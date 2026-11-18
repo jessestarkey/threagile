@@ -2,6 +2,7 @@ id: key-management-separation-of-duties-violation
 title: Key Management Separation-of-Duties Violation
 function: architecture
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 269
 description: >
   A single identity can both perform key operations and administer or audit that same key

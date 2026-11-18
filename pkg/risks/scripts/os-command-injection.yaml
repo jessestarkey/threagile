@@ -2,6 +2,7 @@ id: os-command-injection
 title: "OS Command Injection"
 function: architecture
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 78
 description: >
   This asset owns custom-developed request or job-processing code that may construct an OS shell

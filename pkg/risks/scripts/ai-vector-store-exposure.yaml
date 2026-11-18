@@ -2,6 +2,7 @@ id: ai-vector-store-exposure
 title: "Vector Store Exposure and Embedding Inversion"
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 200
 description: >
   A vector store holds embeddings of source content, and embeddings are not anonymous: the

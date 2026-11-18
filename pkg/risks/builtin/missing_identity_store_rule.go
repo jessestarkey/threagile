@@ -33,6 +33,7 @@ func (*MissingIdentityStoreRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Spoofing,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Models with authenticated data-flows authorized via end user identity missing an in-scope identity store.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the end user-identity authorized technical assets and " +
 			"their data assets processed.",

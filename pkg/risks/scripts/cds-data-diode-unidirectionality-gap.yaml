@@ -2,6 +2,7 @@ id: cds-data-diode-unidirectionality-gap
 title: "CDS Data Diode Unidirectionality Verification and Feed Integrity Gap"
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 345
 description: >
   A data diode's entire assurance rests on one physical property -- that no return path exists

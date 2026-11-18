@@ -2,6 +2,7 @@ id: untrusted-container-image
 title: Untrusted Container Image Supply Chain
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 1357
 description: >
   The container image's provenance is not explicitly verified as coming from a trusted, scanned

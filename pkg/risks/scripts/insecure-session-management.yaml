@@ -2,6 +2,7 @@ id: insecure-session-management
 title: Insecure Session Management
 function: architecture
 stride: spoofing
+finding_class: control-not-evidenced
 cwe: 613
 description: >
   The frontend application issues session tokens without enforcing secure handling -- missing

@@ -2,6 +2,7 @@ id: ai-unsafe-nl-data-gateway
 title: "Unsafe Natural-Language Data Gateway"
 function: architecture
 stride: information-disclosure
+finding_class: weakness-shown
 cwe: 89
 description: >
   An AI asset connects directly to a datastore and turns natural-language requests into queries

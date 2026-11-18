@@ -2,6 +2,7 @@ id: ai-supply-chain-compromise
 title: "AI Supply Chain Compromise"
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 1357
 description: >
   This asset loads third-party AI components it did not build: model weights, adapters, and

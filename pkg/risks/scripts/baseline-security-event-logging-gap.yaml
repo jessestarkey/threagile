@@ -2,6 +2,7 @@ id: baseline-security-event-logging-gap
 title: "Baseline Security Event Logging and SIEM Forwarding Gap"
 function: operations
 stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
   This asset does not capture and forward authentication failures, authorization denials, and

@@ -2,6 +2,7 @@ id: space-vehicle-bus-segmentation-gap
 title: "Space Vehicle Onboard Command Authentication and Bus Segmentation Gap"
 function: architecture
 stride: spoofing
+finding_class: control-not-evidenced
 cwe: 284
 description: >
   The spacecraft's own command-and-data-handling subsystem is the last line of defense if

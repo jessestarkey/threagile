@@ -561,10 +561,16 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			STRIDE:                     stride,
 			ModelFailurePossibleReason: customRiskCategoryCategory.ModelFailurePossibleReason,
 			CWE:                        customRiskCategoryCategory.CWE,
+			FindingClass:               customRiskCategoryCategory.FindingClass,
 		}
 
 		if cat.Description == "" {
 			cat.Description = customRiskCategoryCategory.Title
+		}
+
+		if cat.FindingClass != "" && !types.IsValidFindingClass(cat.FindingClass) {
+			return nil, fmt.Errorf("unknown 'finding_class' value of individual risk category %q: %v (expected %q or %q)",
+				customRiskCategoryCategory.Title, cat.FindingClass, types.FindingClassWeaknessShown, types.FindingClassControlNotEvidenced)
 		}
 
 		err = checkIdSyntax(customRiskCategoryCategory.ID)
@@ -657,6 +663,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 					SyntheticId:                     createSyntheticId(cat.ID, mostRelevantDataAssetId, mostRelevantTechnicalAssetId, mostRelevantCommunicationLinkId, mostRelevantTrustBoundaryId, mostRelevantSharedRuntimeId),
 					Title:                           title,
 					CategoryId:                      cat.ID,
+					FindingClass:                    cat.FindingClass,
 					Severity:                        severity,
 					ExploitationLikelihood:          exploitationLikelihood,
 					ExploitationImpact:              exploitationImpact,

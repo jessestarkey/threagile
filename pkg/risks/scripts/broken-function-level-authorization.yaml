@@ -2,6 +2,7 @@ id: broken-function-level-authorization
 title: Broken Function-Level Authorization (BFLA)
 function: architecture
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 285
 description: >
   The backend API exposes administrative or privileged function endpoints that rely on

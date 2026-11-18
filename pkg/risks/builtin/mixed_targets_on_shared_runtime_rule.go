@@ -26,9 +26,10 @@ func (*MixedTargetsOnSharedRuntimeRule) Category() *types.RiskCategory {
 		Mitigation: "Use separate runtime environments for running different target components or apply similar separation styles to " +
 			"prevent load- or breach-related problems originating from one more attacker-facing asset impacts also the " +
 			"other more critical rated backend/datastore assets.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Shared runtime running technical assets of different trust-boundaries is at risk. " +
 			"Also mixing backend/datastore with frontend components on the same shared runtime is considered a risk.",
 		RiskAssessment: "The risk rating (low or medium) depends on the confidentiality, integrity, and availability rating of " +

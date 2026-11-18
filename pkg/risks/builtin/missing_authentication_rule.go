@@ -31,9 +31,10 @@ func (*MissingAuthenticationRule) Category() *types.RiskCategory {
 			"Actuator, Elasticsearch, Redis, etcd, database admin consoles). References: CWE-306, CWE-287; MITRE ATT&CK " +
 			"T1190 (Exploit Public-Facing Application); OWASP Top 10:2025 A07 (Authentication Failures); OWASP API " +
 			"Security Top 10:2023 API2 (Broken Authentication); NIST SP 800-53 IA-2, IA-9.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (except " + types.LoadBalancer + ", " + types.ReverseProxy + ", " + types.ServiceRegistry + ", " + types.WAF + ", " + types.IDS + ", and " + types.IPS + " and in-process calls) should authenticate incoming requests when the asset processes " +
 			"sensitive data. This is especially the case for all multi-tenant assets (there even non-sensitive ones).",
 		RiskAssessment: "The risk rating (medium or high) " +

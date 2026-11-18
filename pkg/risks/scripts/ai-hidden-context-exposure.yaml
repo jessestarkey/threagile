@@ -2,6 +2,7 @@ id: ai-hidden-context-exposure
 title: "Hidden Context Exposure"
 function: architecture
 stride: information-disclosure
+finding_class: weakness-shown
 cwe: 200
 description: >
   An LLM endpoint, RAG pipeline, or agent answers requests from outside its trust boundary, and

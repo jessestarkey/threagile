@@ -33,9 +33,10 @@ func (*MissingBuildInfrastructureRule) Category() *types.RiskCategory {
 			"the build platform is owned by a shared enterprise team, model it as out-of-scope assets so its data flows " +
 			"into this system still appear, and cite that platform's own authorization package. References: NIST SP " +
 			"800-218 (SSDF) PO.3, PO.5; NIST SP 800-53 SA-15, SR-3; MITRE ATT&CK T1195.002.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.Tampering,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Models with in-scope custom-developed parts missing in-scope development (code creation) and build infrastructure " +
 			"components (devops-client, sourcecode-repo, build-pipeline, etc.).",
 		RiskAssessment: "The risk rating depends on the highest sensitivity of the in-scope assets running custom-developed parts.",

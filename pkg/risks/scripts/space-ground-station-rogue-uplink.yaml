@@ -2,6 +2,7 @@ id: space-ground-station-rogue-uplink
 title: "Rogue Ground Station Impersonation"
 function: operations
 stride: spoofing
+finding_class: control-not-evidenced
 cwe: 306
 description: >
   A ground station that uplinks commands to a spacecraft is impersonable if command

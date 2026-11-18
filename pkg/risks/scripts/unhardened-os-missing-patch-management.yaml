@@ -2,6 +2,7 @@ id: unhardened-os-missing-patch-management
 title: "Unhardened OS / Missing Patch Management"
 function: operations
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 1104
 description: >
   The virtual machine is not deployed from a STIG-compliant baseline image and has no automated

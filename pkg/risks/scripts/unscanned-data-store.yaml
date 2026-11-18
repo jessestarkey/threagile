@@ -2,6 +2,7 @@ id: unscanned-data-store
 title: Unclassified or Unscanned Data Store
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 200
 description: >
   A persistent data store has never been run through an automated classification scan, so no

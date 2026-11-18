@@ -34,9 +34,10 @@ func (*UnencryptedCommunicationRule) Category() *types.RiskCategory {
 			"cannot be upgraded, tunnel it through IPsec or a TLS wrapper. References: CWE-319; CAPEC-94 (Adversary in the " +
 			"Middle); MITRE ATT&CK T1040 (Network Sniffing), T1557 (Adversary-in-the-Middle); OWASP Top 10:2025 A04 " +
 			"(Cryptographic Failures); NIST SP 800-53 SC-8, SC-8(1), SC-13.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.InformationDisclosure,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.InformationDisclosure,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Unencrypted technical communication links of in-scope technical assets (excluding " + types.Monitoring + " traffic as well as " + types.LocalFileAccess.String() + ", " + types.InProcessLibraryCall.String() + " and " + types.InterProcessCommunication.String() + ") " +
 			"transferring sensitive data.", // TODO more detailed text required here
 		RiskAssessment: "Depending on the confidentiality rating of the transferred data-assets either medium or high risk.",

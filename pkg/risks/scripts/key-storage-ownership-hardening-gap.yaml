@@ -2,6 +2,7 @@ id: key-storage-ownership-hardening-gap
 title: Key Storage and Ownership Hardening Gap
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 320
 description: >
   This secrets or key management asset holds consequential key material either generated only in

@@ -38,6 +38,7 @@ func (*UncheckedDeploymentRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "All development-relevant technical assets.",
 		RiskAssessment: "The risk rating depends on the highest rating of the technical assets and data assets processed by deployment-receiving targets.",
 		FalsePositives: "When the build-pipeline does not build any software components it can be considered a false positive " +

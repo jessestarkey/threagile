@@ -2,6 +2,7 @@ id: ai-adversarial-evasion
 title: "Adversarial Evasion Against Model Decision Boundary"
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 20
 description: >
   An adversary can craft an input with small, often human-imperceptible perturbations

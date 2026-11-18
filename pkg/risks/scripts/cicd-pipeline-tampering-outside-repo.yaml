@@ -2,6 +2,7 @@ id: cicd-pipeline-tampering-outside-repo
 title: CI/CD Pipeline and Admission-Policy Tampering Outside Repository Trail
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 1357
 description: >
   An identity with access to the CI/CD platform's own console can modify the pipeline definition

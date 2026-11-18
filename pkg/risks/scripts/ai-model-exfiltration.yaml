@@ -2,6 +2,7 @@ id: ai-model-exfiltration
 title: "Model Exfiltration and IP Replication"
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 200
 description: >
   Model weights, adapters, and the training code and feature engineering that produced them are

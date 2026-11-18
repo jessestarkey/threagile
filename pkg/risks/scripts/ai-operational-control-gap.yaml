@@ -2,6 +2,7 @@ id: ai-operational-control-gap
 title: "AI Operational Control Gap"
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 693
 description: >
   What this AI asset does in production is set by artifacts that change outside normal code

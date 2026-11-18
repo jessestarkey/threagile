@@ -22,6 +22,22 @@ func WriteRisksJSON(parsedModel *types.Model, filename string) error {
 
 // TODO: also a "data assets" json?
 
+// RiskCategoriesJSONFilename is written next to the risks JSON: the metadata (title, finding
+// class, risk assessment, ...) of every category with at least one finding, from all rule layers.
+const RiskCategoriesJSONFilename = "risk-categories.json"
+
+func WriteRiskCategoriesJSON(parsedModel *types.Model, filename string) error {
+	jsonBytes, err := json.Marshal(parsedModel.SortedRiskCategories())
+	if err != nil {
+		return fmt.Errorf("failed to marshal risk categories to JSON: %w", err)
+	}
+	err = os.WriteFile(filename, jsonBytes, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write risk categories to JSON file: %w", err)
+	}
+	return nil
+}
+
 func WriteTechnicalAssetsJSON(parsedModel *types.Model, filename string) error {
 	jsonBytes, err := json.Marshal(parsedModel.TechnicalAssets)
 	if err != nil {

@@ -2,6 +2,7 @@ id: key-rotation-escrow-neglect
 title: Key Rotation and Escrow Neglect
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 320
 description: >
   Key rotation for this asset is manual and inconsistently performed, and no tested escrow or

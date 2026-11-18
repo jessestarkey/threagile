@@ -2,6 +2,7 @@ id: vulnerable-outdated-dependency
 title: "Vulnerable and Outdated Third-Party Dependency"
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 1104
 description: >
   This asset's own custom-developed code pulls in third-party libraries/packages whose versions

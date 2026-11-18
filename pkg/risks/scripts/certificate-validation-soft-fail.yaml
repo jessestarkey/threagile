@@ -2,6 +2,7 @@ id: certificate-validation-soft-fail
 title: "Certificate Validation Service Soft-Fail Revocation Checking"
 function: operations
 stride: spoofing
+finding_class: control-not-evidenced
 cwe: 299
 description: >
   A certificate-status validation service (OCSP responder or CRL distribution point) that

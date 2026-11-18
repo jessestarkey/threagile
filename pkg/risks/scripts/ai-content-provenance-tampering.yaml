@@ -2,6 +2,7 @@ id: ai-content-provenance-tampering
 title: "Content Provenance Watermark Stripping and Forged Credential Insertion"
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 345
 description: >
   A service embedding or verifying content-provenance or watermarking metadata on AI-generated

@@ -2,6 +2,7 @@ id: cds-guard-ruleset-bypass
 title: "CDS Guard Filter Rule-Set Staleness and Undocumented Bypass Path"
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 696
 description: >
   A cross-domain solution guard's entire release decision rests on its content-inspection

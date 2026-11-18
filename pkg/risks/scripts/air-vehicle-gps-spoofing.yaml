@@ -2,6 +2,7 @@ id: air-vehicle-gps-spoofing
 title: "Air Vehicle GPS/PNT Spoofing-Induced Navigation Hijack and Physical Capture Data Exposure"
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 290
 description: >
   An air vehicle navigating on unauthenticated civilian GPS/PNT signals can be spoofed or

@@ -2,6 +2,7 @@ id: ai-insecure-inter-agent-communication
 title: "Insecure Inter-Agent Communication"
 function: architecture
 stride: spoofing
+finding_class: weakness-shown
 cwe: 287
 description: >
   An AI agent delegates to or messages another agent over a link that crosses a trust boundary,

@@ -33,9 +33,10 @@ func (*UnencryptedAssetRule) Category() *types.RiskCategory {
 			"AWS Config) so unencrypted resources cannot be created. References: CWE-311, CWE-312; MITRE ATT&CK T1005 " +
 			"(Data from Local System), T1530 (Data from Cloud Storage); OWASP Top 10:2025 A04 (Cryptographic Failures); " +
 			"NIST SP 800-53 SC-28, SC-28(1), SC-12, SC-13.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.InformationDisclosure,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.InformationDisclosure,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope unencrypted technical assets (excluding " + types.ReverseProxy +
 			", " + types.LoadBalancer + ", " + types.WAF + ", " + types.IDS +
 			", " + types.IPS + " and embedded components like " + types.Library + ") " +

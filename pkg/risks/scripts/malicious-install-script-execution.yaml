@@ -2,6 +2,7 @@ id: malicious-install-script-execution
 title: Malicious Package Install-Script Execution on CI Runner
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 1357
 description: >
   This build pipeline allows dependency install scripts to run automatically during resolution,

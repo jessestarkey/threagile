@@ -35,6 +35,7 @@ func (*CrossSiteRequestForgeryRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Spoofing,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope web applications accessed via typical web access protocols.",
 		RiskAssessment: "The risk rating depends on the integrity rating of the data sent across the communication link.",
 		FalsePositives: "Web applications passing the authentication state via custom headers instead of cookies can " +

@@ -2,6 +2,7 @@ id: ai-excessive-agency-tool-misuse
 title: "Excessive Agency and Tool Misuse"
 function: architecture
 stride: elevation-of-privilege
+finding_class: weakness-shown
 cwe: 269
 description: >
   An AI agent orchestrator or tool server can take actions on other assets -- it has at least one

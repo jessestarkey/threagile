@@ -35,6 +35,7 @@ func (*MissingFileValidationRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Spoofing,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope technical assets with custom-developed code accepting file data formats.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Fully trusted (i.e. cryptographically signed or similar) files can be considered " +

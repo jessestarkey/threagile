@@ -2,6 +2,7 @@ id: ai-unbounded-consumption
 title: "Unbounded Consumption"
 function: operations
 stride: denial-of-service
+finding_class: weakness-shown
 cwe: 400
 description: >
   An LLM endpoint or AI gateway answers requests from outside its trust boundary, and every

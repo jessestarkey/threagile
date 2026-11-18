@@ -2,6 +2,7 @@ id: missing-data-retention-schedule
 title: Missing Data Retention and Disposition Schedule
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 200
 description: >
   The asset holds data with no documented retention period or disposition action tied to its

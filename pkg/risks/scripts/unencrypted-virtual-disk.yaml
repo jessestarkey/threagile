@@ -2,6 +2,7 @@ id: unencrypted-virtual-disk
 title: Unencrypted Virtual Disk
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 311
 description: >
   The virtual machine's attached disks are not encrypted at rest, or do not use a FIPS-validated

@@ -2,6 +2,7 @@ id: data-store-audit-detection-gap
 title: Data Store Audit Logging and Anomalous Access Detection Gap
 function: operations
 stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
   A data store has no operation-level audit logging and no detection tuned to abnormal access

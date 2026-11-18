@@ -2,6 +2,7 @@ id: cluster-control-plane-audit-gap
 title: Container Orchestrator Control-Plane Audit Logging Gap
 function: operations
 stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
   The cluster's audit policy is left at its default, which does not capture pod exec,

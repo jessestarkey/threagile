@@ -2,6 +2,7 @@ id: ai-improper-output-handling
 title: "Improper Output Handling"
 function: architecture
 stride: tampering
+finding_class: weakness-shown
 cwe: 74
 description: >
   Model output leaves this AI asset for something that interprets it: a browser or front end

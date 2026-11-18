@@ -34,6 +34,7 @@ func (*ServiceRegistryPoisoningRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Spoofing,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope service registries.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical assets accessing the service registry " +
 			"as well as the data assets processed.",

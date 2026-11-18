@@ -42,6 +42,7 @@ func (*ContainerPlatformEscapeRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS or CSVS chapter applied?",
 		Function:       types.Operations,
 		STRIDE:         types.ElevationOfPrivilege,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope container platforms.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Container platforms not running parts of the target architecture can be considered " +

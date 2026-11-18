@@ -2,6 +2,7 @@ id: dangerous-container-capabilities
 title: Dangerous Container Linux Capabilities
 function: operations
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 250
 description: >
   The container is granted Linux capabilities beyond what its function requires, such as

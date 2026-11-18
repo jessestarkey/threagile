@@ -2,6 +2,7 @@ id: broken-object-property-level-authorization
 title: Broken Object Property Level Authorization (Mass Assignment)
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 915
 description: >
   The backend API binds client request bodies directly to internal models without an explicit

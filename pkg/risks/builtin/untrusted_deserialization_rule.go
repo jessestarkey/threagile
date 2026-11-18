@@ -38,6 +38,7 @@ func (*UntrustedDeserializationRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope technical assets accepting serialization data formats (including EJB and RMI protocols).",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Fully trusted (i.e. cryptographically signed or similar) data deserialized can be considered " +

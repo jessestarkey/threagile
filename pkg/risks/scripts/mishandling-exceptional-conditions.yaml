@@ -2,6 +2,7 @@ id: mishandling-exceptional-conditions
 title: Mishandling of Exceptional Conditions
 function: architecture
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 755
 description: >
   The application does not consistently handle exceptional conditions (unhandled exceptions,

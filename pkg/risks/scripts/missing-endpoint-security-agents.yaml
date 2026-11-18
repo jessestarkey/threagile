@@ -2,6 +2,7 @@ id: missing-endpoint-security-agents
 title: Missing Endpoint Security Agents
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 778
 description: >
   The virtual machine lacks mandatory endpoint security agents such as EDR or a centralized log

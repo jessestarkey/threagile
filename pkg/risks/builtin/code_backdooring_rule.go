@@ -34,9 +34,10 @@ func (*CodeBackdooringRule) Category() *types.RiskCategory {
 			"before accepting an artifact. Restrict who can modify pipeline definitions, and protect pipeline secrets with " +
 			"environment-scoped approvals. References: CWE-506, CWE-494; CAPEC-444 (Development Alteration); MITRE ATT&CK " +
 			"T1195.002 (Compromise Software Supply Chain); NIST SP 800-218 (SSDF) PS.1, PS.2; NIST SP 800-53 SR-11, CM-14.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.Tampering,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope development relevant technical assets which are either accessed by out-of-scope unmanaged " +
 			"developer clients and/or are directly accessed by any kind of internet-located (non-VPN) component or are themselves directly located " +
 			"on the internet.",

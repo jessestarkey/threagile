@@ -2,6 +2,7 @@ id: ai-cross-context-bleed
 title: "Cross-Context Bleed and Over-Broad Context"
 function: architecture
 stride: information-disclosure
+finding_class: weakness-shown
 cwe: 488
 description: >
   An LLM endpoint, RAG pipeline, or agent serves more than one tenant, or handles data at more

@@ -2,6 +2,7 @@ id: ai-security-tooling-compromise
 title: "AI-Powered Security Tooling Compromise"
 function: architecture
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 269
 description: >
   AI-powered defensive tools that make trust decisions and trigger automated responses are

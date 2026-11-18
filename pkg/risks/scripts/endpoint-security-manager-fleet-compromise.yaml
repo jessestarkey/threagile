@@ -2,6 +2,7 @@ id: endpoint-security-manager-fleet-compromise
 title: "Endpoint Security Management Console Fleet-Wide Compromise Path"
 function: operations
 stride: elevation-of-privilege
+finding_class: control-not-evidenced
 cwe: 269
 description: >
   A centralized endpoint security/EDR management console pushes policy, signature updates,

@@ -37,6 +37,7 @@ func (*PathTraversalRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.InformationDisclosure,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Filesystems accessed by in-scope callers.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the data stored inside the technical asset.",
 		FalsePositives: "File accesses by filenames not consisting of parts controllable by the caller can be considered " +

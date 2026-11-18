@@ -37,6 +37,7 @@ func (*SearchQueryInjectionRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope clients accessing search engine servers via typical search access protocols.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the search engine server itself and of the data assets processed.",
 		FalsePositives: "Server engine queries by search values not consisting of parts controllable by the caller can be considered " +

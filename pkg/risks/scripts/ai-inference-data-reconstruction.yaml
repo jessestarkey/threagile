@@ -2,6 +2,7 @@ id: ai-inference-data-reconstruction
 title: "Inference and Training-Data Reconstruction"
 function: architecture
 stride: information-disclosure
+finding_class: weakness-shown
 cwe: 200
 description: >
   A model's inference API answers requests from outside its own trust boundary. Systematic

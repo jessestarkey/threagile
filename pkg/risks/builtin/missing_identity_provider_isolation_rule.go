@@ -32,9 +32,10 @@ func (*MissingIdentityProviderIsolationRule) Category() *types.RiskCategory {
 			"key vault, and alert on any change to federation trusts, signing certificates, or newly added application " +
 			"credentials. References: CWE-653; MITRE ATT&CK T1556 (Modify Authentication Process), T1606.002 (Forge Web " +
 			"Credentials: SAML Tokens), T1003 (OS Credential Dumping); NIST SP 800-53 SC-7, AC-6; NIST SP 800-207.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope identity provider assets and their identity data stores " +
 			"when surrounded by other (not identity-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-identity related assets are within the same execution environment (i.e. same database or same application server).",

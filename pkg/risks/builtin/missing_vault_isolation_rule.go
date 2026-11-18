@@ -31,9 +31,10 @@ func (*MissingVaultIsolationRule) Category() *types.RiskCategory {
 			"access. Alert on vault policy changes, new access grants, bulk secret reads, and access from unexpected " +
 			"network sources. References: CWE-653; MITRE ATT&CK T1555 (Credentials from Password Stores), T1552 (Unsecured " +
 			"Credentials); NIST SP 800-53 SC-7, SC-12, AC-6.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope vault assets " +
 			"when surrounded by other (not vault-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-vault related assets are within the same execution environment (i.e. same database or same application server).",

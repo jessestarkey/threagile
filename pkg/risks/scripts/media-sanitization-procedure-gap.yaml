@@ -2,6 +2,7 @@ id: media-sanitization-procedure-gap
 title: Media Sanitization Procedure Gap
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 212
 description: >
   This virtual machine's persistent storage has no documented, NIST SP 800-88-aligned

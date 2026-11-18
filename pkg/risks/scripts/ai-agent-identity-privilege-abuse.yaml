@@ -2,6 +2,7 @@ id: ai-agent-identity-privilege-abuse
 title: "Agent Identity and Privilege Abuse"
 function: architecture
 stride: elevation-of-privilege
+finding_class: weakness-shown
 cwe: 441
 description: >
   An AI agent, tool server, or AI gateway calls another asset under its own service identity

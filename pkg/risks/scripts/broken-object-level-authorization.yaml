@@ -2,6 +2,7 @@ id: broken-object-level-authorization
 title: Broken Object-Level Authorization (BOLA/IDOR)
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 639
 description: >
   The backend API does not verify that an authenticated user is authorized to access a specific

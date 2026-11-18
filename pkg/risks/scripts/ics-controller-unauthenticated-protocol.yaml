@@ -2,6 +2,7 @@ id: ics-controller-unauthenticated-protocol
 title: "ICS/PACS Controller Unauthenticated Industrial Protocol Command Injection"
 function: architecture
 stride: tampering
+finding_class: weakness-shown
 cwe: 306
 description: >
   Industrial control protocols (Modbus, BACnet, DNP3) and legacy physical-access-control

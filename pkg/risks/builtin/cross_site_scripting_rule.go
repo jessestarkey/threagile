@@ -37,6 +37,7 @@ func (*CrossSiteScriptingRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope web applications.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the data processed in the web application.",
 		FalsePositives: "When the technical asset " +

@@ -2,6 +2,7 @@ id: ai-rag-corpus-poisoning
 title: "RAG Corpus Poisoning"
 function: architecture
 stride: tampering
+finding_class: weakness-shown
 cwe: 349
 description: >
   A RAG pipeline or its ingest path brings in content from outside its own trust boundary --

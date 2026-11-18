@@ -2,6 +2,7 @@ id: multi-tenant-data-isolation
 title: Multi-Tenant Data Isolation Failure
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 668
 description: >
   The asset serves multiple organizational tenants from a shared deployment without sufficient

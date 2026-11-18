@@ -2,6 +2,7 @@ id: ai-cascading-agent-failures
 title: "Cascading Agent Failures"
 function: architecture
 stride: denial-of-service
+finding_class: weakness-shown
 cwe: 400
 description: >
   An AI agent hands work to another agent -- an outgoing link from an agent orchestrator or

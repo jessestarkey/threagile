@@ -2,6 +2,7 @@ id: ai-telemetry-prompt-log-leakage
 title: "AI Telemetry and Prompt-Log Leakage"
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 532
 description: >
   AI tracing and monitoring capture far more than ordinary application logs: full prompts,

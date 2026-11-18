@@ -30,9 +30,10 @@ func (*UnguardedDirectDatastoreAccessRule) Category() *types.RiskCategory {
 			"access path with MFA and session recording. Send database connection and privileged-statement audit logs to " +
 			"the SIEM. References: CWE-668, CWE-284; MITRE ATT&CK T1213 (Data from Information Repositories), T1078 (Valid " +
 			"Accounts); NIST SP 800-53 AC-3, AC-4, SC-7.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets of type " + types.Datastore.String() + " (except " + types.IdentityStoreLDAP + " when accessed from " + types.IdentityProvider + " and " + types.FileServer + " when accessed via file transfer protocols) with confidentiality rating " +
 			"of " + types.Confidential.String() + " (or higher) or with integrity rating of " + types.Critical.String() + " (or higher) " +
 			"which have incoming data-flows from assets outside across a network trust-boundary. DevOps config and deployment access is excluded from this risk.", // TODO new rule "missing bastion host"?

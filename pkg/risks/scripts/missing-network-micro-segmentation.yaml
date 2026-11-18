@@ -2,6 +2,7 @@ id: missing-network-micro-segmentation
 title: Missing Network Micro-Segmentation
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 1008
 description: >
   The workload lacks an explicit, default-deny network policy, allowing unrestricted East-West

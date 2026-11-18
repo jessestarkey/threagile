@@ -163,6 +163,10 @@ func Generate(config reportConfigReader, readResult *model.ReadResult, commands 
 		if err != nil {
 			return fmt.Errorf("error while writing risks json: %w", err)
 		}
+		err = WriteRiskCategoriesJSON(readResult.ParsedModel, filepath.Join(config.GetOutputFolder(), RiskCategoriesJSONFilename))
+		if err != nil {
+			return fmt.Errorf("error while writing risk categories json: %w", err)
+		}
 	}
 
 	// technical assets json

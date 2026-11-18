@@ -2,6 +2,7 @@ id: ai-sensitive-information-disclosure
 title: "Sensitive Information Disclosure via Model Output"
 function: architecture
 stride: information-disclosure
+finding_class: weakness-shown
 cwe: 200
 description: >
   An LLM endpoint, RAG pipeline, or agent has confidential-or-higher data in reach -- in its

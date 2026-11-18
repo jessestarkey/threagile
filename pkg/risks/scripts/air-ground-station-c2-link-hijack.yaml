@@ -2,6 +2,7 @@ id: air-ground-station-c2-link-hijack
 title: "Air Ground Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink"
 function: operations
 stride: spoofing
+finding_class: control-not-evidenced
 cwe: 306
 description: >
   An air vehicle command-and-control link is commonly line-of-sight RF, attackable with far less

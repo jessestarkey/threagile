@@ -2,6 +2,7 @@ id: ai-synthetic-data-leakage
 title: "Synthetic Data and Anonymization Pitfalls"
 function: architecture
 stride: information-disclosure
+finding_class: weakness-shown
 cwe: 359
 description: >
   A synthetic-data pipeline generates training or test data from real confidential-or-higher

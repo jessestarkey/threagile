@@ -2,6 +2,7 @@ id: ai-retrieval-resilience-gap
 title: "AI Retrieval and Index Resilience Gap"
 function: operations
 stride: denial-of-service
+finding_class: control-not-evidenced
 cwe: 636
 description: >
   A vector store, feature store, or RAG pipeline that a mission-critical AI capability depends on

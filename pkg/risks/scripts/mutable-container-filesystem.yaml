@@ -2,6 +2,7 @@ id: mutable-container-filesystem
 title: Mutable Container Filesystem
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 732
 description: >
   The container's root filesystem is writable, allowing an attacker who gains code execution to

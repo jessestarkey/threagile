@@ -36,6 +36,7 @@ func (*SqlNoSqlInjectionRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Database accessed via typical database access protocols by in-scope clients.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the data stored inside the database.",
 		FalsePositives: "Database accesses by queries not consisting of parts controllable by the caller can be considered " +

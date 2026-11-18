@@ -2,6 +2,7 @@ id: security-control-tamper-resistance-gap
 title: "Security Control Tamper Resistance Gap"
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 778
 description: >
   This security control (WAF, IDS/IPS, HSM, vault, or SIEM/monitoring platform) has no

@@ -34,9 +34,10 @@ func (*MissingIdentityPropagationRule) Category() *types.RiskCategory {
 			"identifier for audit. References: CWE-639, CWE-285; OWASP API Security Top 10:2023 API1 (Broken Object Level " +
 			"Authorization), API5 (Broken Function Level Authorization); OWASP Top 10:2025 A01 (Broken Access Control); " +
 			"NIST SP 800-53 AC-3, AC-6; NIST SP 800-207.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope service-like technical assets which usually process data based on end user requests, if authenticated " +
 			"(i.e. non-public), should authorize incoming requests based on the propagated end user identity when their rating is sensitive. " +
 			"This is especially the case for all multi-tenant assets (there even less-sensitive rated ones). " +

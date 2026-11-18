@@ -36,9 +36,10 @@ func (*UnguardedAccessFromInternetRule) Category() *types.RiskCategory {
 			"management tooling) to confirm nothing else is exposed. For DoD systems, follow the DISA SCCA boundary " +
 			"architecture for internet-facing traffic. References: CWE-668; MITRE ATT&CK T1190 (Exploit Public-Facing " +
 			"Application), T1133 (External Remote Services); NIST SP 800-53 SC-7, SC-7(5), AC-17.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (excluding " + types.LoadBalancer + ") with confidentiality rating " +
 			"of " + types.Confidential.String() + " (or higher) or with integrity rating of " + types.Critical.String() + " (or higher) when " +
 			"accessed directly from the internet. All " +

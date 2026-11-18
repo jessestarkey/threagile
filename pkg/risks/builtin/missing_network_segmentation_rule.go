@@ -37,9 +37,10 @@ func (*MissingNetworkSegmentationRule) Category() *types.RiskCategory {
 			"into the segment, and keep the segmentation reflected in the boundary diagram and the ports, protocols, and " +
 			"services list. References: CWE-653; MITRE ATT&CK TA0008 (Lateral Movement), T1210 (Exploitation of Remote " +
 			"Services); NIST SP 800-53 SC-7, SC-7(5), AC-4; NIST SP 800-207.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets with high sensitivity and RAA values as well as data stores " +
 			"when surrounded by assets (without a network trust-boundary in-between) which are of type " + types.ClientSystem + ", " +
 			types.WebServer + ", " + types.WebApplication + ", " + types.CMS + ", " + types.WebServiceREST + ", " + types.WebServiceSOAP + ", " +

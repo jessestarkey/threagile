@@ -2,6 +2,7 @@ id: insufficient-audit-logging
 title: "Insufficient Audit Logging (AU-2 Compliance Gap)"
 function: operations
 stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
   The asset does not generate audit records for the event types NIST SP 800-53 AU-2 requires,

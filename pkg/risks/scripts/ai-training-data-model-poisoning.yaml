@@ -2,6 +2,7 @@ id: ai-training-data-model-poisoning
 title: "Training and Fine-Tuning Data and Model Poisoning"
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 345
 description: >
   Whatever shapes a model during training decides how it behaves afterwards: training and

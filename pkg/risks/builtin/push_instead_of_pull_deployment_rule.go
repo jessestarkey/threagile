@@ -34,9 +34,10 @@ func (*PushInsteadPullDeploymentRule) Category() *types.RiskCategory {
 			"federation, require manual approval gates for production, and restrict the deployment endpoint to the " +
 			"runner's private network. References: CWE-668; MITRE ATT&CK T1072 (Software Deployment Tools), T1195.002; " +
 			"NIST SP 800-53 CM-5, AC-17; NIST SP 800-204D.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.Tampering,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Models with build pipeline components accessing in-scope targets of deployment (in a non-readonly way) which " +
 			"are not build-related components themselves.",
 		RiskAssessment: "The risk rating depends on the highest sensitivity of the deployment targets running custom-developed parts.",

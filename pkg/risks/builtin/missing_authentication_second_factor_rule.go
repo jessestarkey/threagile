@@ -33,9 +33,10 @@ func (*MissingAuthenticationSecondFactorRule) Category() *types.RiskCategory {
 			"hardware keys, alerting on every use, and periodic review. References: CWE-308; MITRE ATT&CK T1078 (Valid " +
 			"Accounts), T1110 (Brute Force), T1621 (Multi-Factor Authentication Request Generation); OWASP Top 10:2025 A07 " +
 			"(Authentication Failures); NIST SP 800-53 IA-2(1), IA-2(2); OMB M-22-09.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.BusinessSide,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.BusinessSide,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (except " + types.LoadBalancer + ", " + types.ReverseProxy + ", " + types.WAF + ", " + types.IDS + ", and " + types.IPS + ") should authenticate incoming requests via two-factor authentication (2FA) " +
 			"when the asset processes or stores highly sensitive data (in terms of confidentiality, integrity, and availability) and is accessed by a client used by a human user.",
 		RiskAssessment: types.MediumSeverity.String(),

@@ -2,6 +2,7 @@ id: dependency-confusion-internal-namespace
 title: Dependency Confusion via Unclaimed Internal Package Namespace
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 1357
 description: >
   This build pipeline's dependency resolver falls back to a public package index when a package

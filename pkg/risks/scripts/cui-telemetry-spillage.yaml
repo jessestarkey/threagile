@@ -2,6 +2,7 @@ id: cui-telemetry-spillage
 title: CUI Telemetry Spillage
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 532
 description: >
   CUI can be written into application logs, stack traces, or observability telemetry through

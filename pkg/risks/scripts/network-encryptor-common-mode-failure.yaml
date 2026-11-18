@@ -2,6 +2,7 @@ id: network-encryptor-common-mode-failure
 title: "CSfC Network Encryptor Common-Mode Failure"
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 653
 description: >
   A CSfC-approved network encryption architecture requires two independent encryption layers

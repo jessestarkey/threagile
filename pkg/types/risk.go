@@ -17,5 +17,6 @@ type Risk struct {
 	DataBreachTechnicalAssetIDs     []string                   `yaml:"data_breach_technical_assets,omitempty" json:"data_breach_technical_assets,omitempty"`
 	RiskExplanation                 []string                   `yaml:"risk_explanation,omitempty" json:"risk_explanation,omitempty"`
 	RatingExplanation               []string                   `yaml:"rating_explanation,omitempty" json:"rating_explanation,omitempty"`
+	FindingClass                    string                     `yaml:"finding_class,omitempty" json:"finding_class,omitempty"` // copied from the category when risks are generated
 	// TODO: refactor all "ID" here to "ID"?
 }

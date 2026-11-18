@@ -37,6 +37,7 @@ func (*MissingVaultRule) Category() *types.RiskCategory {
 		Check:          "GetAttribute a Vault (Secret Storage) in place?",
 		Function:       types.Architecture,
 		STRIDE:         types.InformationDisclosure,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Models without a Vault (Secret Storage).",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Models where no technical assets have any kind of sensitive config data to protect " +

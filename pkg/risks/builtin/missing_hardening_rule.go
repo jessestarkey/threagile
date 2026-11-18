@@ -37,9 +37,10 @@ func (r *MissingHardeningRule) Category() *types.RiskCategory {
 			"Re-scan after every change and at least monthly, and patch within the timelines set by vulnerability " +
 			"management policy. References: CWE-16, CWE-1188; MITRE ATT&CK T1190, T1068 (Exploitation for Privilege " +
 			"Escalation); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP 800-53 CM-6, CM-7, SI-2.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.Tampering,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope technical assets with RAA values of " + strconv.Itoa(r.raaLimit) + " % or higher. " +
 			"Generally for high-value targets like data stores, application servers, identity providers and ERP systems this limit is reduced to " + strconv.Itoa(r.raaLimitReduced) + " %",
 		RiskAssessment:             "The risk rating depends on the sensitivity of the data processed in the technical asset.",

@@ -35,6 +35,7 @@ func (*LdapInjectionRule) Category() *types.RiskCategory {
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope clients accessing LDAP servers via typical LDAP access protocols.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the LDAP server itself and of the data assets processed.",
 		FalsePositives: "LDAP server queries by search values not consisting of parts controllable by the caller can be considered " +

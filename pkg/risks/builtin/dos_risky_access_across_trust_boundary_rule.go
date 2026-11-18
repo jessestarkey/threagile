@@ -33,9 +33,10 @@ func (*DosRiskyAccessAcrossTrustBoundaryRule) Category() *types.RiskCategory {
 			"documented availability objective to confirm the limits hold. References: CWE-400, CWE-770; CAPEC-125 " +
 			"(Flooding); MITRE ATT&CK T1498 (Network Denial of Service), T1499 (Endpoint Denial of Service); OWASP API " +
 			"Security Top 10:2023 API4 (Unrestricted Resource Consumption); NIST SP 800-53 SC-5.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.DenialOfService,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.DenialOfService,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (excluding " + types.LoadBalancer + ") with " +
 			"availability rating of " + types.Critical.String() + " or higher which have incoming data-flows across a " +
 			"network trust-boundary (excluding " + types.DevOps.String() + " usage).",
