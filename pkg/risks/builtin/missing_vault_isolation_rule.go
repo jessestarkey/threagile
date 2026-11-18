@@ -37,8 +37,9 @@ func (*MissingVaultIsolationRule) Category() *types.RiskCategory {
 		DetectionLogic: "In-scope vault assets " +
 			"when surrounded by other (not vault-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-vault related assets are within the same execution environment (i.e. same database or same application server).",
-		RiskAssessment: "Default is " + types.MediumImpact.String() + " impact. The impact is increased to " + types.HighImpact.String() + " when the asset missing the " +
-			"trust-boundary protection is rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + ".",
+		RiskAssessment: "Likelihood starts at " + types.Unlikely.String() + ", one level higher when another asset shares the vault's execution " +
+			"environment. Impact starts at " + types.MediumImpact.String() + ", " + "one level higher for an asset rated " + types.Confidential.String() + "/" + types.Critical.String() + " or above, one level lower " +
+			"for " + types.Internal.String() + "/" + types.Operational.String() + " or below.",
 		FalsePositives: "When all assets within the network segmentation trust-boundary are hardened and protected to the same extend as if all were " +
 			"vaults with data of highest sensitivity.",
 		ModelFailurePossibleReason: false,

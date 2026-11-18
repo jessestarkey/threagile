@@ -38,8 +38,9 @@ func (*MissingIdentityProviderIsolationRule) Category() *types.RiskCategory {
 		DetectionLogic: "In-scope identity provider assets and their identity data stores " +
 			"when surrounded by other (not identity-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-identity related assets are within the same execution environment (i.e. same database or same application server).",
-		RiskAssessment: "Default is " + types.HighImpact.String() + " impact. The impact is increased to " + types.VeryHighImpact.String() + " when the asset missing the " +
-			"trust-boundary protection is rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + ".",
+		RiskAssessment: "Likelihood starts at " + types.PossibleLikelihood.String() + ", one level higher when another asset shares the identity asset's execution " +
+			"environment. Impact starts at " + types.MediumImpact.String() + ", " + "one level higher for an asset rated " + types.Confidential.String() + "/" + types.Critical.String() + " or above, one level lower " +
+			"for " + types.Internal.String() + "/" + types.Operational.String() + " or below.",
 		FalsePositives: "When all assets within the network segmentation trust-boundary are hardened and protected to the same extend as if all were " +
 			"identity providers with data of highest sensitivity.",
 		ModelFailurePossibleReason: false,

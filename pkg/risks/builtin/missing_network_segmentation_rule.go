@@ -45,8 +45,8 @@ func (*MissingNetworkSegmentationRule) Category() *types.RiskCategory {
 			types.WebServer + ", " + types.WebApplication + ", " + types.CMS + ", " + types.WebServiceREST + ", " + types.WebServiceSOAP + ", " +
 			types.BuildPipeline + ", " + types.SourcecodeRepository + ", " + types.Monitoring + ", or similar and there is no direct connection between these " +
 			"(hence no requirement to be so close to each other).",
-		RiskAssessment: "Default is " + types.LowSeverity.String() + " risk. The risk is increased to " + types.MediumSeverity.String() + " when the asset missing the " +
-			"trust-boundary protection is rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + ".",
+		RiskAssessment: "Impact starts at " + types.LowImpact.String() + ", " + "one level higher for an asset rated " + types.Confidential.String() + "/" + types.Critical.String() + " or above, one level lower " +
+			"for " + types.Internal.String() + "/" + types.Operational.String() + " or below.",
 		FalsePositives: "When all assets within the network segmentation trust-boundary are hardened and protected to the same extend as if all were " +
 			"containing/processing highly sensitive data.",
 		ModelFailurePossibleReason: false,
