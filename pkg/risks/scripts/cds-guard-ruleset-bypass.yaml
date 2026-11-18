@@ -3,7 +3,7 @@ title: "CDS Guard Filter Rule-Set Staleness and Undocumented Bypass Path"
 function: operations
 stride: tampering
 finding_class: control-not-evidenced
-cwe: 696
+cwe: 693
 description: >
   A cross-domain solution guard's entire release decision rests on its content-inspection
   rule set (classification-marking patterns, malware signatures, dirty-word/regex lists) and

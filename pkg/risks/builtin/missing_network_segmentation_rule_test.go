@@ -8,6 +8,8 @@ import (
 	"github.com/threagile/threagile/pkg/types"
 )
 
+// The asset under test is marked no_network_segmentation_required: false throughout: the rule now
+// skips assets that need no segmentation of their own (an upstream refactor had inverted that gate).
 func TestMissingNetworkSegmentationRuleGenerateRisksEmptyModelNotRisksCreated(t *testing.T) {
 	rule := NewMissingNetworkSegmentationRule()
 
@@ -30,7 +32,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksOutOfScopeNoRisksCreated(t *
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},
@@ -54,7 +56,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksNoNetworkSegmentationRequire
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: false,
+							types.IsNoNetworkSegmentationRequired: true,
 						},
 					},
 				},
@@ -76,7 +78,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksLowRAANoNetworkSegmentationR
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},
@@ -100,7 +102,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksNotDataStoreAndLowCIABNoRisk
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},
@@ -171,7 +173,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksRiskCreated(t *testing.T) {
 							{
 								Name: "service-registry",
 								Attributes: map[string]bool{
-									types.IsNoNetworkSegmentationRequired: true,
+									types.IsNoNetworkSegmentationRequired: false,
 								},
 							},
 						},
@@ -232,7 +234,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksSparringAssetIsNotLessProtec
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},
@@ -284,7 +286,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksSparringAssetCloseToHighValu
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},
@@ -342,7 +344,7 @@ func TestMissingNetworkSegmentationRuleGenerateRisksNotSameTrustBoundaryNoRisksC
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},
@@ -395,7 +397,7 @@ func TestMissingNetworkSegmentationHasDirectConnectionNoRisksCreated(t *testing.
 					{
 						Name: "service-registry",
 						Attributes: map[string]bool{
-							types.IsNoNetworkSegmentationRequired: true,
+							types.IsNoNetworkSegmentationRequired: false,
 						},
 					},
 				},

@@ -41,7 +41,7 @@ func (*ClusterControlPlaneAuditGapRule) Category() *types.RiskCategory {
 		FindingClass: types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Review the API server's configured audit policy for coverage of exec/attach/port-forward, secret " +
 			"access, and admission decisions, and confirm the audit log is forwarding to the SIEM.",
-		RiskAssessment: "Likelihood starts at Likely, taken from the most attractive container on the cluster. Impact " +
+		RiskAssessment: "Likelihood starts at Likely and takes the highest any container on the cluster reaches. Impact " +
 			"starts at Low and steps on the highest integrity rating among its containers. Each step is one level: " +
 			"impact up for a rating of confidential/critical or above, down for internal/operational or below; " +
 			"likelihood also moves with the asset's attractiveness (RAA) and internet exposure. High for any cluster " +
@@ -100,22 +100,20 @@ func (r *ClusterControlPlaneAuditGapRule) GenerateRisks(input *types.Model) ([]*
 	return risks, nil
 }
 
-// createRisk raises one finding for a cluster (a shared runtime) or a lone container. Likelihood
-// follows the most attractive container -- the one an attacker would land on first -- and impact
-// the highest integrity among them, since a missing audit trail lets tampering go unreconstructed.
+// createRisk raises one finding for a cluster (a shared runtime) or a lone container. Likelihood is
+// the highest any container on it reaches (its RAA and internet exposure: an attacker lands on the
+// most exposed one), and impact follows the highest integrity among them, since a missing audit
+// trail lets tampering go unreconstructed.
 func (r *ClusterControlPlaneAuditGapRule) createRisk(id, title string, containers []*types.TechnicalAsset, isRuntime bool) *types.Risk {
-	mostAttractive := containers[0]
+	likelihood := types.Unlikely
 	rank := 0
 	ids := make([]string, 0, len(containers))
 	for _, container := range containers {
-		if container.RAA > mostAttractive.RAA || (container.RAA == mostAttractive.RAA && container.Id < mostAttractive.Id) {
-			mostAttractive = container
-		}
+		likelihood = max(likelihood, computeLikelihood(types.Likely, container))
 		rank = max(rank, rankForStride(r.Category().STRIDE, container.Confidentiality, container.Integrity, container.Availability))
 		ids = append(ids, container.Id)
 	}
 	sort.Strings(ids)
-	likelihood := computeLikelihood(types.Likely, mostAttractive)
 	impact := types.AdjustImpactForRank(types.LowImpact, rank)
 	risk := &types.Risk{
 		CategoryId:                  r.Category().ID,
@@ -128,6 +126,8 @@ func (r *ClusterControlPlaneAuditGapRule) createRisk(id, title string, container
 		SyntheticId:                 r.Category().ID + "@" + id,
 	}
 	if isRuntime {
+		// A shared runtime and a technical asset may share an id; keep their findings apart.
+		risk.SyntheticId = r.Category().ID + "@shared-runtime:" + id
 		risk.MostRelevantSharedRuntimeId = id
 	} else {
 		risk.MostRelevantTechnicalAssetId = id

@@ -3,10 +3,11 @@ title: "Vulnerable and Outdated Third-Party Dependency"
 function: architecture
 stride: tampering
 finding_class: control-not-evidenced
-cwe: 1104
+cwe: 1395
 description: >
-  This asset's own custom-developed code pulls in third-party libraries/packages whose versions
-  are not continuously checked against known-vulnerability databases, distinct from container
+  This asset's own custom-developed code pulls in third-party libraries/packages, and unless their
+  versions are continuously checked against known-vulnerability databases a known-vulnerable one
+  can ship -- distinct from container
   base-image scanning (which covers the OS/runtime layer, not this asset's own application-level
   dependency graph) and from End-of-Life component tracking (which covers products that have
   stopped receiving patches entirely, not an actively-maintained library with an unpatched known
@@ -60,6 +61,15 @@ risk:
           and:
             - false: "{tech_asset.out_of_scope}"
             - true: "{tech_asset.custom_developed_parts}"
+            # in-house assets only: external-entity is the zero value of type and drops out, so
+            # test for process or datastore
+            - or:
+                - equal:
+                    first: "{tech_asset.type}"
+                    second: process
+                - equal:
+                    first: "{tech_asset.type}"
+                    second: datastore
           then:
             return: true
 

@@ -3,10 +3,10 @@ title: Malicious Package Install-Script Execution on CI Runner
 function: operations
 stride: tampering
 finding_class: control-not-evidenced
-cwe: 1357
+cwe: 829
 description: >
-  This build pipeline allows dependency install scripts to run automatically during resolution,
-  before any malware or vulnerability scan examines the package.
+  Unless this build pipeline disables them, dependency install scripts run automatically during
+  resolution, before any malware or vulnerability scan examines the package.
 impact: >
   If this risk remains unmitigated, a malicious dependency's install script executes arbitrary
   code on the CI runner before any downstream scan has a chance to catch it.

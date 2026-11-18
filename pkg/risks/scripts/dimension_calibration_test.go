@@ -126,7 +126,6 @@ var approvedImpactByRule = map[string]approvedImpact{
 	"security-control-tamper-resistance-gap":        {types.LowImpact, dimI},
 	"space-ground-station-rogue-uplink":             {types.HighImpact, dimI},
 	"space-vehicle-bus-segmentation-gap":            {types.HighImpact, dimI},
-	"unencrypted-virtual-disk":                      {types.LowImpact, dimC},
 	"unhardened-os-missing-patch-management":        {types.MediumImpact, dimCIA},
 	"unscanned-data-store":                          {types.LowImpact, dimC},
 	"untrusted-container-image":                     {types.MediumImpact, dimI},

@@ -60,6 +60,14 @@ risk:
             - any:
                 in: "{tech_asset.technologies}"
                 true: "{.attributes.application_logic}"
+            # in-house assets only (see vulnerable-outdated-dependency)
+            - or:
+                - equal:
+                    first: "{tech_asset.type}"
+                    second: process
+                - equal:
+                    first: "{tech_asset.type}"
+                    second: datastore
           then:
             return: true
 

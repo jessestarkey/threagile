@@ -93,3 +93,55 @@ func TestTelemetrySpillageNeedsSensitiveData(t *testing.T) {
 	assert.ElementsMatch(t, []string{"own-rating", "processes-secret"}, keys(fired),
 		"logs can only spill data the asset handles")
 }
+
+//go:embed vulnerable-outdated-dependency.yaml
+var vulnerableOutdatedDependencyForReview string
+
+//go:embed os-command-injection.yaml
+var osCommandInjectionForReview string
+
+func TestDependencyAndCommandInjectionRulesSkipExternalEntities(t *testing.T) {
+	custom := func(id string, assetType types.TechnicalAssetType) *types.TechnicalAsset {
+		asset := agencyAsset(id, "web-application")
+		asset.Type = assetType // agencyAsset defaults to process; ExternalEntity is the dropped zero value
+		asset.CustomDevelopedParts = true
+		asset.Technologies[0].Attributes["application_logic"] = true
+		return asset
+	}
+	model := secretsSprawlModel(
+		custom("service", types.Process),
+		custom("store", types.Datastore),
+		custom("partner", types.ExternalEntity),
+	)
+
+	assert.ElementsMatch(t, []string{"service", "store"},
+		keys(firedOn(generateScriptRisks(t, vulnerableOutdatedDependencyForReview, model))),
+		"an external entity's dependencies are not ours to manage")
+	assert.ElementsMatch(t, []string{"service", "store"},
+		keys(firedOn(generateScriptRisks(t, osCommandInjectionForReview, model))))
+}
+
+func TestClusterAuditGapTakesTheHighestLikelihoodAndKeepsRuntimeIDsApart(t *testing.T) {
+	quiet, exposed, clash := container("quiet"), container("exposed"), container("k8s")
+	quiet.RAA, exposed.RAA = 30, 20
+	exposed.Internet = true // the internet step lifts the less attractive container above the other
+	model := secretsSprawlModel(quiet, exposed, clash)
+	model.SharedRuntimes = map[string]*types.SharedRuntime{
+		"k8s": {Id: "k8s", Title: "k8s", TechnicalAssetsRunning: []string{"quiet", "exposed"}},
+	}
+
+	risks, err := builtin.NewClusterControlPlaneAuditGapRule().GenerateRisks(model)
+	assert.NoError(t, err)
+
+	ids := map[string]*types.Risk{}
+	for _, risk := range risks {
+		ids[risk.SyntheticId] = risk
+	}
+	assert.Len(t, ids, 2, "a runtime and a lone container named alike must not share a synthetic id")
+	runtime := ids["cluster-control-plane-audit-gap@shared-runtime:k8s"]
+	if assert.NotNil(t, runtime) {
+		assert.Equal(t, types.VeryLikely, runtime.ExploitationLikelihood,
+			"the exposed container (RAA 20, internet +1: Very Likely) outranks the more attractive quiet one (RAA 30: Likely)")
+	}
+	assert.NotNil(t, ids["cluster-control-plane-audit-gap@k8s"], "the lone container keeps its own id")
+}

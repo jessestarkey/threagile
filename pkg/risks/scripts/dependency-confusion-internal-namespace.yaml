@@ -3,10 +3,10 @@ title: Dependency Confusion via Unclaimed Internal Package Namespace
 function: architecture
 stride: tampering
 finding_class: control-not-evidenced
-cwe: 1357
+cwe: 427
 description: >
-  This build pipeline's dependency resolver falls back to a public package index when a package
-  is not found in the internal feed, rather than restricting internally-named packages to that
+  This build pipeline's dependency resolver may fall back to a public package index when a package
+  is not found in the internal feed, unless internally-named packages are restricted to that
   feed.
 impact: >
   If this risk remains unmitigated, an attacker who publishes a higher-versioned package under

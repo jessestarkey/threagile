@@ -71,7 +71,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>Insufficient Audit Logging (AU-2 Compliance Gap)</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Insufficient Security Event Logging (AU-2 / AU-6 Gap)</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"

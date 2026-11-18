@@ -368,7 +368,6 @@ cds-guard:
         - radiant-mercury
         - tactical-cds
         - isse-guard
-        - trusted-thin-client
     description: A dedicated, accredited appliance that inspects and mediates content crossing a classification boundary between two security domains, typically performing automated content, malware, and classification-marking checks and often requiring human-in-the-loop review before release
     attributes:
         cds-guard: true

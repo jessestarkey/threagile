@@ -74,7 +74,9 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 			continue
 		}
 
-		if !technicalAsset.Technologies.GetAttribute(types.IsNoNetworkSegmentationRequired) {
+		// Skip what needs no segmentation of its own (IDS/IPS, reverse proxies, service registries,
+		// WAFs). An upstream refactor had inverted this check, so the rule ran only on those assets.
+		if technicalAsset.Technologies.GetAttribute(types.IsNoNetworkSegmentationRequired) {
 			continue
 		}
 

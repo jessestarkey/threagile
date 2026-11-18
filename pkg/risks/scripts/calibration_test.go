@@ -21,7 +21,6 @@ type calibratedRating struct {
 
 // calibratedOnProfileT is generated from the approved calibration table.
 var calibratedOnProfileT = map[string]calibratedRating{
-	"accidental-secret-leak":                        {types.Likely, types.MediumImpact},
 	"ai-adversarial-evasion":                        {types.PossibleLikelihood, types.HighImpact},
 	"ai-agent-identity-privilege-abuse":             {types.Likely, types.HighImpact},
 	"ai-cascading-agent-failures":                   {types.PossibleLikelihood, types.MediumImpact},
@@ -79,7 +78,6 @@ var calibratedOnProfileT = map[string]calibratedRating{
 	"security-control-tamper-resistance-gap":        {types.Unlikely, types.MediumImpact},
 	"space-ground-station-rogue-uplink":             {types.Unlikely, types.VeryHighImpact},
 	"space-vehicle-bus-segmentation-gap":            {types.Unlikely, types.VeryHighImpact},
-	"unencrypted-virtual-disk":                      {types.Unlikely, types.MediumImpact},
 	"unhardened-os-missing-patch-management":        {types.Likely, types.HighImpact},
 	"unscanned-data-store":                          {types.PossibleLikelihood, types.MediumImpact},
 	"untrusted-container-image":                     {types.Likely, types.HighImpact},
