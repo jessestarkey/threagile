@@ -4372,11 +4372,11 @@ func (r *pdfReporter) createTargetDescription(parsedModel *types.Model, baseFold
 	intro.Reset()
 	r.pdfColorBlack()
 
-	intro.WriteString("<br><br><br><b>Business Overview</b><br><br>")
-	intro.WriteString(uni(parsedModel.BusinessOverview.Description))
+	intro.WriteString("<br><br><br><b>Threat Landscape</b><br><br>")
+	intro.WriteString(uni(parsedModel.ThreatLandscape.Description))
 	html.Write(5, intro.String())
 	intro.Reset()
-	err := r.addCustomImages(parsedModel.BusinessOverview.Images, baseFolder, html)
+	err := r.addCustomImages(parsedModel.ThreatLandscape.Images, baseFolder, html)
 	if err != nil {
 		return fmt.Errorf("error adding custom images: %w", err)
 	}

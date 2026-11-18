@@ -38,6 +38,16 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 				modelInput.MissionCriticality, modelInput.BusinessCriticality)
 		}
 	}
+	// threat_landscape is the narrative of threat vectors, high-value targets and core defenses;
+	// business_overview is its older name and still accepted.
+	threatLandscape := modelInput.ThreatLandscape
+	older := modelInput.BusinessOverview
+	if threatLandscape.Description == "" && len(threatLandscape.Images) == 0 {
+		threatLandscape = older
+	} else if (older.Description != "" || len(older.Images) > 0) && older.Description != threatLandscape.Description {
+		return nil, fmt.Errorf("model sets both 'threat_landscape' and 'business_overview' with different text: keep only threat_landscape")
+	}
+
 	missionCriticality, _, err := types.ParseMissionCriticality(missionCriticalityValue)
 	if err != nil {
 		return nil, fmt.Errorf("unknown 'mission_criticality' value of application: %v", missionCriticalityValue)
@@ -59,7 +69,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		Contributors:                   convertAuthors(modelInput.Contributors),
 		Date:                           types.Date{Time: reportDate},
 		AppDescription:                 removePathElementsFromImageFiles(modelInput.AppDescription),
-		BusinessOverview:               removePathElementsFromImageFiles(modelInput.BusinessOverview),
+		ThreatLandscape:                removePathElementsFromImageFiles(threatLandscape),
 		TechnicalOverview:              removePathElementsFromImageFiles(modelInput.TechnicalOverview),
 		MissionCriticality:             missionCriticality,
 		ManagementSummaryComment:       modelInput.ManagementSummaryComment,

@@ -891,9 +891,9 @@ func (adoc adocReport) targetDescription(f *os.File, baseFolder string) {
 	writeLine(f, critString)
 
 	writeLine(f, "\n\n")
-	writeLine(f, "== Business Overview")
-	writeLine(f, fixBasicHtml(adoc.model.BusinessOverview.Description))
-	addCustomImages(f, adoc.model.BusinessOverview.Images, baseFolder)
+	writeLine(f, "== Threat Landscape")
+	writeLine(f, fixBasicHtml(adoc.model.ThreatLandscape.Description))
+	addCustomImages(f, adoc.model.ThreatLandscape.Images, baseFolder)
 
 	writeLine(f, "\n\n")
 	writeLine(f, "== Technical Overview")

@@ -37,3 +37,24 @@ func TestMissionCriticalityKeyAndItsOlderName(t *testing.T) {
 	_, err = ParseModel(&mockConfig{}, missionModel("vital", ""), make(types.RiskRules), make(types.RiskRules))
 	assert.ErrorContains(t, err, "mission_criticality")
 }
+
+func TestThreatLandscapeKeyAndItsOlderName(t *testing.T) {
+	parse := func(landscape, business string) (*types.Model, error) {
+		model := missionModel("mission-support", "")
+		model.ThreatLandscape.Description, model.BusinessOverview.Description = landscape, business
+		return ParseModel(&mockConfig{}, model, make(types.RiskRules), make(types.RiskRules))
+	}
+	for _, tc := range []struct{ name, landscape, business, want string }{
+		{"new key", "insider threat", "", "insider threat"},
+		{"older key", "", "insider threat", "insider threat"},
+		{"both keys agreeing", "insider threat", "insider threat", "insider threat"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			parsed, err := parse(tc.landscape, tc.business)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, parsed.ThreatLandscape.Description)
+		})
+	}
+	_, err := parse("insider threat", "supply chain")
+	assert.ErrorContains(t, err, "threat_landscape")
+}

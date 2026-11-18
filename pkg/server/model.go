@@ -59,13 +59,13 @@ author:
   name: ""
   homepage: ""
 date:
-business_overview:
+threat_landscape:
   description: ""
   images: []
 technical_overview:
   description: ""
   images: []
-business_criticality: ""
+mission_criticality: ""
 management_summary_comment: ""
 questions: {}
 abuse_cases: {}
@@ -237,7 +237,8 @@ type payloadOverview struct {
 	ManagementSummaryComment string         `yaml:"management_summary_comment" json:"management_summary_comment"`
 	MissionCriticality       string         `yaml:"mission_criticality" json:"mission_criticality"`
 	BusinessCriticality      string         `yaml:"business_criticality" json:"business_criticality"` // older name, still accepted
-	BusinessOverview         input.Overview `yaml:"business_overview" json:"business_overview"`
+	ThreatLandscape          input.Overview `yaml:"threat_landscape" json:"threat_landscape"`
+	BusinessOverview         input.Overview `yaml:"business_overview" json:"business_overview"` // older name, still accepted
 	TechnicalOverview        input.Overview `yaml:"technical_overview" json:"technical_overview"`
 }
 
@@ -271,8 +272,13 @@ func (s *server) setOverview(ginContext *gin.Context) {
 		modelInput.ManagementSummaryComment = payload.ManagementSummaryComment
 		modelInput.MissionCriticality = criticality.String()
 		modelInput.BusinessCriticality = ""
-		modelInput.BusinessOverview.Description = payload.BusinessOverview.Description
-		modelInput.BusinessOverview.Images = payload.BusinessOverview.Images
+		landscape := payload.ThreatLandscape
+		if landscape.Description == "" && len(landscape.Images) == 0 {
+			landscape = payload.BusinessOverview
+		}
+		modelInput.ThreatLandscape.Description = landscape.Description
+		modelInput.ThreatLandscape.Images = landscape.Images
+		modelInput.BusinessOverview = input.Overview{}
 		modelInput.TechnicalOverview.Description = payload.TechnicalOverview.Description
 		modelInput.TechnicalOverview.Images = payload.TechnicalOverview.Images
 		ok = s.writeModel(ginContext, key, folderNameOfKey, &modelInput, "Overview Update")
@@ -296,7 +302,7 @@ func (s *server) getOverview(ginContext *gin.Context) {
 		ginContext.JSON(http.StatusOK, gin.H{
 			"management_summary_comment": aModel.ManagementSummaryComment,
 			"mission_criticality":        aModel.MissionCriticality,
-			"business_overview":          aModel.BusinessOverview,
+			"threat_landscape":           aModel.ThreatLandscape,
 			"technical_overview":         aModel.TechnicalOverview,
 		})
 	}

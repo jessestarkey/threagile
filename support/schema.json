@@ -151,12 +151,33 @@
         }
       }
     },
-    "business_overview": {
-      "description": "Individual business overview for the report",
+    "threat_landscape": {
+      "description": "Threat landscape for the report: primary threat vectors, high-value targets and core defenses",
       "type": "object",
       "properties": {
         "description": {
-          "description": "Individual business overview for the report",
+          "description": "Threat landscape for the report: primary threat vectors, high-value targets and core defenses",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "images": {
+          "description": "Custom images for the report",
+          "type": [
+            "array",
+            "null"
+          ],
+          "uniqueItems": true
+        }
+      }
+    },
+    "business_overview": {
+      "description": "Deprecated: older name for threat_landscape, still accepted",
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Deprecated: older name for threat_landscape, still accepted",
           "type": [
             "string",
             "null"

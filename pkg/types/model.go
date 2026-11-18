@@ -24,7 +24,7 @@ type Model struct {
 	Contributors                                  []*Author                     `yaml:"contributors,omitempty" json:"contributors,omitempty"`
 	Date                                          Date                          `json:"date,omitempty" yaml:"date,omitempty"`
 	AppDescription                                *Overview                     `yaml:"application_description,omitempty" json:"application_description,omitempty"`
-	BusinessOverview                              *Overview                     `json:"business_overview,omitempty" yaml:"business_overview,omitempty"`
+	ThreatLandscape                               *Overview                     `json:"threat_landscape,omitempty" yaml:"threat_landscape,omitempty"`
 	TechnicalOverview                             *Overview                     `json:"technical_overview,omitempty" yaml:"technical_overview,omitempty"`
 	MissionCriticality                            MissionCriticality            `json:"mission_criticality,omitempty" yaml:"mission_criticality,omitempty"`
 	ManagementSummaryComment                      string                        `json:"management_summary_comment,omitempty" yaml:"management_summary_comment,omitempty"`
