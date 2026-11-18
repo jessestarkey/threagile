@@ -42,8 +42,9 @@ risk_assessment: >
   important-or-higher integrity/availability with no human confirmation gate. High when every
   reachable asset is low-value.
 false_positives: >
-  Fires on any in-scope asset with the ai-agent-orchestrator or ai-tool-server technology that has
-  at least one outgoing communication link that is not readonly and does not go to model or
+  Fires on any in-scope ai-agent-orchestrator, or an ai-tool-server that no in-scope agent
+  orchestrator calls (when one does, that agent decides what the tools do and carries the
+  finding), that has at least one outgoing communication link that is not readonly and does not go to model or
   operational infrastructure (an LLM endpoint, model serving, AI gateway, guardrail, AI
   observability stack, or monitoring -- calls to the model or telemetry are not tool actions).
   Model each tool an agent calls as a link from the agent (or from the ai-tool-server hosting it)
@@ -66,12 +67,27 @@ risk:
       - if:
           any:
             in: "{tech_asset.technologies}"
-            or:
-              - true: "{.attributes.ai-agent-orchestrator}"
-              - true: "{.attributes.ai-tool-server}"
+            true: "{.attributes.ai-agent-orchestrator}"
           then:
             - assign:
                 is_agent: true
+      # A tool server only executes: when an in-scope agent calls it, that agent decides what the
+      # tools do and already carries this finding. The tool server carries it only when the agent
+      # steering it is not in the model (for example an MCP server used by outside agents).
+      - if:
+          and:
+            - false: "{is_agent}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-tool-server}"
+          then:
+            - assign:
+                - steered: "called_by_in_scope_agent({tech_asset})"
+            - if:
+                false: "{steered}"
+                then:
+                  - assign:
+                      is_agent: true
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
@@ -92,6 +108,25 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True when an in-scope agent orchestrator calls this asset.
+    called_by_in_scope_agent:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - if:
+                  and:
+                    - false: "{$model.technical_assets.{link.source_id}.out_of_scope}"
+                    - any:
+                        in: "{$model.technical_assets.{link.source_id}.technologies}"
+                        true: "{.attributes.ai-agent-orchestrator}"
+                  then:
+                    - return: true
+        - return: false
+
     # True for a target that is model or operational infrastructure rather than a tool or data
     # asset: an LLM endpoint, model serving, AI gateway, guardrail, AI observability stack, or
     # monitoring. Calls to these are not tool actions and are ignored.

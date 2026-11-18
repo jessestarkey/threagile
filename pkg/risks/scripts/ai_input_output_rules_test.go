@@ -64,11 +64,11 @@ func TestImproperOutputHandlingFiresWhenOutputIsConsumed(t *testing.T) {
 
 	fired := firedOn(generateScriptRisks(t, aiImproperOutputHandling, model))
 
-	assert.ElementsMatch(t, []string{"called", "model", "writer"}, keys(fired),
-		"called and model have callers that consume their output; writer writes to a datastore; "+
-			"telemetry-only only sends metrics; agent only calls its own model")
+	assert.ElementsMatch(t, []string{"called", "writer"}, keys(fired),
+		"called has a caller that consumes its output; writer writes to a datastore; telemetry-only "+
+			"only sends metrics; agent only calls its own model; model's only caller is an agent, which "+
+			"passes the output on and carries the finding itself where it lands")
 	assert.Equal(t, types.HighImpact, fired["called"].ExploitationImpact, "consumed by a critical-integrity backend")
-	assert.Equal(t, types.LowImpact, fired["model"].ExploitationImpact)
 	assert.Equal(t, types.HighImpact, fired["writer"].ExploitationImpact, "output reaches a critical-integrity datastore")
 	assert.Equal(t, types.Likely, fired["writer"].ExploitationLikelihood)
 }

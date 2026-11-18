@@ -41,12 +41,13 @@ risk_assessment: >
   Critical when strictly-confidential data reaches telemetry stored outside an environment
   accredited for it. High for confidential data.
 false_positives: >
-  Fires on any in-scope AI asset (any technology with the ai attribute, including an ai-
-  observability-stack) that stores or processes a data asset rated confidential or higher, or
-  sends one over a telemetry link -- AI tracing captures full prompts and responses by default, so
-  the telemetry link does not have to be drawn for the risk to exist. Likelihood steps up one
-  level when an outgoing link to a monitoring or ai-observability-stack asset is modeled carrying
-  such data. Note that Threagile adds every data asset an asset sends to its processed list, so
+  Fires on any in-scope asset that sees prompts and responses (ai-llm-endpoint,
+  ai-model-serving, ai-agent-orchestrator, ai-rag-pipeline, ai-gateway, ai-multi-agent-gateway,
+  ai-guardrails) or stores them (ai-observability-stack), and that stores or processes a data
+  asset rated confidential or higher, or sends one over a telemetry link -- AI tracing captures
+  full prompts and responses by default, so the telemetry link does not have to be drawn for the
+  risk to exist. Tool servers, vector stores and data pipelines handle data but not prompts, so
+  they do not fire. Note that Threagile adds every data asset an asset sends to its processed list, so
   the data on a modeled telemetry link counts as processed too. Dispose of a confirmed-compliant
   asset through risk_tracking: log it as mitigated once redaction and accredited, restricted,
   retention-limited storage are confirmed.
@@ -63,16 +64,26 @@ risk:
           - is_ai: false
           - sends_sensitive: "sends_sensitive_telemetry({tech_asset})"
           - holds_sensitive: "holds_confidential({tech_asset})"
+      # Only assets that see prompts and responses: the ones AI tracing actually captures
+      # content from, plus the observability stack that stores it. Tool servers, vector stores and
+      # pipelines handle data but not prompts, so a finding there would repeat this one.
       - if:
           any:
             in: "{tech_asset.technologies}"
-            true: "{.attributes.ai}"
+            or:
+              - true: "{.attributes.ai-llm-endpoint}"
+              - true: "{.attributes.ai-model-serving}"
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-rag-pipeline}"
+              - true: "{.attributes.ai-gateway}"
+              - true: "{.attributes.ai-multi-agent-gateway}"
+              - true: "{.attributes.ai-guardrails}"
+              - true: "{.attributes.ai-observability-stack}"
           then:
             - assign:
                 is_ai: true
-      # AI tracing captures full prompts and responses by default, so any AI asset handling
-      # confidential data is in scope whether or not its telemetry link is drawn; a drawn link that
-      # carries the data raises likelihood (see get_likelihood).
+      # AI tracing captures full prompts and responses by default, so a prompt-handling asset with
+      # confidential data is in scope whether or not its telemetry link is drawn.
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"

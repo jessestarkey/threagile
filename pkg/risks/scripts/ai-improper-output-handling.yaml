@@ -43,7 +43,8 @@ false_positives: >
   Fires on an in-scope ai-llm-endpoint, ai-model-serving, ai-agent-orchestrator, or ai-rag-
   pipeline whose output is consumed by something: any asset that calls it (the caller receives the
   response -- for a model this is where the output goes), except monitoring and AI observability
-  assets, or any outgoing link to an asset that is not model or operational infrastructure (LLM
+  assets and agent orchestrators or RAG pipelines (they pass the output on and carry this finding
+  themselves where it finally lands), or any outgoing link to an asset that is not model or operational infrastructure (LLM
   endpoint, model serving, AI gateway, guardrail, observability, monitoring). An agent calling its
   own model is the model's consumer, not a sink of the agent's output. Impact comes from the
   integrity of those consumers. Dispose of a confirmed-compliant asset through risk_tracking: log
@@ -121,8 +122,31 @@ risk:
               - return: true
         - return: false
 
-    # True when the output is consumed: a non-monitoring caller (it receives the response), or an
-    # outgoing link to an asset that is not model or operational infrastructure.
+    # True for a caller that does not consume the output itself: monitoring, which reads metrics,
+    # and an agent or RAG pipeline, which passes the output on and carries this finding itself
+    # wherever the output finally lands. Counting it here would raise the finding twice for one
+    # chain (model -> agent -> sink).
+    is_not_a_consumer:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - monitoring: "is_monitoring({asset_id})"
+        - if:
+            true: "{monitoring}"
+            then:
+              - return: true
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-agent-orchestrator}"
+                - true: "{.attributes.ai-rag-pipeline}"
+            then:
+              - return: true
+        - return: false
+    # True when the output is consumed: a caller that consumes it (it receives the response), or
+    # an outgoing link to an asset that is not model or operational infrastructure.
     output_reaches_sink:
       parameters:
         - tech_asset
@@ -132,7 +156,7 @@ risk:
             item: link
             do:
               - assign:
-                  - monitoring: "is_monitoring({link.source_id})"
+                  - monitoring: "is_not_a_consumer({link.source_id})"
               - if:
                   false: "{monitoring}"
                   then:
@@ -170,7 +194,7 @@ risk:
             item: link
             do:
               - assign:
-                  - monitoring: "is_monitoring({link.source_id})"
+                  - monitoring: "is_not_a_consumer({link.source_id})"
               - if:
                   false: "{monitoring}"
                   then:
