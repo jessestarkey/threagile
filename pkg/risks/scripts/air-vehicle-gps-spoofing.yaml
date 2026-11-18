@@ -41,10 +41,12 @@ risk_assessment: >
   independent navigation cross-check, or carrying cryptographic material/mission data with no
   anti-tamper or zeroization protection against physical capture.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope air-vehicle
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
-  it as mitigated once independent navigation cross-checking and anti-tamper/zeroization
-  protection are confirmed.
+  Fires on every in-scope air-vehicle asset by design. It covers two linked threats in one
+  finding -- navigation spoofing, and onboard keys and data exposed when a vehicle it forces down
+  (or one lost otherwise) is recovered -- and its rating is set by the navigation hijack, with
+  capture as the consequence; a second finding per vehicle would repeat the same path. Dispose of
+  a confirmed-compliant asset through risk_tracking: log it as mitigated once independent
+  navigation cross-checking and anti-tamper/zeroization protection are both confirmed.
 
 risk:
   id:
