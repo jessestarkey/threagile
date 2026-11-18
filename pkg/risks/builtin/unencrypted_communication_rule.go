@@ -40,7 +40,7 @@ func (*UnencryptedCommunicationRule) Category() *types.RiskCategory {
 		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Unencrypted technical communication links of in-scope technical assets (excluding " + types.Monitoring + " traffic as well as " + types.LocalFileAccess.String() + ", " + types.InProcessLibraryCall.String() + " and " + types.InterProcessCommunication.String() + ") " +
 			"transferring sensitive data.", // TODO more detailed text required here
-		RiskAssessment: "Depending on the confidentiality rating of the transferred data-assets either medium or high risk.",
+		RiskAssessment: "Likelihood starts at Possible, one level higher across a network trust boundary. Impact starts at Medium and steps on the higher of the confidentiality and integrity of the data on the link; authentication data in cleartext counts as confidential. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "When all sensitive data sent over the communication link is already fully encrypted on document or data level. " +
 			"Also intra-container/pod communication can be considered false positive when container orchestration platform handles encryption.",
 		ModelFailurePossibleReason: false,
@@ -91,9 +91,10 @@ func (r *UnencryptedCommunicationRule) GenerateRisks(input *types.Model) ([]*typ
 }
 
 func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, transferringAuthData bool) *types.Risk {
-	// Medium baseline plus the confidentiality step for the data on the link; authentication data
-	// in cleartext counts as confidential whatever the link's data assets say.
-	rank := linkRank(input, r.Category().STRIDE, dataFlow)
+	// Medium baseline plus the CIA step on the higher of the link data's confidentiality and
+	// integrity: cleartext can be read and altered in transit, and the rule fires on either.
+	// Authentication data in cleartext counts as confidential whatever the data assets say.
+	rank := max(int(input.HighestCommunicationLinkConfidentiality(dataFlow)), int(input.HighestCommunicationLinkIntegrity(dataFlow)))
 	if transferringAuthData {
 		rank = max(rank, int(types.Confidential))
 	}
@@ -107,11 +108,7 @@ func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalA
 		title += " (even VPN-protected connections need to encrypt their data in-transit when confidentiality is " +
 			"rated " + types.StrictlyConfidential.String() + " or integrity is rated " + types.MissionCritical.String() + ")"
 	}
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
-	// own Description already explicitly says "confidentiality and/or integrity rating," not
-	// just the former.
-	// One level more likely across a network trust boundary than within one.
+	// Impact: see createRisk -- the higher of the link data's confidentiality and integrity.
 	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, stepIf(isAcrossTrustBoundaryNetworkOnly(input, dataFlow), 1))
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,

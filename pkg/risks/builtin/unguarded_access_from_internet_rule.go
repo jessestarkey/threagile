@@ -47,10 +47,7 @@ func (*UnguardedAccessFromInternetRule) Category() *types.RiskCategory {
 			"they do not consist of custom developed code and " +
 			"the data-flow only consists of HTTP or FTP protocols. Access from " + types.Monitoring + " systems " +
 			"as well as VPN-protected connections are exempted.",
-		RiskAssessment: "The matching technical assets are at " + types.LowSeverity.String() + " risk. When either the " +
-			"confidentiality rating is " + types.StrictlyConfidential.String() + " or the integrity rating " +
-			"is " + types.MissionCritical.String() + ", the risk-rating is considered " + types.MediumSeverity.String() + ". " +
-			"For assets with RAA values higher than 40 % the risk-rating increases.",
+		RiskAssessment:             "Likelihood starts at Likely. Impact starts at Low and steps on the highest of the asset's own confidentiality, integrity and availability ratings. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When other means of filtering client requests are applied equivalent of " + types.ReverseProxy + ", " + types.WAF + ", or " + types.Gateway + " components.",
 		ModelFailurePossibleReason: false,
 		CWE:                        501,

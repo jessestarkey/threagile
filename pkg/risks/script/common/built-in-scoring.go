@@ -17,7 +17,9 @@ import (
 //	adjust_impact_rank(baseline, rank)           baseline + CIA step for a 0-4 rank
 //	cia_rank(ratings...)                         highest 0-4 rank among confidentiality/criticality names
 //
-// Missing values (dropped zero values such as public, archive, or RAA 0) count as 0.
+// Missing values (dropped zero values such as public, archive, or RAA 0) count as 0. A missing
+// baseline, an unknown rating name, or a number passed as a rating is an error rather than a
+// silent rank 0, so a typo in a rule fails loudly instead of rating one level low.
 
 const (
 	adjustLikelihood = "adjust_likelihood"
@@ -81,6 +83,9 @@ func adjustLikelihoodFunc(parameters []Value) (Value, error) {
 	if len(parameters) < 2 {
 		return nil, fmt.Errorf("%s: expected baseline and raa, got %d parameters", adjustLikelihood, len(parameters))
 	}
+	if strings.TrimSpace(textArg(parameters[0])) == "" {
+		return nil, fmt.Errorf("%s: missing baseline", adjustLikelihood)
+	}
 	baseline, err := types.RiskExploitationLikelihood(0).Find(strings.TrimSpace(textArg(parameters[0])))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", adjustLikelihood, err)
@@ -101,6 +106,9 @@ func adjustLikelihoodFunc(parameters []Value) (Value, error) {
 }
 
 func impactBaseline(name string, value Value) (types.RiskExploitationImpact, error) {
+	if strings.TrimSpace(textArg(value)) == "" {
+		return types.LowImpact, fmt.Errorf("%s: missing baseline", name)
+	}
 	baseline, err := types.RiskExploitationImpact(0).Find(strings.TrimSpace(textArg(value)))
 	if err != nil {
 		return baseline, fmt.Errorf("%s: %w", name, err)
@@ -116,11 +124,9 @@ func adjustImpactFunc(parameters []Value) (Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	highest := 0
-	for _, parameter := range parameters[1:] {
-		if rank := types.CIARank(textArg(parameter)); rank > highest {
-			highest = rank
-		}
+	highest, err := highestRating(adjustImpact, parameters[1:])
+	if err != nil {
+		return nil, err
 	}
 	return SomeStringValue(types.AdjustImpactForRank(baseline, highest).String(), nil), nil
 }
@@ -144,11 +150,27 @@ func ciaRankFunc(parameters []Value) (Value, error) {
 	if len(parameters) < 1 {
 		return nil, fmt.Errorf("%s: expected at least one rating", ciaRank)
 	}
-	highest := 0
-	for _, parameter := range parameters {
-		if rank := types.CIARank(textArg(parameter)); rank > highest {
-			highest = rank
-		}
+	highest, err := highestRating(ciaRank, parameters)
+	if err != nil {
+		return nil, err
 	}
 	return SomeDecimalValue(decimal.NewFromInt(int64(highest)), nil), nil
+}
+
+// highestRating is the highest 0-4 rank among confidentiality/criticality names. A number is
+// rejected (a rank belongs in adjust_impact_rank), as is any name that is not a rating.
+func highestRating(name string, parameters []Value) (int, error) {
+	highest := 0
+	for _, parameter := range parameters {
+		switch plainValue(parameter).(type) {
+		case decimal.Decimal, int, int64, float64:
+			return 0, fmt.Errorf("%s: got a number where a rating name belongs (use adjust_impact_rank for a rank)", name)
+		}
+		rank, ok := types.ParseCIARank(textArg(parameter))
+		if !ok {
+			return 0, fmt.Errorf("%s: unknown rating %q", name, textArg(parameter))
+		}
+		highest = max(highest, rank)
+	}
+	return highest, nil
 }

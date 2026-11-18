@@ -37,8 +37,7 @@ func (*MissingAuthenticationRule) Category() *types.RiskCategory {
 		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (except " + types.LoadBalancer + ", " + types.ReverseProxy + ", " + types.ServiceRegistry + ", " + types.WAF + ", " + types.IDS + ", and " + types.IPS + " and in-process calls) should authenticate incoming requests when the asset processes " +
 			"sensitive data. This is especially the case for all multi-tenant assets (there even non-sensitive ones).",
-		RiskAssessment: "The risk rating (medium or high) " +
-			"depends on the sensitivity of the data sent across the communication link. Monitoring callers are exempted from this risk.",
+		RiskAssessment: "Likelihood starts at Likely. Impact starts at Medium and steps on the highest rating of the data on the unauthenticated link, or of the target asset when the link carries no data. Monitoring callers are exempted. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "Technical assets which do not process requests regarding functionality or data linked to end-users (customers) " +
 			"can be considered as false positives after individual review.",
 		ModelFailurePossibleReason: false,
@@ -87,7 +86,13 @@ func (r *MissingAuthenticationRule) GenerateRisks(input *types.Model) ([]*types.
 // scoped to the comm link's own ratings rather than the target asset's -- not reused via the
 // shared computeImpact() helper, which operates on the asset's own CIA fields, not a link's.
 func (r *MissingAuthenticationRule) calculateImpact(commLink *types.CommunicationLink, input *types.Model) types.RiskExploitationImpact {
-	return types.AdjustImpactForRank(types.MediumImpact, linkRank(input, r.Category().STRIDE, commLink))
+	rank := linkRank(input, r.Category().STRIDE, commLink)
+	if len(commLink.DataAssetsSent) == 0 && len(commLink.DataAssetsReceived) == 0 {
+		// No data modeled on the link: the unauthenticated caller still reaches the target, so
+		// rate on what the target holds rather than on an empty link (rank 0).
+		rank = processedRank(input, r.Category().STRIDE, input.TechnicalAssets[commLink.TargetId])
+	}
+	return types.AdjustImpactForRank(types.MediumImpact, rank)
 }
 
 func (r *MissingAuthenticationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingAccess, incomingAccessOrigin *types.CommunicationLink, hopBetween string,

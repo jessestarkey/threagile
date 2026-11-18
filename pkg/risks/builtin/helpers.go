@@ -208,11 +208,12 @@ func processedImpact(input *types.Model, baseline types.RiskExploitationImpact, 
 	return types.AdjustImpactForRank(baseline, processedRank(input, stride, assets...))
 }
 
-// injectionImpact applies the symmetric CIA step for the higher of the processed confidentiality
-// and integrity ranks. Injection both reads and alters what the asset handles, so a
-// strictly-confidential but low-integrity asset is not rated down just because the category is
-// filed under Tampering. Availability is left out: it is not what injection mainly threatens.
-func injectionImpact(input *types.Model, baseline types.RiskExploitationImpact, asset *types.TechnicalAsset) types.RiskExploitationImpact {
+// readAndAlterImpact applies the symmetric CIA step for the higher of the processed
+// confidentiality and integrity ranks. Injection, code execution and backdoored code both read
+// and alter what the asset handles, so a strictly-confidential but low-integrity asset is not
+// rated down just because the category is filed under Tampering. Availability is left out: it is
+// not what these threats mainly endanger.
+func readAndAlterImpact(input *types.Model, baseline types.RiskExploitationImpact, asset *types.TechnicalAsset) types.RiskExploitationImpact {
 	return types.AdjustImpactForRank(baseline, max(int(input.HighestProcessedConfidentiality(asset)), int(input.HighestProcessedIntegrity(asset))))
 }
 

@@ -64,10 +64,8 @@ func (r *ContainerBaseImageBackdooringRule) GenerateRisks(parsedModel *types.Mod
 
 func (r *ContainerBaseImageBackdooringRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Container Base Image Backdooring</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Integrity (this category's own STRIDE value): a backdoored base image grants code
-	// execution inside the container, which can read, modify, or deny whatever that container
-	// handles regardless of which single dimension is highest-rated.
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens (integrity),
+	// for the data the container processes.
 	impact := processedImpact(parsedModel, types.HighImpact, r.Category().STRIDE, technicalAsset)
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{

@@ -35,4 +35,8 @@ func TestCIARankParsesBothScales(t *testing.T) {
 	assert.Equal(t, 2, CIARank("important"))
 	assert.Equal(t, 4, CIARank("mission-critical"))
 	assert.Equal(t, 0, CIARank("nonsense"))
+	_, ok := ParseCIARank("nonsense")
+	assert.False(t, ok)
+	_, ok = ParseCIARank("")
+	assert.True(t, ok, "a dropped zero value is a valid rating")
 }

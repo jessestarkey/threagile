@@ -76,13 +76,9 @@ func (r *SqlNoSqlInjectionRule) createRisk(input *types.Model, technicalAsset *t
 	caller := input.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>SQL/NoSQL-Injection</b> risk at <b>" + caller.Title + "</b> against database <b>" + technicalAsset.Title + "</b>" +
 		" via <b>" + incomingFlow.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
-	// Impact text, SQL/NoSQL injection lets an attacker "steal and modify data" -- both a
-	// confidentiality and an integrity consequence, not just the latter (see
-	// docs/risk-methodology.md's discussion of this exact category as a known multi-dimensional
-	// case in the custom engine).
-	impact := injectionImpact(input, types.HighImpact, technicalAsset)
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): injection both reads and alters data.
+	impact := readAndAlterImpact(input, types.HighImpact, technicalAsset)
 	likelihood := types.PossibleLikelihood // DevOps: one level below the baseline, with no RAA/internet step
 	if incomingFlow.Usage == types.DevOps {
 		// Same rationale as the SSRF rule's DevOps branch: the asset-level RAA/internet-

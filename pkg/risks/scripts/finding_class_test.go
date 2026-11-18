@@ -156,3 +156,10 @@ func TestEveryRuleCarriesItsApprovedFindingClass(t *testing.T) {
 		assert.Contains(t, categories, id, "stale approved class for %q", id)
 	}
 }
+
+// The built-in accidental-secret-leak is shadowed by the script rule of the same id in
+// allRuleCategories, so check its own category directly.
+func TestShadowedBuiltinAccidentalSecretLeakCarriesItsClass(t *testing.T) {
+	assert.Equal(t, types.FindingClassControlNotEvidenced,
+		risks.GetBuiltInRiskRules()["accidental-secret-leak"].Category().FindingClass)
+}

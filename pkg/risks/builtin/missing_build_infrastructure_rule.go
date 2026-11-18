@@ -124,7 +124,9 @@ func getTechFlags(technicalAsset *types.TechnicalAsset, hasBuildPipeline, hasSou
 
 func (r *MissingBuildInfrastructureRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
 	title := "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	// Flat, like the impact: the referenced asset is only an example, so its RAA and exposure
+	// say nothing about a gap in the whole model.
+	likelihood := types.Unlikely
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

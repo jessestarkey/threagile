@@ -32,8 +32,7 @@ func (*MixedTargetsOnSharedRuntimeRule) Category() *types.RiskCategory {
 		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Shared runtime running technical assets of different trust-boundaries is at risk. " +
 			"Also mixing backend/datastore with frontend components on the same shared runtime is considered a risk.",
-		RiskAssessment: "The risk rating (low or medium) depends on the confidentiality, integrity, and availability rating of " +
-			"the technical asset running on the shared runtime.",
+		RiskAssessment: "Likelihood is Unlikely (a shared runtime has no single asset to adjust for). Impact starts at Low and steps on the highest rating among the assets running on the shared runtime. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "When all assets running on the shared runtime are hardened and protected to the same extend as if all were " +
 			"containing/processing highly sensitive data.",
 		ModelFailurePossibleReason: false,

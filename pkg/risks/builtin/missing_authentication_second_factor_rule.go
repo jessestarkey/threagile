@@ -39,7 +39,7 @@ func (*MissingAuthenticationSecondFactorRule) Category() *types.RiskCategory {
 		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (except " + types.LoadBalancer + ", " + types.ReverseProxy + ", " + types.WAF + ", " + types.IDS + ", and " + types.IPS + ") should authenticate incoming requests via two-factor authentication (2FA) " +
 			"when the asset processes or stores highly sensitive data (in terms of confidentiality, integrity, and availability) and is accessed by a client used by a human user.",
-		RiskAssessment: types.MediumSeverity.String(),
+		RiskAssessment: "Likelihood starts at Likely. Impact starts at Medium and steps on the highest rating of the data on the human-facing link. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "Technical assets which do not process requests regarding functionality or data linked to end-users (customers) " +
 			"can be considered as false positives after individual review.",
 		ModelFailurePossibleReason: false,

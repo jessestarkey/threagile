@@ -78,12 +78,9 @@ func (r *SearchQueryInjectionRule) createRisk(input *types.Model, technicalAsset
 	caller := input.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>Search Query Injection</b> risk at <b>" + caller.Title + "</b> against search engine server <b>" + technicalAsset.Title + "</b>" +
 		" via <b>" + incomingFlow.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
-	// Impact text, search query injection lets an attacker "read more data ... and eventually
-	// further escalate towards a deeper system penetration" -- a disclosure consequence first,
-	// a tampering one as it escalates.
-	impact := injectionImpact(input, types.MediumImpact, technicalAsset)
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): injection both reads and alters data.
+	impact := readAndAlterImpact(input, types.MediumImpact, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

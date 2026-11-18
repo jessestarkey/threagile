@@ -38,9 +38,7 @@ func (*ServerSideRequestForgeryRule) Category() *types.RiskCategory {
 		STRIDE:         types.InformationDisclosure,
 		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope non-client systems accessing (using outgoing communication links) targets with either HTTP or HTTPS protocol.",
-		RiskAssessment: "The risk rating (low or medium) depends on the sensitivity of the data assets receivable via web protocols from " +
-			"targets within the same network trust-boundary as well on the sensitivity of the data assets receivable via web protocols from the target asset itself. " +
-			"Also for cloud-based environments the exploitation impact is at least medium, as cloud backend services can be attacked via SSRF.",
+		RiskAssessment: "Likelihood starts at Possible (fixed at Unlikely for DevOps links). Impact starts at Low and steps on the confidentiality of the most confidential target reachable over web protocols, and is at least Medium inside a cloud trust boundary, where the metadata endpoint is always reachable. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "Servers not sending outgoing web requests can be considered " +
 			"as false positives after review.",
 		ModelFailurePossibleReason: false,

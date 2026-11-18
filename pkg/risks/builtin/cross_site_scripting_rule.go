@@ -70,11 +70,9 @@ func (asl CrossSiteScriptingRule) skipAsset(technicalAsset *types.TechnicalAsset
 
 func (r *CrossSiteScriptingRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Cross-Site Scripting (XSS)</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
-	// Impact text, a successful XSS lets an attacker "steal or modify" victim data -- both a
-	// confidentiality and an integrity consequence, not just the latter.
-	impact := injectionImpact(parsedModel, types.MediumImpact, technicalAsset)
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): injection both reads and alters data.
+	impact := readAndAlterImpact(parsedModel, types.MediumImpact, technicalAsset)
 	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

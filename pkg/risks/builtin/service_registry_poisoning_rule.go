@@ -63,13 +63,8 @@ func (r *ServiceRegistryPoisoningRule) GenerateRisks(input *types.Model) ([]*typ
 
 func (r *ServiceRegistryPoisoningRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingFlows []*types.CommunicationLink) *types.Risk {
 	title := "<b>Service Registry Poisoning</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off all three CIA dimensions, across the registry, its
-	// callers, and the link between them, rather than narrowing to just Integrity (this
-	// category's own STRIDE value): per this category's own Impact text, poisoned lookup data
-	// can lead to "breach of sensitive data" downstream just as much as a direct tampering
-	// consequence at the registry itself.
-	// Medium baseline plus the CIA step for the highest rank across the registry, its callers and
-	// the data on their links: a poisoned entry redirects every caller.
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the
+	// highest rank across the registry, its callers and the data on their links.
 	rank := processedRank(input, r.Category().STRIDE, technicalAsset)
 	for _, incomingFlow := range incomingFlows {
 		rank = max(rank, processedRank(input, r.Category().STRIDE, input.TechnicalAssets[incomingFlow.SourceId]),

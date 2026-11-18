@@ -80,15 +80,23 @@ func AdjustImpactForRank(baseline RiskExploitationImpact, rank int) RiskExploita
 // into its 0-4 rank. An empty or unknown value is rank 0: public and archive are the zero values
 // and are dropped from serialized models, so a missing rating means the lowest one.
 func CIARank(value string) int {
+	rank, _ := ParseCIARank(value)
+	return rank
+}
+
+// ParseCIARank is CIARank that also reports whether value was understood: empty (a dropped zero
+// value) and any confidentiality or criticality name are; anything else, such as a misspelling,
+// is not.
+func ParseCIARank(value string) (int, bool) {
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return 0
+		return 0, true
 	}
 	if confidentiality, err := Confidentiality(0).Find(value); err == nil {
-		return int(confidentiality)
+		return int(confidentiality), true
 	}
 	if criticality, err := Criticality(0).Find(value); err == nil {
-		return int(criticality)
+		return int(criticality), true
 	}
-	return 0
+	return 0, false
 }

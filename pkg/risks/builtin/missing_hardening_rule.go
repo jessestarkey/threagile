@@ -76,9 +76,8 @@ func (r *MissingHardeningRule) skipAsset(technicalAsset *types.TechnicalAsset) b
 
 func (r *MissingHardeningRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Missing Hardening</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): this category's own
-	// Impact text is generically about attacking a high-value target, not a single dimension.
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the data
+	// the asset processes.
 	impact := processedImpact(input, types.LowImpact, r.Category().STRIDE, technicalAsset)
 	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit/
 	// raaLimitReduced gate) -- that detection-logic role is kept as-is. computeLikelihood() is

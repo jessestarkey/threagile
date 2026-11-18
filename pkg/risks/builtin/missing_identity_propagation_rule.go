@@ -42,8 +42,7 @@ func (*MissingIdentityPropagationRule) Category() *types.RiskCategory {
 			"(i.e. non-public), should authorize incoming requests based on the propagated end user identity when their rating is sensitive. " +
 			"This is especially the case for all multi-tenant assets (there even less-sensitive rated ones). " +
 			"DevOps usages are exempted from this risk.",
-		RiskAssessment: "The risk rating (medium or high) " +
-			"depends on the confidentiality, integrity, and availability rating of the technical asset.",
+		RiskAssessment: "Likelihood starts at Possible. Impact starts at Low and steps on the highest of the asset's own confidentiality, integrity and availability ratings. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "Technical assets which do not process requests regarding functionality or data linked to end-users (customers) " +
 			"can be considered as false positives after individual review.",
 		ModelFailurePossibleReason: false,

@@ -360,10 +360,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 		fullTitle += ": <u>" + details + "</u>"
 	}
 
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Integrity (this category's own STRIDE value): missing cloud hardening is a broad
-	// misconfiguration risk ("attackers might access cloud components in an unintended way")
-	// that can just as easily expose or disrupt a resource as corrupt it.
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the
+	// highest ratings in the asset, shared runtime or trust boundary.
 	impact := impactForRatings(types.LowImpact, r.Category().STRIDE, confidentiality, integrity, availability)
 
 	risk := &types.Risk{

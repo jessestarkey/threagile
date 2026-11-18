@@ -44,7 +44,7 @@ func (*UnencryptedAssetRule) Category() *types.RiskCategory {
 			"For technical assets storing data assets rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + " the " +
 			"encryption must be of type " + types.DataWithEndUserIndividualKey.String() + ".",
 		// NOTE: the risk assessment does not only consider the CIs of the *stored* data-assets
-		RiskAssessment:             "Depending on the confidentiality rating of the stored data-assets either medium or high risk.",
+		RiskAssessment:             "Likelihood starts at Unlikely. Impact starts at Low and steps on the confidentiality of the data the asset stores. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When all sensitive data stored within the asset is already fully encrypted on document or data level.",
 		ModelFailurePossibleReason: false,
 		CWE:                        311,
@@ -102,10 +102,8 @@ func (r *UnencryptedAssetRule) createRisk(technicalAsset *types.TechnicalAsset, 
 	if requiresEndUserKey {
 		title += " missing end user individual encryption with " + types.DataWithEndUserIndividualKey.String()
 	}
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
-	// own detection/assessment logic already deliberately considers both (see the "NOTE" comment
-	// above in GenerateRisks), not just the stored data's confidentiality.
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens
+	// (confidentiality), for the data the asset stores.
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

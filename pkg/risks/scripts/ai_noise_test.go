@@ -65,3 +65,28 @@ func TestImproperOutputHandlingSkipsModelsWhoseOnlyCallerIsAnAgent(t *testing.T)
 	assert.ElementsMatch(t, []string{"agent", "direct"}, keys(fired),
 		"the agent's output lands in the UI; direct's output lands in an app; llm's only caller is the agent")
 }
+
+func TestExcessiveAgencyAgentImpactReachesThroughItsToolServer(t *testing.T) {
+	db := agencyAsset("db", "database")
+	db.Confidentiality, db.Integrity = types.StrictlyConfidential, types.MissionCritical
+
+	writable := boundaryModel(map[string]string{},
+		agencyAsset("agent", "ai-agent-orchestrator", agencyLink("agent>tools", "tools", false)),
+		agencyAsset("tools", "ai-tool-server", agencyLink("tools>db", "db", false)),
+		db,
+	)
+	fired := firedOn(generateExcessiveAgencyRisks(t, writable))
+	assert.ElementsMatch(t, []string{"agent"}, keys(fired))
+	assert.Equal(t, types.HighImpact, fired["agent"].ExploitationImpact,
+		"the agent reaches the strictly-confidential database through its tool server")
+
+	readonly := boundaryModel(map[string]string{},
+		agencyAsset("agent", "ai-agent-orchestrator", agencyLink("agent>tools", "tools", true)),
+		agencyAsset("tools", "ai-tool-server", agencyLink("tools>db", "db", false)),
+		db,
+	)
+	fired = firedOn(generateExcessiveAgencyRisks(t, readonly))
+	assert.ElementsMatch(t, []string{"tools"}, keys(fired),
+		"a read-only agent link does not hand the tools over, so the tool server keeps the finding")
+	assert.Equal(t, types.HighImpact, fired["tools"].ExploitationImpact)
+}

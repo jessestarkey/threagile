@@ -40,11 +40,7 @@ func (*DosRiskyAccessAcrossTrustBoundaryRule) Category() *types.RiskCategory {
 		DetectionLogic: "In-scope technical assets (excluding " + types.LoadBalancer + ") with " +
 			"availability rating of " + types.Critical.String() + " or higher which have incoming data-flows across a " +
 			"network trust-boundary (excluding " + types.DevOps.String() + " usage).",
-		RiskAssessment: "Matching technical assets with availability rating " +
-			"of " + types.Critical.String() + " or higher are " +
-			"at " + types.LowSeverity.String() + " risk. When the availability rating is " +
-			types.MissionCritical.String() + " and neither a VPN nor IP filter for the incoming data-flow nor redundancy " +
-			"for the asset is applied, the risk-rating is considered " + types.MediumSeverity.String() + ".", // TODO reduce also, when data-flow authenticated and encrypted?
+		RiskAssessment:             "Likelihood starts at Possible. Impact starts at Low and steps on the asset's availability; the rule fires only at critical availability or above, so it lands at Medium, one level lower when the link is VPN-protected or IP-filtered or the asset is redundant. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When the accessed target operations are not time- or resource-consuming.",
 		ModelFailurePossibleReason: false,
 		CWE:                        400,

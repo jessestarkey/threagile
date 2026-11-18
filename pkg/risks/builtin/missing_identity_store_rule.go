@@ -101,7 +101,9 @@ func (r *MissingIdentityStoreRule) skipAsset(technicalAsset *types.TechnicalAsse
 
 func (r *MissingIdentityStoreRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
 	title := "<b>Missing Identity Store</b> in the threat model (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	// Flat, like the impact: the referenced asset is only an example, so its RAA and exposure
+	// say nothing about a gap in the whole model.
+	likelihood := types.Unlikely
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

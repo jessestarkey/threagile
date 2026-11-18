@@ -117,8 +117,11 @@ risk:
             in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
             item: link
             do:
+              # Only a writable link hands the tools to the agent; through a read-only link the
+              # agent can't drive the tool server's writes, so the tool server keeps the finding.
               - if:
                   and:
+                    - false: "{link.readonly}"
                     - false: "{$model.technical_assets.{link.source_id}.out_of_scope}"
                     - any:
                         in: "{$model.technical_assets.{link.source_id}.technologies}"
@@ -127,6 +130,44 @@ risk:
                     - return: true
         - return: false
 
+    # Highest rank (max of C, I, A) among the writable, non-infrastructure targets of a tool server:
+    # what an agent that calls it can reach through its tools.
+    tool_server_reach:
+      parameters:
+        - target_id
+      do:
+        - assign:
+            - reach: 0
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              true: "{.attributes.ai-tool-server}"
+            then:
+              - loop:
+                  in: "{$model.technical_assets.{target_id}.communication_links}"
+                  item: tool_link
+                  do:
+                    - assign:
+                        - tool_infra: "is_infra_target({tool_link.target_id})"
+                    - if:
+                        and:
+                          - false: "{tool_link.readonly}"
+                          - false: "{tool_infra}"
+                        then:
+                          - assign:
+                              - reached_confidentiality: "{$model.technical_assets.{tool_link.target_id}.confidentiality}"
+                              - reached_integrity: "{$model.technical_assets.{tool_link.target_id}.integrity}"
+                              - reached_availability: "{$model.technical_assets.{tool_link.target_id}.availability}"
+                          - assign:
+                              - reached_rank: "cia_rank({reached_confidentiality}, {reached_integrity}, {reached_availability})"
+                          - if:
+                              greater:
+                                first: "{reached_rank}"
+                                second: "{reach}"
+                              then:
+                                - assign:
+                                    reach: "{reached_rank}"
+        - return: "{reach}"
     # True for a target that is model or operational infrastructure rather than a tool or data
     # asset: an LLM endpoint, model serving, AI gateway, guardrail, AI observability stack, or
     # monitoring. Calls to these are not tool actions and are ignored.
@@ -177,8 +218,9 @@ risk:
         - return: "adjust_likelihood(likely, {tech_asset.raa})"
 
     # Impact baseline: medium.
-    # Impact: baseline plus the CIA step for the highest rank across the agent and every
-    # writable, non-infrastructure tool it calls (max of C, I, A).
+    # Impact: baseline plus the CIA step for the highest rank across the agent, every writable,
+    # non-infrastructure tool it calls, and, for a tool server, what that tool server writes to
+    # (max of C, I, A).
     get_impact:
       parameters:
         - tech_asset
@@ -209,4 +251,13 @@ risk:
                         then:
                           - assign:
                               best: "{target_rank}"
+                    - assign:
+                        - through_tools: "tool_server_reach({link.target_id})"
+                    - if:
+                        greater:
+                          first: "{through_tools}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{through_tools}"
         - return: "adjust_impact_rank(medium, {best})"

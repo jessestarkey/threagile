@@ -82,13 +82,9 @@ func (r *CodeBackdooringRule) GenerateRisks(parsedModel *types.Model) ([]*types.
 
 func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Code Backdooring</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): backdoored code shipped
-	// into production can just as easily exfiltrate data as corrupt it, so a deployment target
-	// with high Confidentiality data deserves the same bump as one with high Integrity data.
-	// Medium baseline plus the symmetric CIA step; one level lower when the asset is itself a
-	// code-inspection platform, the mitigation the model can show.
-	impact := types.ClampImpact(int(processedImpact(input, types.MediumImpact, r.Category().STRIDE, technicalAsset)) +
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): backdoored code both reads and alters data.
+	impact := types.ClampImpact(int(readAndAlterImpact(input, types.MediumImpact, technicalAsset)) +
 		stepIf(technicalAsset.Technologies.GetAttribute(types.CodeInspectionPlatform), -1))
 	// data breach at all deployment targets
 	uniqueDataBreachTechnicalAssetIDs := make(map[string]interface{})
