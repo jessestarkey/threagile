@@ -84,7 +84,7 @@ func (r *MissingHardeningRule) createRisk(input *types.Model, technicalAsset *ty
 	// raaLimitReduced gate) -- that detection-logic role is kept as-is. computeLikelihood() is
 	// still applied on top of the flat baseline for consistency with every other rule's scoring:
 	// since both raaLimit (55) and raaLimitReduced (40) already sit at or above
-	// raaLikelihoodThreshold (40), every asset that reaches this point already earns the RAA
+	// types.RAALikelihoodThreshold (40), every asset that reaches this point already earns the RAA
 	// Likelihood delta too, so Likely becomes VeryLikely here consistently -- the reachability
 	// delta can still vary per asset even though the RAA delta cannot.
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)

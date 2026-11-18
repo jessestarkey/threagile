@@ -116,18 +116,8 @@ func isSameTrustBoundaryNetworkOnly(parsedModel *types.Model, ta *types.Technica
 // baseline, so a similar-looking finding scores consistently whichever engine produced it -- they
 // do not change what counts as a baseline; each rule keeps its own judgment call about that.
 
-// raaLikelihoodThreshold/raaLikelihoodLowThreshold match RAA_LIKELIHOOD_THRESHOLD/
-// RAA_LIKELIHOOD_LOW_THRESHOLD in inject_risks.py exactly -- kept identical so a finding's
-// RAA-driven Likelihood delta behaves the same regardless of which engine computed it.
-// Both now live in pkg/types/risk_scoring.go, shared with the script-rule built-ins.
-const raaLikelihoodThreshold = types.RAALikelihoodThreshold
-const raaLikelihoodLowThreshold = types.RAALikelihoodLowThreshold
-
-// ciaRankToDelta maps a CIA rank (Confidentiality's and Criticality's shared 0-4 ordinal shape --
-// Criticality covers both Integrity and Availability) to the -1/0/+1 Impact delta applied on top
-// of a baseline. Mirrors CIA_RANK_TO_DELTA in inject_risks.py: the bottom two tiers pull the
-// baseline down a notch, the middle tier leaves it alone, the top two tiers push it up a notch.
-var ciaRankToDelta = types.CIARankToDelta
+// The RAA thresholds, the CIA-rank deltas and clamping live in pkg/types/risk_scoring.go,
+// shared with the script-rule built-ins and mirrored by inject_risks.py.
 
 // strideToCIADimension mirrors STRIDE_TO_CIA_DIMENSION in inject_risks.py: which CIA dimension a
 // finding's STRIDE category most directly threatens, so e.g. a denial-of-service finding is nudged
@@ -142,10 +132,6 @@ var strideToCIADimension = map[types.STRIDE]string{
 	types.Repudiation:           "integrity",
 	types.DenialOfService:       "availability",
 }
-
-func clampLikelihood(idx int) types.RiskExploitationLikelihood { return types.ClampLikelihood(idx) }
-
-func clampImpact(idx int) types.RiskExploitationImpact { return types.ClampImpact(idx) }
 
 // computeLikelihood nudges a rule's own baseline Likelihood by this specific asset's context: a
 // -1/0/+1 delta from the asset's own RAA (+1 at or above raaLikelihoodThreshold, -1 below

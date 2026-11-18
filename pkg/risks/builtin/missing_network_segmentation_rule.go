@@ -111,7 +111,7 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAsset) *types.Risk {
 	impact := computeImpact(types.LowImpact, r.Category().STRIDE, techAsset)
 	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit gate,
-	// 50% -- already at or above raaLikelihoodThreshold's 40%) -- that detection-logic role is
+	// 50% -- already at or above types.RAALikelihoodThreshold's 40%) -- that detection-logic role is
 	// kept as-is. computeLikelihood() is still applied on top of the flat baseline for
 	// consistency with every other rule's scoring: every asset that reaches this point already
 	// earns the RAA Likelihood delta too, so Unlikely becomes Possible here consistently -- the

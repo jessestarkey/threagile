@@ -264,7 +264,7 @@ func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) 
 			"target": {
 				Id:              "target",
 				Title:           "Target Technical Asset",
-				RAA:             10, // below raaLikelihoodLowThreshold (15)
+				RAA:             10, // below types.RAALikelihoodLowThreshold (15)
 				Confidentiality: types.Confidential,
 				Integrity:       types.Critical,
 				CommunicationLinks: []*types.CommunicationLink{

@@ -380,13 +380,13 @@ func TestUnguardedDirectDatastoreAccessRuleRaaAffectsLikelihoodNotImpact(t *test
 	}
 	rule := NewUnguardedDirectDatastoreAccessRule()
 
-	lowRaaRisks, err := rule.GenerateRisks(newModel(10)) // below raaLikelihoodLowThreshold (15)
+	lowRaaRisks, err := rule.GenerateRisks(newModel(10)) // below types.RAALikelihoodLowThreshold (15)
 	assert.Nil(t, err)
 	assert.Len(t, lowRaaRisks, 1)
 	assert.Equal(t, types.Unlikely, lowRaaRisks[0].ExploitationLikelihood)
 	assert.Equal(t, types.MediumImpact, lowRaaRisks[0].ExploitationImpact)
 
-	highRaaRisks, err := rule.GenerateRisks(newModel(50)) // at or above raaLikelihoodThreshold (40)
+	highRaaRisks, err := rule.GenerateRisks(newModel(50)) // at or above types.RAALikelihoodThreshold (40)
 	assert.Nil(t, err)
 	assert.Len(t, highRaaRisks, 1)
 	assert.Equal(t, types.Likely, highRaaRisks[0].ExploitationLikelihood)
