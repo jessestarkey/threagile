@@ -5,42 +5,41 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 345
 description: >
-  A data diode's entire assurance rests on one physical property -- that no return path exists
-  -- rather than on any content inspection, since a true hardware diode performs none. Both the
-  unidirectionality claim itself and the integrity of what crosses on the one-way feed need
-  independent verification rather than vendor assertion alone.
+  A data diode's entire assurance rests on one physical property, namely that no return path exists,
+  rather than on any content inspection, since a true hardware diode performs none. Thus, both the
+  claim of unidirectionality and the integrity of what crosses on the one-way feed need independent
+  verification, rather than the vendor's assertion alone.
 impact: >
-  If this risk remains unmitigated, a diode whose one-way property has never been
-  independently verified could carry an undetected return channel, and because the diode
-  itself inspects nothing, corrupted or malicious content on the forward feed reaches the
-  receiving side with no filtering at all to catch it.
+  If this risk remains unmitigated, a diode whose one-way property has never been independently
+  verified could carry an undetected return channel. Furthermore, because the diode itself inspects
+  nothing, corrupted or malicious content on the forward feed reaches the receiving side with no
+  filtering at all to catch it.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
-action: "Independently verify the diode's unidirectionality on a recurring schedule, and apply content integrity verification on the receiving side rather than relying on the diode for any inspection."
+action: 'Independently verify the diode''s unidirectionality on a recurring schedule, and verify content integrity on the receiving side, rather than relying on the diode for any inspection.'
 mitigation: >
-  Independently test and periodically re-verify the diode's physical unidirectionality --
-  vendor accreditation at initial installation is not a substitute for recurring verification,
-  since a hardware fault or an unauthorized modification after installation would not
-  self-report. Apply cryptographic integrity verification (signed manifests or hashes) to
-  content on the receiving side of the feed, since the diode itself performs no content
-  inspection and cannot be relied upon to catch corruption or injected content introduced
-  before the diode. Treat the sending-side system, not the diode, as responsible for any
-  content-level assurance the mission actually needs. References: NIST SP 800-53 SC-7
-  (Boundary Protection); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity);
-  DoD Raise-the-Bar Cross Domain Solution requirements.
-check: "Is the diode's physical unidirectionality independently verified on a recurring schedule, and is content integrity checked on the receiving side rather than assumed from the diode's own forwarding?"
+  Independently test, and periodically re-verify, the diode's physical unidirectionality. Vendor
+  accreditation at the initial installation is not a substitute for recurring verification, since a
+  hardware fault or an unauthorized modification after installation would not report itself.
+  Additionally, apply cryptographic integrity verification (signed manifests or hashes) to content
+  on the receiving side of the feed, since the diode itself performs no content inspection and
+  cannot be relied on to catch corruption or injected content introduced before the diode. Finally,
+  treat the sending-side system, not the diode, as responsible for any content-level assurance that
+  the mission actually needs. References include NIST SP 800-53 SC-7 (Boundary Protection) and SI-7
+  (Software, Firmware, and Information Integrity), and the DoD Raise-the-Bar Cross Domain Solution
+  requirements.
+check: 'Is the diode''s physical unidirectionality independently verified on a recurring schedule, and is content integrity checked on the receiving side, rather than assumed from the diode''s own forwarding?'
 detection_logic: >
-  Audit records for the diode's recurring independent unidirectionality verification testing,
-  distinct from initial vendor accreditation. Confirm the receiving side applies cryptographic
-  integrity verification to content arriving via the diode.
+  Audit the records of the diode's recurring, independent unidirectionality verification testing,
+  which is distinct from the initial vendor accreditation. Additionally, confirm that the receiving
+  side applies cryptographic integrity verification to content that arrives through the diode.
 risk_assessment: >
-  Critical for any data diode with no recurring independent unidirectionality verification, or
+  Critical for any data diode with no recurring, independent unidirectionality verification, or
   whose receiving side trusts arriving content with no integrity verification of its own.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope CDS-data-diode
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
-  it as mitigated once recurring unidirectionality verification and receiving-side integrity
-  checking are confirmed.
+  This rule fires on every in-scope CDS data diode asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once recurring unidirectionality verification and receiving-side integrity checking are confirmed.
 
 risk:
   id:

@@ -5,43 +5,46 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 359
 description: >
-  A synthetic-data pipeline generates training or test data from real confidential-or-higher
-  source data so the real data does not have to travel. That only works if the output cannot be
-  traced back: a generator can memorize and reproduce fragments of its source, and "anonymized"
-  or synthetic records can often be re-identified by linking them with other data. Synthetic
-  output is then treated as safe and shared well beyond the boundary the source was confined to.
+  A synthetic-data pipeline generates training or test data from real confidential-or-higher source
+  data, so that the real data does not have to travel. However, that works only if the output cannot
+  be traced back. A generator can memorize and reproduce fragments of its source, and anonymized or
+  synthetic records can often be re-identified by linking them with other data. Furthermore,
+  synthetic output is then treated as safe and shared well beyond the boundary that the source was
+  confined to.
 impact: >
-  If this risk remains unmitigated, real confidential records -- or enough of them to
-  re-identify people or reconstruct protected facts -- leave their boundary inside a dataset
-  everyone believes is safe, reaching every downstream consumer of the synthetic set undetected.
+  If this risk remains unmitigated, real confidential records, or enough of them to re-identify
+  people or reconstruct protected facts, leave their boundary inside a dataset that everyone
+  believes is safe. As a result, they reach every downstream consumer of the synthetic set
+  undetected.
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Measure, before release, whether each synthetic or anonymized dataset leaks or re-identifies its source, and handle it at the source's classification until it passes."
+action: 'Before release, measure whether each synthetic or anonymized dataset leaks or re-identifies its source, and handle it at the source''s classification until it passes.'
 mitigation: >
-  Test every synthetic or anonymized dataset before release: check for verbatim and
+  Test every synthetic or anonymized dataset before release. Specifically, check for verbatim and
   near-duplicate source records, run membership-inference and linkage (re-identification) tests
-  against available auxiliary data, and record the results with the dataset. Use generation
-  methods with formal privacy guarantees (differential privacy) where the source is sensitive,
-  and remove rare or outlier records that are easiest to re-identify. Until a dataset passes,
-  label and handle it at the classification of its source, not as unrestricted. Keep lineage
-  from each synthetic set back to its source so a leak can be scoped. References: OWASP GenAI
-  Data Security 2026 DSGAI10 (Synthetic Data and Anonymization Pitfalls); MITRE ATLAS
-  AML.T0024.000 (Infer Training Data Membership), AML.T0025; MAESTRO layers 1 and 2; CWE-359,
-  CWE-330; NIST SP 800-53 SI-4, RA-5, CA-7 (mappings via the OWASP GenAI Security Crosswalk
-  2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is every synthetic or anonymized dataset tested for source leakage and re-identification before release, generated with privacy guarantees where the source is sensitive, and handled at the source's classification until it passes?"
+  against the available auxiliary data, and record the results with the dataset. Additionally, where
+  the source is sensitive, use generation methods with formal privacy guarantees (differential
+  privacy), and remove the rare or outlier records that are easiest to re-identify. Until a dataset
+  passes, label and handle it at the classification of its source, rather than as unrestricted.
+  Finally, keep lineage from each synthetic set back to its source, so that a leak can be scoped.
+  References include OWASP GenAI Data Security 2026 DSGAI10 (Synthetic Data and Anonymization
+  Pitfalls), MITRE ATLAS AML.T0024.000 (Infer Training Data Membership) and AML.T0025, MAESTRO
+  layers 1 and 2, CWE-359 and CWE-330, and NIST SP 800-53 SI-4, RA-5, and CA-7, with the mappings
+  taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is every synthetic or anonymized dataset tested for source leakage and re-identification before release, generated with privacy guarantees where the source is sensitive, and handled at the source''s classification until it passes?'
 detection_logic: >
-  Review release records for leakage and re-identification test results. Compare a sample of
-  synthetic records against the source for verbatim or near-duplicate matches. Check how
+  Review the release records for leakage and re-identification test results. Then, compare a sample
+  of synthetic records against the source for verbatim or near-duplicate matches. Finally, check how
   synthetic datasets are labeled and where they are shared.
 risk_assessment: >
-  High for any synthetic or anonymized dataset generated from confidential-or-higher data and
-  released without leakage and re-identification testing.
+  High for any synthetic or anonymized dataset that is generated from confidential-or-higher data
+  and released without leakage and re-identification testing.
 false_positives: >
-  Fires on an in-scope ai-synthetic-data-pipeline asset that processes a data asset rated
-  confidential or higher. A pipeline generating only from lower-sensitivity data does not fire.
-  Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once
-  pre-release leakage and re-identification testing and source-level handling are confirmed.
+  This rule fires on an in-scope ai-synthetic-data-pipeline asset that processes a data asset rated
+  confidential or higher. A pipeline that generates only from lower-sensitivity data does not fire.
+  Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  pre-release leakage and re-identification testing, and source-level handling, are confirmed.
 
 risk:
   id:

@@ -5,44 +5,46 @@ stride: denial-of-service
 finding_class: weakness-shown
 cwe: 400
 description: >
-  An AI agent hands work to another agent -- an outgoing link from an agent orchestrator or
-  multi-agent gateway to another one. In a chain of agents, one agent's runaway loop, retry storm,
-  unbounded delegation, or stall becomes load on every agent downstream, so a single fault
-  amplifies across the chain and takes the workflow down instead of staying contained where it
-  started. (Manipulated output spreading between agents is an integrity risk, covered by the
-  indirect prompt injection and insecure inter-agent communication categories.)
+  An AI agent hands work to another agent, namely through an outgoing link from an agent
+  orchestrator or multi-agent gateway to another one. In a chain of agents, one agent's runaway
+  loop, retry storm, unbounded delegation, or stall becomes load on every agent downstream. Thus, a
+  single fault amplifies across the chain and takes the workflow down, instead of staying contained
+  where it started. Manipulated output that spreads between agents, by contrast, is an integrity
+  risk, which the indirect prompt injection and insecure inter-agent communication categories cover.
 impact: >
   If this risk remains unmitigated, one failing or overloaded agent can exhaust the shared
-  resources, budgets, and rate limits of every agent downstream of it, taking out the whole agent
-  workflow rather than one step of it.
+  resources, budgets, and rate limits of every agent downstream of it. As a result, it takes out the
+  whole agent workflow rather than one step of it.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Contain faults at every agent-to-agent hand-off with validation, bounded retries and recursion, timeouts, and circuit breakers."
+action: 'Contain faults at every agent-to-agent hand-off with validation, bounded retries and recursion, timeouts, and circuit breakers.'
 mitigation: >
-  Treat every message from another agent as untrusted input: validate its structure and bounds
-  before acting on it. Cap delegation depth, fan-out, retries, and total tool calls per workflow,
-  and give every hand-off a timeout. Add circuit breakers that stop sending work to an agent that
-  is failing or behaving anomalously, with a defined degraded mode instead of retrying
-  indefinitely. Isolate each agent's resource budget so one runaway agent cannot starve the
-  others. Trace each workflow end to end so a fault can be located and the chain halted.
-  References: OWASP Top 10 for Agentic Applications 2026 ASI08 (Cascading Agent Failures);
-  MITRE ATLAS AML.T0029 (Denial of AI Service), AML.T0034 (Cost Harvesting); MAESTRO layers 4, 5
-  and 7; CWE-400, CWE-674, CWE-703, CWE-755; NIST SP 800-53 SC-5, SC-7, SI-4, IR-4 (mappings via
-  the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is every agent-to-agent hand-off validated and bounded (depth, fan-out, retries, timeouts), with circuit breakers and per-agent resource budgets that stop a fault from propagating down the chain?"
+  Treat every message from another agent as untrusted input, and validate its structure and bounds
+  before acting on it. Additionally, cap the delegation depth, fan-out, retries, and total tool
+  calls per workflow, and give every hand-off a timeout. Add circuit breakers that stop sending work
+  to an agent that is failing or behaving anomalously, with a defined degraded mode rather than
+  indefinite retries. Furthermore, isolate each agent's resource budget, so that one runaway agent
+  cannot starve the others. Finally, trace each workflow end to end, so that a fault can be located
+  and the chain halted. References include the OWASP Top 10 for Agentic Applications 2026 ASI08
+  (Cascading Agent Failures), MITRE ATLAS AML.T0029 (Denial of AI Service) and AML.T0034 (Cost
+  Harvesting), MAESTRO layers 4, 5, and 7, CWE-400, CWE-674, CWE-703, and CWE-755, and NIST SP
+  800-53 SC-5, SC-7, SI-4, and IR-4, with the mappings taken from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is every agent-to-agent hand-off validated and bounded (in depth, fan-out, retries, and timeouts), with circuit breakers and per-agent resource budgets that stop a fault from propagating down the chain?'
 detection_logic: >
-  Map every agent-to-agent hand-off and review its validation, limits, and timeout settings.
-  Inject a malformed or looping response at one agent in a test environment and observe whether
-  downstream agents contain it. Monitor workflow traces for runaway delegation depth or fan-out.
+  Map every agent-to-agent hand-off, and review its validation, limits, and timeout settings. Then,
+  in a test environment, inject a malformed or looping response at one agent, and observe whether
+  the downstream agents contain it. Finally, monitor the workflow traces for runaway delegation
+  depth or fan-out.
 risk_assessment: >
   High when the chain reaches agents with critical-or-higher availability and has no circuit
-  breakers or delegation limits. Medium otherwise.
+  breakers or delegation limits. Otherwise, the finding is Medium.
 false_positives: >
-  Fires on an in-scope ai-agent-orchestrator or ai-multi-agent-gateway with an outgoing link to
-  another ai-agent-orchestrator or ai-multi-agent-gateway. A single agent that only calls models
-  and tools does not fire. Dispose of a confirmed-compliant asset through risk_tracking: log it as
-  mitigated once every hand-off in the chain is confirmed validated, bounded, and behind a
-  circuit breaker.
+  This rule fires on an in-scope ai-agent-orchestrator or ai-multi-agent-gateway that has an
+  outgoing link to another ai-agent-orchestrator or ai-multi-agent-gateway. A single agent that only
+  calls models and tools does not fire. Dispose of a confirmed-compliant asset through
+  risk_tracking, logging it as mitigated once every hand-off in the chain is confirmed to be
+  validated, bounded, and behind a circuit breaker.
 
 risk:
   id:

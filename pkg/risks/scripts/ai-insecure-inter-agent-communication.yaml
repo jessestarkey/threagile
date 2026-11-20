@@ -6,45 +6,48 @@ finding_class: weakness-shown
 cwe: 287
 description: >
   An AI agent delegates to or messages another agent over a link that crosses a trust boundary,
-  carries no authentication, or uses an unencrypted protocol. Agents act on each other's
-  messages as instructions, so whoever can read, inject, or replay traffic on that link -- or
-  impersonate either agent -- can steer what the receiving agent does.
+  carries no authentication, or uses an unencrypted protocol. Since agents act on each other's
+  messages as instructions, whoever can read, inject, or replay traffic on that link, or impersonate
+  either agent, can steer what the receiving agent does.
 impact: >
-  If this risk remains unmitigated, an adversary can impersonate a trusted agent, inject or
-  alter delegated tasks, or replay earlier instructions, and the receiving agent will act on them
-  inside the system's own trusted context.
+  If this risk remains unmitigated, an adversary can impersonate a trusted agent, inject or alter
+  delegated tasks, or replay earlier instructions. The receiving agent then acts on them inside the
+  system's own trusted context.
 asvs: "V9 - Communication"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Mutually authenticate every agent-to-agent link with a per-agent identity, encrypt it, and sign or bind messages so they cannot be altered or replayed."
+action: 'Mutually authenticate every agent-to-agent link with a per-agent identity, encrypt it, and sign or bind messages so that they cannot be altered or replayed.'
 mitigation: >
-  Give each agent a unique, verifiable identity (PKI-backed workload identity or equivalent) and
-  require mutual authentication on every agent-to-agent link -- never an unauthenticated or
-  shared-secret channel. Encrypt agent traffic in transit end to end, including inside a cluster.
-  Sign messages or bind them to the session with nonces and expiry so delegated tasks cannot be
-  altered or replayed. Route agents that sit in different trust boundaries through an
-  admission-controlled agent gateway or registry that verifies identity and enforces which agent
-  may delegate what to whom. Log every cross-agent message with sender and receiver identity.
-  References: OWASP Top 10 for Agentic Applications 2026 ASI07 (Insecure Inter-Agent
-  Communications); MAESTRO layer 7 (Agent Ecosystem); MITRE ATLAS AML.T0012 (Valid Accounts);
-  CWE-287, CWE-294, CWE-319, CWE-346; NIST SP 800-53 IA-9, SC-8, AC-3 (mappings via the OWASP
-  GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is every agent-to-agent link mutually authenticated with per-agent identities, encrypted in transit, and protected against message alteration and replay, with cross-boundary delegation mediated by an admission-controlled gateway?"
+  Give each agent a unique, verifiable identity (a PKI-backed workload identity or an equivalent),
+  and require mutual authentication on every agent-to-agent link, never an unauthenticated or
+  shared-secret channel. Additionally, encrypt agent traffic end to end in transit, including inside
+  a cluster. Sign messages, or bind them to the session with nonces and expiry, so that delegated
+  tasks cannot be altered or replayed. Furthermore, route agents that sit in different trust
+  boundaries through an admission-controlled agent gateway or registry that verifies identity and
+  enforces which agent may delegate what to whom. Finally, log every cross-agent message with the
+  sender's and receiver's identities. References include the OWASP Top 10 for Agentic Applications
+  2026 ASI07 (Insecure Inter-Agent Communications), MAESTRO layer 7 (Agent Ecosystem), MITRE ATLAS
+  AML.T0012 (Valid Accounts), CWE-287, CWE-294, CWE-319, and CWE-346, and NIST SP 800-53 IA-9, SC-8,
+  and AC-3, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is every agent-to-agent link mutually authenticated with per-agent identities, encrypted in transit, and protected against message alteration and replay, with cross-boundary delegation mediated by an admission-controlled gateway?'
 detection_logic: >
-  Inventory every agent-to-agent channel and verify its authentication, encryption, and message
-  integrity controls. Attempt to send a delegated task from an unregistered or impersonated agent
-  identity and confirm it is rejected. Audit cross-agent logs for identity mismatches.
+  Inventory every agent-to-agent channel, and verify its authentication, encryption, and message
+  integrity controls. Then, attempt to send a delegated task from an unregistered or impersonated
+  agent identity, and confirm that it is rejected. Finally, audit the cross-agent logs for identity
+  mismatches.
 risk_assessment: >
-  Critical for an unauthenticated or unencrypted agent-to-agent link that crosses a trust
-  boundary into an agent with important-or-higher integrity. High otherwise.
+  Critical for an unauthenticated or unencrypted agent-to-agent link that crosses a trust boundary
+  into an agent with important-or-higher integrity. Otherwise, the finding is High.
 false_positives: >
-  Fires on an in-scope ai-agent-orchestrator or ai-multi-agent-gateway with an outgoing link to
-  another ai-agent-orchestrator or ai-multi-agent-gateway where the link crosses a trust boundary
-  (the two assets' directly containing trust boundaries differ), has authentication: none, or
-  uses a protocol Threagile does not class as encrypted (an unset protocol counts as
-  unencrypted). The boundary test is simpler than Threagile's built-in network-only one: any
-  difference in directly containing boundary counts. Dispose of a confirmed-compliant asset
-  through risk_tracking: log it as mitigated once every such link is confirmed mutually
-  authenticated, encrypted, and replay-protected.
+  This rule fires on an in-scope ai-agent-orchestrator or ai-multi-agent-gateway with an outgoing
+  link to another ai-agent-orchestrator or ai-multi-agent-gateway, where the link meets any of three
+  conditions: (1) it crosses a trust boundary, meaning the two assets' directly containing trust
+  boundaries differ, (2) it has authentication: none, or (3) it uses a protocol that Threagile does
+  not class as encrypted, with an unset protocol counting as unencrypted. This boundary test is
+  simpler than Threagile's built-in, network-only one, since any difference in the directly
+  containing boundary counts. Dispose of a confirmed-compliant asset through risk_tracking, logging
+  it as mitigated once every such link is confirmed to be mutually authenticated, encrypted, and
+  replay-protected.
 
 risk:
   id:

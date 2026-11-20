@@ -6,37 +6,37 @@ finding_class: control-not-evidenced
 cwe: 639
 description: >
   The backend API does not verify that an authenticated user is authorized to access a specific
-  object, allowing them to read, modify, or delete records belonging to other users or tenants
-  by changing an identifier in the request.
+  object. As a result, the user can read, modify, or delete records that belong to other users or
+  tenants by changing an identifier in the request.
 impact: >
-  If this risk remains unmitigated, an authenticated user can access or modify records outside
-  their own -- including other users' or tenants' data -- without needing any additional
-  privilege escalation.
+  If this risk remains unmitigated, an authenticated user can access or modify records outside their
+  own, including other users' or tenants' data, without needing any additional privilege escalation.
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html"
-action: "Implement and test server-side object ownership verification on every API endpoint that operates on a resource by identifier."
+action: 'Implement and test server-side verification of object ownership on every API endpoint that operates on a resource by identifier.'
 mitigation: >
   Enforce server-side authorization checks on every data-access operation that accepts an object
-  identifier -- verify that the authenticated principal owns or has explicit permission for the
-  specific record, not just the resource type. Use opaque, non-sequential identifiers (UUIDs v4)
-  to eliminate enumeration. Implement automated BOLA test cases in the CI/CD pipeline. Apply
-  attribute-based access control (ABAC) or row-level security at the database layer as a
-  defense-in-depth backstop. References: OWASP API Security Top 10 API1:2023; NIST SP 800-53 AC-3
-  (Access Enforcement); NIST SP 800-53 AC-4 (Information Flow Enforcement).
-check: "Does every API endpoint accepting an object identifier verify the authenticated principal's specific-record authorization, not just resource-type access?"
+  identifier. Specifically, verify that the authenticated principal owns, or has explicit permission
+  for, the specific record, not just the resource type. Additionally, use opaque, non-sequential
+  identifiers (version 4 UUIDs) to eliminate enumeration, and run automated BOLA test cases in the
+  CI/CD pipeline. Finally, apply attribute-based access control (ABAC) or row-level security at the
+  database layer as a defense-in-depth backstop. References include the OWASP API Security Top 10
+  API1:2023 and NIST SP 800-53 AC-3 (Access Enforcement) and AC-4 (Information Flow Enforcement).
+check: 'Does every API endpoint that accepts an object identifier verify the authenticated principal''s authorization for that specific record, not just access to the resource type?'
 detection_logic: >
-  Include BOLA-specific test cases in the automated API test suite: for each endpoint that
-  accepts a resource ID, verify that a token for user A cannot retrieve or modify resources owned
-  by user B. Run DAST tools configured for IDOR detection. Monitor API access logs for sequential
-  or enumeration-pattern ID probing.
+  Include BOLA-specific test cases in the automated API test suite. Specifically, for each endpoint
+  that accepts a resource ID, verify that a token for user A cannot retrieve or modify resources
+  owned by user B. Additionally, run DAST tools configured for IDOR detection. Finally, monitor the
+  API access logs for sequential or enumeration-pattern ID probing.
 risk_assessment: >
-  High for any multi-tenant API that operates on CUI records by identifier. Medium for
-  single-tenant deployments where all authenticated users are authorized to access all records.
+  High for any multi-tenant API that operates on CUI records by identifier. However, the finding is
+  Medium for a single-tenant deployment where every authenticated user is authorized to access every
+  record.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope request-serving API
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once server-side object ownership verification is confirmed on every endpoint that
-  accepts a resource identifier.
+  This rule fires on every in-scope request-serving API asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once server-side verification of object ownership is confirmed on every endpoint that accepts a
+  resource identifier.
 
 risk:
   id:

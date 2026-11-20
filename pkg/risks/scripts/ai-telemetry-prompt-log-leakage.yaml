@@ -5,52 +5,53 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 532
 description: >
-  AI tracing and monitoring capture far more than ordinary application logs: full prompts,
-  retrieved documents, tool inputs and outputs, and model responses, often by default. When an
-  AI asset sends that telemetry -- carrying confidential-or-higher data -- to a monitoring or AI
-  observability stack, or the observability stack itself holds such data, the telemetry becomes
-  a second copy of the sensitive data with weaker access control, longer retention, and a wider
-  audience than the system it came from.
+  AI tracing and monitoring capture far more than ordinary application logs, namely full prompts,
+  retrieved documents, tool inputs and outputs, and model responses, often by default. When an AI
+  asset sends that telemetry, carrying confidential-or-higher data, to a monitoring or AI
+  observability stack, or when the observability stack itself holds such data, the telemetry becomes
+  a second copy of the sensitive data. Furthermore, that copy has weaker access control, longer
+  retention, and a wider audience than the system it came from.
 impact: >
-  If this risk remains unmitigated, confidential prompts, documents, and responses accumulate in
-  a monitoring system readable by operators, vendors, and integrations without need-to-know, and
-  a compromise of that system exposes all of it at once. For CUI or classified data, the
-  telemetry copy is itself a spill.
+  If this risk remains unmitigated, confidential prompts, documents, and responses accumulate in a
+  monitoring system that operators, vendors, and integrations can read without a need to know, and a
+  compromise of that system exposes all of it at once. For CUI or classified data, the telemetry
+  copy is itself a spill.
 asvs: "V16 - Security Logging and Error Handling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
-action: "Redact or exclude sensitive content from AI telemetry before it leaves the asset, and protect and retain the observability stack at the classification of what it still holds."
+action: 'Redact or exclude sensitive content from AI telemetry before it leaves the asset, and protect and retain the observability stack at the classification of what it still holds.'
 mitigation: >
-  Configure AI tracing and logging to record metadata (model, latency, token counts, tool names,
-  decision outcomes) rather than full prompt and response bodies by default, and redact or
-  tokenize sensitive fields before telemetry leaves the asset. Where full content must be kept
-  for evaluation or incident response, send it to a store accredited for that classification,
-  restrict it to named roles, and apply short, enforced retention. Review third-party
-  observability vendors' data handling before sending AI telemetry to them. Alert on access to
-  and bulk export of stored prompts. Tampering with the observability stack itself (blinding it
-  to hide activity) is covered separately by the security-control tamper-resistance rule.
-  References: OWASP GenAI Data Security 2026 DSGAI14 (Excessive Telemetry and Monitoring
-  Leakage); MITRE ATLAS AML.T0024, AML.T0025, AML.T0036; MAESTRO layers 2, 5 and 6; CWE-532,
-  CWE-312, CWE-200; NIST SP 800-53 AU-9, AU-11, AC-3, SI-12 (mappings via the OWASP GenAI
-  Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is sensitive content redacted or excluded from AI telemetry before it leaves the asset, and is any retained full content held in a store accredited for its classification, with restricted access and enforced retention?"
+  Configure AI tracing and logging to record metadata (the model, latency, token counts, tool names,
+  and decision outcomes) rather than full prompt and response bodies by default, and redact or
+  tokenize sensitive fields before telemetry leaves the asset. Where full content must be kept for
+  evaluation or incident response, send it to a store accredited for that classification, restrict
+  it to named roles, and apply short, enforced retention. Additionally, review third-party
+  observability vendors' data handling before sending AI telemetry to them, and alert on access to,
+  and bulk export of, stored prompts. Tampering with the observability stack itself (blinding it to
+  hide activity), by contrast, is covered separately by the security-control tamper-resistance rule.
+  References include OWASP GenAI Data Security 2026 DSGAI14 (Excessive Telemetry and Monitoring
+  Leakage), MITRE ATLAS AML.T0024, AML.T0025, and AML.T0036, MAESTRO layers 2, 5, and 6, CWE-532,
+  CWE-312, and CWE-200, and NIST SP 800-53 AU-9, AU-11, AC-3, and SI-12, with the mappings taken
+  from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is sensitive content redacted or excluded from AI telemetry before it leaves the asset, and is any retained full content held in a store accredited for its classification, with restricted access and enforced retention?'
 detection_logic: >
-  Inspect a sample of traces and logs in the monitoring or observability stack for prompt,
-  document, and response content. Review tracing configuration for full-body capture defaults,
-  redaction coverage, retention settings, and who can read stored traces.
+  Inspect a sample of the traces and logs in the monitoring or observability stack for prompt,
+  document, and response content. Then, review the tracing configuration for full-body capture
+  defaults, redaction coverage, retention settings, and who can read stored traces.
 risk_assessment: >
-  Critical when strictly-confidential data reaches telemetry stored outside an environment
-  accredited for it. High for confidential data.
+  Critical when strictly confidential data reaches telemetry that is stored outside an environment
+  accredited for it. However, the finding is High for confidential data.
 false_positives: >
-  Fires on any in-scope asset that sees prompts and responses (ai-llm-endpoint,
-  ai-model-serving, ai-agent-orchestrator, ai-rag-pipeline, ai-gateway, ai-multi-agent-gateway,
-  ai-guardrails) or stores them (ai-observability-stack), and that stores or processes a data
-  asset rated confidential or higher, or sends one over a telemetry link -- AI tracing captures
-  full prompts and responses by default, so the telemetry link does not have to be drawn for the
-  risk to exist. Tool servers, vector stores and data pipelines handle data but not prompts, so
-  they do not fire. Note that Threagile adds every data asset an asset sends to its processed list, so
-  the data on a modeled telemetry link counts as processed too. Dispose of a confirmed-compliant
-  asset through risk_tracking: log it as mitigated once redaction and accredited, restricted,
-  retention-limited storage are confirmed.
+  This rule fires on any in-scope asset that sees prompts and responses (an ai-llm-endpoint,
+  ai-model-serving, ai-agent-orchestrator, ai-rag-pipeline, ai-gateway, ai-multi-agent-gateway, or
+  ai-guardrails asset) or that stores them (an ai-observability-stack), and that stores or processes
+  a data asset rated confidential or higher, or sends one over a telemetry link. Since AI tracing
+  captures full prompts and responses by default, the telemetry link does not have to be drawn for
+  the risk to exist. Tool servers, vector stores, and data pipelines handle data but not prompts, so
+  they do not fire. Note that Threagile adds every data asset that an asset sends to its processed
+  list, so the data on a modeled telemetry link counts as processed too. Dispose of a
+  confirmed-compliant asset through risk_tracking, logging it as mitigated once redaction, and
+  accredited, restricted, retention-limited storage, are confirmed.
 
 risk:
   id:

@@ -5,31 +5,31 @@ stride: elevation-of-privilege
 finding_class: control-not-evidenced
 cwe: 1104
 description: >
-  The virtual machine is not deployed from a STIG-compliant baseline image and has no automated
+  The virtual machine is not deployed from a STIG-compliant baseline image, and it has no automated
   patch management in place.
 impact: >
-  If this risk remains unmitigated, the OS accumulates known, unpatched CVEs and configuration
-  drift that make privilege escalation substantially easier.
+  If this risk remains unmitigated, the operating system accumulates known, unpatched CVEs and
+  configuration drift, which make privilege escalation substantially easier.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
-action: "Enforce STIG baselines and automated patching."
+action: 'Enforce STIG baselines and automated patching.'
 mitigation: >
-  Provision VMs exclusively from DoD-approved, STIG-compliant marketplace images and enroll them
-  in strict automated update schedules to meet SLA patching requirements. References: CWE-1104
-  (Use of Unmaintained Third Party Components); NIST SP 800-53 SI-2 (Flaw Remediation); NIST SP
-  800-53 CM-6 (Configuration Settings); MITRE ATT&CK T1068 (Exploitation for Privilege
-  Escalation); DISA OS STIGs.
-check: "Is this VM provisioned from a STIG-compliant baseline image and enrolled in automated patching?"
+  Provision VMs exclusively from DoD-approved, STIG-compliant marketplace images, and enroll them in
+  strict automated update schedules that meet the SLA patching requirements. References include
+  CWE-1104 (Use of Unmaintained Third Party Components), NIST SP 800-53 SI-2 (Flaw Remediation) and
+  CM-6 (Configuration Settings), MITRE ATT&CK T1068 (Exploitation for Privilege Escalation), and the
+  DISA OS STIGs.
+check: 'Is this VM provisioned from a STIG-compliant baseline image and enrolled in automated patching?'
 detection_logic: >
-  Audit the platform's patch-management compliance logs and run automated STIG compliance scans
-  (e.g., ACAS/Nessus) against the host.
+  Audit the platform's patch-management compliance logs, and run automated STIG compliance scans
+  (for example, ACAS or Nessus) against the host.
 risk_assessment: >
-  High risk of compromise via known vulnerabilities.
+  High, since the gap carries a high risk of compromise through known vulnerabilities.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope virtual-machine
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once the VM is confirmed provisioned from a STIG-compliant baseline image and
-  enrolled in automated patching.
+  This rule fires on every in-scope virtual machine asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once the VM is confirmed to be provisioned from a STIG-compliant baseline image and enrolled in
+  automated patching.
 
 risk:
   id:

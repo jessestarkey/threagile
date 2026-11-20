@@ -5,37 +5,38 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 532
 description: >
-  CUI can be written into application logs, stack traces, or observability telemetry through
-  debug logging, ORM query logging, or auto-instrumentation that captures request headers.
+  CUI can be written into application logs, stack traces, or observability telemetry through debug
+  logging, ORM query logging, or auto-instrumentation that captures request headers.
 impact: >
-  If this risk remains unmitigated, CUI reaching a log or telemetry pipeline constitutes a formal
-  data spill and may expose sensitive data to personnel without need-to-know.
+  If this risk remains unmitigated, CUI that reaches a log or telemetry pipeline constitutes a
+  formal data spill. Furthermore, it may expose sensitive data to personnel without a need to know.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
-action: "Audit all log emission points for CUI content and implement pre-emission redaction."
+action: 'Audit every log emission point for CUI content, and redact it before emission.'
 mitigation: >
-  Disable verbose/debug logging in production via environment-specific configuration. Implement a
-  structured logging wrapper that applies regex or pattern-based redaction to known CUI field
-  patterns before any log emission. Configure ORM and HTTP client libraries to suppress parameter
-  and body logging. Apply the same redaction pipeline to distributed tracing span attributes.
-  Restrict log storage access to personnel with appropriate clearance and need-to-know. References:
-  NIST SP 800-53 AU-3 (Content of Audit Records); NIST SP 800-53 AU-9 (Protection of Audit
-  Information); DoD CUI Registry spillage handling requirements.
-check: "Have all log emission points been audited for CUI content and confirmed to apply pre-emission redaction?"
+  Disable verbose and debug logging in production through environment-specific configuration.
+  Additionally, use a structured logging wrapper that applies regex or pattern-based redaction to
+  known CUI field patterns before any log emission. Configure ORM and HTTP client libraries to
+  suppress parameter and body logging, and apply the same redaction pipeline to distributed tracing
+  span attributes. Finally, restrict access to log storage to personnel with the appropriate
+  clearance and need to know. References include NIST SP 800-53 AU-3 (Content of Audit Records) and
+  AU-9 (Protection of Audit Information), and the DoD CUI Registry's spillage handling requirements.
+check: 'Has every log emission point been audited for CUI content and confirmed to redact it before emission?'
 detection_logic: >
-  Run periodic DLP scans against log samples in the SIEM to detect patterns matching CUI field
-  formats. Monitor for environment configuration changes that enable debug or verbose logging in
-  production.
+  Run periodic DLP scans against log samples in the SIEM to detect patterns that match CUI field
+  formats. Additionally, monitor for environment configuration changes that enable debug or verbose
+  logging in production.
 risk_assessment: >
-  High if debug logging is enabled or if request/response body logging is active on any endpoint
-  that processes CUI. Medium with structured logging and redaction controls in place but no
-  periodic DLP validation.
+  High if debug logging is enabled, or if request or response body logging is active on any endpoint
+  that processes CUI. However, the finding is Medium with structured logging and redaction controls
+  in place but no periodic DLP validation.
 false_positives: >
-  Fires on every in-scope app-tier asset that handles confidential or higher data (its own rating,
-  or a data asset it processes or stores) -- logs can only spill data the asset handles -- except
-  AI assets (any technology with the ai attribute), which ai-telemetry-prompt-log-leakage covers
-  instead. Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once
-  all log emission points are confirmed to emit only redacted/non-CUI content.
+  This rule fires on every in-scope app-tier asset that handles confidential or higher data, whether
+  through its own rating or through a data asset it processes or stores, since logs can only spill
+  data that the asset handles. However, AI assets (any technology with the ai attribute) are
+  excluded, since ai-telemetry-prompt-log-leakage covers them instead. Dispose of a
+  confirmed-compliant asset through risk_tracking, logging it as mitigated once every log emission
+  point is confirmed to emit only redacted or non-CUI content.
 
 risk:
   id:

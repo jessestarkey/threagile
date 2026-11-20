@@ -5,44 +5,44 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 693
 description: >
-  A cross-domain solution guard's entire release decision rests on its content-inspection
-  rule set (classification-marking patterns, malware signatures, dirty-word/regex lists) and
-  the absence of any path around that inspection. A stale rule set or an undocumented
-  administrative override quietly defeats the guard's one job without appearing as an outage.
+  A cross-domain solution guard's entire release decision rests on two things: (1) its
+  content-inspection rule set (classification-marking patterns, malware signatures, and dirty-word
+  and regex lists), and (2) the absence of any path around that inspection. Thus, a stale rule set
+  or an undocumented administrative override quietly defeats the guard's one job, without appearing
+  as an outage.
 impact: >
-  If this risk remains unmitigated, content the guard's rule set was never updated to catch --
-  or content pushed through an undocumented bypass -- crosses the classification boundary with
-  the same apparent assurance as properly inspected content, since nothing distinguishes the
-  two downstream.
+  If this risk remains unmitigated, content that the guard's rule set was never updated to catch, or
+  content pushed through an undocumented bypass, crosses the classification boundary with the same
+  apparent assurance as properly inspected content, since nothing distinguishes the two downstream.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
-action: "Keep the guard's inspection rule set on a documented review and update cadence, and confirm no administrative override path releases content without passing through it."
+action: 'Keep the guard''s inspection rule set on a documented review and update cadence, and confirm that no administrative override path releases content without passing through it.'
 mitigation: >
-  Maintain the guard's classification-marking, malware-signature, and dirty-word/regex rule set
-  under version control with a documented, recurring review cadence tied to the accreditation
-  body's own revalidation schedule -- a rule set accredited once and never revisited silently
-  drifts out of step with new data types and threats the guard is relied upon to catch. Audit
-  the guard's own administrative configuration for any override, maintenance-mode, or
-  emergency-release capability that bypasses the normal inspection path, and require the same
-  release-authority approval for its use as for a normal transfer. Log every rule-set change and
-  every bypass invocation to a destination the guard administrators themselves cannot modify.
-  References: NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity); NIST SP
-  800-53 CM-3 (Configuration Change Control); DoD Raise-the-Bar Cross Domain Solution
-  requirements.
-check: "Is the guard's inspection rule set under version control with a documented recurring review cadence, and is every administrative override or bypass path logged and gated on the same release-authority approval as a normal transfer?"
+  Maintain the guard's classification-marking, malware-signature, and dirty-word and regex rule set
+  under version control, with a documented, recurring review cadence tied to the accreditation
+  body's own revalidation schedule. A rule set that is accredited once and never revisited silently
+  drifts out of step with the new data types and threats that the guard is relied on to catch.
+  Additionally, audit the guard's own administrative configuration for any override,
+  maintenance-mode, or emergency-release capability that bypasses the normal inspection path, and
+  require the same release-authority approval for its use as for a normal transfer. Finally, log
+  every rule-set change and every bypass invocation to a destination that the guard's administrators
+  themselves cannot modify. References include NIST SP 800-53 SI-7 (Software, Firmware, and
+  Information Integrity) and CM-3 (Configuration Change Control), and the DoD Raise-the-Bar Cross
+  Domain Solution requirements.
+check: 'Is the guard''s inspection rule set under version control with a documented, recurring review cadence, and is every administrative override or bypass path logged and gated on the same release-authority approval as a normal transfer?'
 detection_logic: >
-  Audit the guard's rule-set version history for recency against its own documented review
-  cadence. Review the guard's administrative configuration for any override or maintenance-mode
-  capability and confirm its use is logged and requires release-authority approval. Cross-
-  reference bypass-invocation logs against release-authority approval records.
+  Audit the guard's rule-set version history for recency against its own documented review cadence.
+  Additionally, review the guard's administrative configuration for any override or maintenance-mode
+  capability, and confirm that its use is logged and requires release-authority approval. Finally,
+  cross-reference the bypass-invocation logs against the release-authority approval records.
 risk_assessment: >
-  Critical for any guard whose rule set has no documented recurring review process, or whose
-  administrative bypass capability is not logged and approval-gated identically to a normal
+  Critical for any guard whose rule set has no documented, recurring review process, or whose
+  administrative bypass capability is not logged and approval-gated in the same way as a normal
   transfer.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope CDS-guard asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once the rule-set review cadence and bypass-path logging/approval are confirmed.
+  This rule fires on every in-scope CDS guard asset by design, so no tag suppresses it. Instead,
+  dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once the
+  rule-set review cadence, and the logging and approval of bypass paths, are confirmed.
 
 risk:
   id:

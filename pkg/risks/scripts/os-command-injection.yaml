@@ -5,39 +5,39 @@ stride: elevation-of-privilege
 finding_class: control-not-evidenced
 cwe: 78
 description: >
-  This asset owns custom-developed request or job-processing code that may construct an OS shell
-  command using unsanitized input, allowing an adversary to inject arbitrary operating system
+  This asset owns custom-developed request- or job-processing code that may build an OS shell
+  command from unsanitized input. As a result, an adversary can inject arbitrary operating system
   commands.
 impact: >
-  If this risk remains unmitigated, an adversary can execute arbitrary commands with the
-  privileges of the hosting process, typically leading to full compromise of the host.
+  If this risk remains unmitigated, an adversary can execute arbitrary commands with the privileges
+  of the hosting process, which typically leads to a full compromise of the host.
 asvs: "V5 - Validation, Sanitization and Encoding"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html"
-action: "Eliminate direct OS shell invocation built from unsanitized input; use safe, parameterized APIs instead."
+action: 'Eliminate direct OS shell invocation built from unsanitized input, and use safe, parameterized APIs instead.'
 mitigation: >
-  Avoid invoking a system shell with user- or caller-influenced input entirely where possible --
+  Where possible, avoid invoking a system shell with user- or caller-influenced input at all, and
   use a language-native API or library function instead of shelling out. Where shelling out is
-  unavoidable, use an API that passes arguments as a list/array (never string concatenation or
-  interpolation into a single command line), and apply a strict allow-list to any argument that
-  influences which binary or flags are invoked. Run the invoking process with the minimum OS
-  privileges it needs. Apply a seccomp/AppArmor profile or equivalent to narrow the syscall
-  surface available even if an injection succeeds. References: CWE-78; CAPEC-88 (OS Command
-  Injection); MITRE ATT&CK T1059 (Command and Scripting Interpreter); OWASP Top 10:2025 A05
-  (Injection).
-check: "Does this asset avoid building shell commands from unsanitized input, using parameterized process-invocation APIs and a minimum-privilege execution context instead?"
+  unavoidable, use an API that passes arguments as a list or array, never through string
+  concatenation or interpolation into a single command line, and apply a strict allow-list to any
+  argument that influences which binary or flags are invoked. Additionally, run the invoking process
+  with the minimum OS privileges it needs. Finally, apply a seccomp or AppArmor profile, or an
+  equivalent, to narrow the syscall surface that remains available even if an injection succeeds.
+  References include CWE-78, CAPEC-88 (OS Command Injection), MITRE ATT&CK T1059 (Command and
+  Scripting Interpreter), and the OWASP Top 10:2025 A05 (Injection).
+check: 'Does this asset avoid building shell commands from unsanitized input, and instead use parameterized process-invocation APIs and a minimum-privilege execution context?'
 detection_logic: >
-  Run SAST rules flagging shell/exec invocations built via string concatenation or interpolation
-  from caller-influenced input. Run DAST payloads containing shell metacharacters (;, |, &&, $(),
-  backticks) against every input field and monitor for command execution side effects (timing,
-  DNS/network callbacks, unexpected process spawns).
+  Run SAST rules that flag shell or exec invocations built by concatenating or interpolating
+  caller-influenced input. Additionally, run DAST payloads that contain shell metacharacters (;, |,
+  &&, $(), and backticks) against every input field, and monitor for the side effects of command
+  execution, such as timing differences, DNS or network callbacks, and unexpected process spawns.
 risk_assessment: >
-  Critical for any custom-developed component that shells out using input influenced by an
-  external caller or upstream system.
+  Critical for any custom-developed component that shells out using input influenced by an external
+  caller or an upstream system.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope asset that owns
-  custom-developed request/job-processing logic, by design). Dispose of a confirmed-compliant
-  asset through risk_tracking instead: log it as mitigated once confirmed that no OS shell
-  invocation is built from unsanitized input anywhere in this asset's own code.
+  This rule fires on every in-scope asset that owns custom-developed request- or job-processing
+  logic by design, so no tag suppresses it. Instead, dispose of a confirmed-compliant asset through
+  risk_tracking, logging it as mitigated once it is confirmed that no OS shell invocation anywhere
+  in this asset's own code is built from unsanitized input.
 
 risk:
   id:

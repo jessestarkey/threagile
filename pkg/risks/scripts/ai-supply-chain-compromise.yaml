@@ -5,48 +5,52 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 1357
 description: >
-  This asset loads third-party AI components it did not build: model weights, adapters, and
-  tokenizers from a model hub or registry, agent frameworks and their dependency trees, or tool
-  servers and their packages. Any of them can be malicious, swapped, or silently updated -- model
-  files that execute code on load, poisoned or backdoored weights, a typo-squatted or hijacked
-  package, a reclaimed hub namespace -- and they run with this asset's full privileges.
+  This asset loads third-party AI components that it did not build, namely model weights, adapters,
+  and tokenizers from a model hub or registry, agent frameworks and their dependency trees, or tool
+  servers and their packages. Any of them can be malicious, swapped, or silently updated. Examples
+  include model files that execute code on load, poisoned or backdoored weights, a typo-squatted or
+  hijacked package, and a reclaimed hub namespace. Furthermore, they run with this asset's full
+  privileges.
 impact: >
-  If this risk remains unmitigated, one compromised component gives an attacker code execution
-  on every host that loads it, or a model whose behaviour they control, across every system
+  If this risk remains unmitigated, one compromised component gives an attacker code execution on
+  every host that loads it, or a model whose behavior the attacker controls, across every system
   built on the same component.
 asvs: "V15 - Secure Coding and Architecture"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
-action: "Admit AI components only from approved sources, pin and verify each by hash or signature, and scan them before they are loaded."
+action: 'Admit AI components only from approved sources, pin and verify each one by hash or signature, and scan them before they are loaded.'
 mitigation: >
   Pull models, adapters, frameworks, and tool packages only from an internal, access-controlled
-  registry or mirror, never directly from a public hub at load time. Pin every component to an
-  exact version and verify it by hash or signature on every load; reject floating tags and
-  unpinned dependencies. Prefer non-executable model formats (safetensors) and scan artifacts
-  for embedded code, unsafe deserialization, and known-malicious content before admission.
-  Maintain an AI bill of materials (models, datasets, frameworks, tools) per deployment, and
-  watch for namespace takeovers and suspicious new versions of components you depend on. Load
-  third-party components with the least privilege the task needs. References: OWASP LLM Top 10
-  2026 LLM04 (Supply Chain); OWASP Top 10 for Agentic Applications 2026 ASI04 (Agentic Supply
-  Chain); OWASP Agentic Skills Top 10 2026 AST02 (Supply Chain Compromise); MITRE ATLAS
-  AML.T0010 (AI Supply Chain Compromise), AML.T0011.000 (Unsafe AI Artifacts); MAESTRO layers 3
-  and 4; CWE-1357, CWE-494, CWE-829; NIST SP 800-53 SR-3, SR-4, SA-9, SI-7 (mappings via the
-  OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Are models, frameworks, and tool packages admitted only from an approved internal registry, pinned and hash- or signature-verified on every load, scanned before admission, and tracked in an AI bill of materials?"
+  registry or mirror, never directly from a public hub at load time. Additionally, pin every
+  component to an exact version, and verify it by hash or signature on every load, rejecting
+  floating tags and unpinned dependencies. Prefer non-executable model formats (such as
+  safetensors), and scan artifacts for embedded code, unsafe deserialization, and known-malicious
+  content before admission. Furthermore, maintain an AI bill of materials (covering models,
+  datasets, frameworks, and tools) for each deployment, and watch for namespace takeovers and
+  suspicious new versions of the components you depend on. Finally, load third-party components with
+  the least privilege that the task needs. References include the OWASP LLM Top 10 2026 LLM04
+  (Supply Chain), the OWASP Top 10 for Agentic Applications 2026 ASI04 (Agentic Supply Chain), the
+  OWASP Agentic Skills Top 10 2026 AST02 (Supply Chain Compromise), MITRE ATLAS AML.T0010 (AI Supply
+  Chain Compromise) and AML.T0011.000 (Unsafe AI Artifacts), MAESTRO layers 3 and 4, CWE-1357,
+  CWE-494, and CWE-829, and NIST SP 800-53 SR-3, SR-4, SA-9, and SI-7, with the mappings taken from
+  the OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Are models, frameworks, and tool packages admitted only from an approved internal registry, pinned and verified by hash or signature on every load, scanned before admission, and tracked in an AI bill of materials?'
 detection_logic: >
-  Inventory every third-party model, adapter, framework, and tool package each deployment loads,
-  and where it is fetched from at runtime. Check for floating tags, unpinned dependencies, and
-  executable model formats. Review admission scanning results and the AI bill of materials.
+  Inventory every third-party model, adapter, framework, and tool package that each deployment
+  loads, and where it is fetched from at runtime. Then, check for floating tags, unpinned
+  dependencies, and executable model formats. Finally, review the admission scanning results and the
+  AI bill of materials.
 risk_assessment: >
   Critical when components are pulled from a public hub or package index at load time without
-  pinning or verification. High when pulled through an internal registry without scanning.
+  pinning or verification. However, the finding is High when they are pulled through an internal
+  registry without scanning.
 false_positives: >
-  Fires on every in-scope ai-model-registry, ai-model-serving, ai-agent-orchestrator, and ai-tool-
-  server asset, because each loads third-party AI components. Likelihood steps up one level when
-  the asset pulls (an outgoing readonly link) from an external asset -- an external entity, or an
-  internet-facing or out-of-scope asset, such as a public model hub or package index. Callers of
-  the asset do not count. Dispose of a confirmed-compliant asset through risk_tracking: log it as
-  mitigated once approved-source admission, pinning with verification, scanning, and an AI bill of
-  materials are confirmed.
+  This rule fires on every in-scope ai-model-registry, ai-model-serving, ai-agent-orchestrator, and
+  ai-tool-server asset, because each one loads third-party AI components. However, likelihood steps
+  up one level when the asset pulls, through an outgoing readonly link, from an external asset,
+  namely an external entity, or an internet-facing or out-of-scope asset, such as a public model hub
+  or package index. Callers of the asset do not count. Dispose of a confirmed-compliant asset
+  through risk_tracking, logging it as mitigated once approved-source admission, pinning with
+  verification, scanning, and an AI bill of materials are confirmed.
 
 risk:
   id:

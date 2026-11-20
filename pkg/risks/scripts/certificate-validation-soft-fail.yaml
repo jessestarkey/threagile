@@ -5,45 +5,43 @@ stride: spoofing
 finding_class: control-not-evidenced
 cwe: 299
 description: >
-  A certificate-status validation service (OCSP responder or CRL distribution point) that
-  fails open -- treating an unreachable or slow revocation check as "not revoked" rather than
-  rejecting the authentication attempt -- lets a revoked or compromised certificate continue
-  authenticating successfully, especially in degraded or disconnected (DDIL) conditions where
-  the responder is most likely to be unreachable.
+  A certificate-status validation service (an OCSP responder or a CRL distribution point) can fail
+  open, treating an unreachable or slow revocation check as "not revoked" rather than rejecting the
+  authentication attempt. In that case, a revoked or compromised certificate continues to
+  authenticate successfully, especially in degraded or disconnected (DDIL) conditions, where the
+  responder is most likely to be unreachable.
 impact: >
-  If this risk remains unmitigated, an attacker holding a revoked or compromised certificate
-  authenticates successfully whenever the revocation check cannot complete, which is exactly
-  when an attacker who has caused the outage -- or is operating during one -- most needs it
-  to.
+  If this risk remains unmitigated, an attacker who holds a revoked or compromised certificate
+  authenticates successfully whenever the revocation check cannot complete. That is exactly when an
+  attacker who has caused the outage, or who is operating during one, most needs it to.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
-action: "Configure revocation checking to fail closed, and confirm every relying system uses a DoD-approved OCSP/CRL source consistent with CAC/PIV authentication requirements."
+action: 'Configure revocation checking to fail closed, and confirm that every relying system uses a DoD-approved OCSP or CRL source, consistent with the CAC and PIV authentication requirements.'
 mitigation: >
-  Configure every relying party's revocation check to fail closed -- reject the authentication
-  attempt when the OCSP responder or CRL cannot be reached or does not respond in time, rather
-  than treating the absence of a definitive answer as implicit non-revocation. Confirm the
-  revocation source itself is a DoD-approved OCSP/CRL source as required for CAC two-factor
-  authentication of privileged users. Where degraded or disconnected (DDIL) operation is a
-  genuine requirement, address it with a short-validity cached response signed by the
-  responder rather than an unconditional fail-open default. References: CWE-299 (Improper Check for
-  Certificate Revocation); MITRE ATT&CK T1557 (Adversary-in-the-Middle); NIST SP 800-53 IA-5(2)
-  (Public Key-Based Authentication); NIST SP 800-53 SC-17 (Public Key Infrastructure
-  Certificates); DoD Cloud Computing Mission Owner Network Security Requirements
-  Guide (CAC/OCSP revocation requirements).
-check: "Does revocation checking fail closed when the OCSP responder or CRL is unreachable, and does every relying system use a DoD-approved OCSP/CRL source?"
+  Configure every relying party's revocation check to fail closed. In other words, reject the
+  authentication attempt when the OCSP responder or the CRL cannot be reached, or does not respond
+  in time, rather than treating the absence of a definitive answer as implicit non-revocation.
+  Additionally, confirm that the revocation source itself is a DoD-approved OCSP or CRL source, as
+  CAC two-factor authentication of privileged users requires. Finally, where degraded or
+  disconnected (DDIL) operation is a genuine requirement, address it with a short-validity cached
+  response signed by the responder, rather than an unconditional fail-open default. References
+  include CWE-299 (Improper Check for Certificate Revocation), MITRE ATT&CK T1557
+  (Adversary-in-the-Middle), NIST SP 800-53 IA-5(2) (Public Key-Based Authentication) and SC-17
+  (Public Key Infrastructure Certificates), and the DoD Cloud Computing Mission Owner Network
+  Security Requirements Guide (for the CAC and OCSP revocation requirements).
+check: 'Does revocation checking fail closed when the OCSP responder or CRL is unreachable, and does every relying system use a DoD-approved OCSP or CRL source?'
 detection_logic: >
-  Audit relying-party configuration for fail-open versus fail-closed behavior on revocation-
-  check timeout or unavailability. Confirm the configured OCSP/CRL source is on the DoD-
-  approved list. Test by simulating responder unavailability and confirming authentication is
-  rejected rather than silently permitted.
+  Audit the relying parties' configuration for fail-open versus fail-closed behavior when a
+  revocation check times out or is unavailable. Additionally, confirm that the configured OCSP or
+  CRL source is on the DoD-approved list. Finally, simulate responder unavailability, and confirm
+  that authentication is rejected rather than silently permitted.
 risk_assessment: >
-  Critical for any certificate-validation service or relying party configured to fail open on
-  an unreachable or unresponsive revocation check.
+  Critical for any certificate-validation service or relying party that is configured to fail open
+  on an unreachable or unresponsive revocation check.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope certificate-
-  validation-service asset, by design). Dispose of a confirmed-compliant asset through
-  risk_tracking instead: log it as mitigated once fail-closed behavior and a DoD-approved
-  revocation source are confirmed.
+  This rule fires on every in-scope certificate validation service asset by design, so no tag
+  suppresses it. Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it
+  as mitigated once fail-closed behavior and a DoD-approved revocation source are confirmed.
 
 risk:
   id:

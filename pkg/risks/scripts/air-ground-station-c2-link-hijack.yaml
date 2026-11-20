@@ -5,44 +5,43 @@ stride: spoofing
 finding_class: control-not-evidenced
 cwe: 306
 description: >
-  An air vehicle command-and-control link is commonly line-of-sight RF, attackable with far less
-  sophisticated equipment than a satellite uplink would require. An unauthenticated command
-  link lets an adversary take direct control of the air vehicle, and an unencrypted sensor or
-  video downlink -- the documented real-world case of intercepted unencrypted drone video
-  feeds -- discloses everything the vehicle observes to anyone within radio range.
+  An air vehicle's command-and-control link is commonly line-of-sight RF, which far less
+  sophisticated equipment can attack than a satellite uplink would require. An unauthenticated
+  command link lets an adversary take direct control of the air vehicle. Additionally, an
+  unencrypted sensor or video downlink discloses everything the vehicle observes to anyone within
+  radio range, as documented real-world interceptions of unencrypted drone video feeds show.
 impact: >
-  If this risk remains unmitigated, an adversary within radio range can either hijack command
-  of the air vehicle outright or passively intercept its full sensor and video feed, with
-  neither requiring more than commodity RF equipment against an unauthenticated or unencrypted
-  link.
+  If this risk remains unmitigated, an adversary within radio range can either hijack command of the
+  air vehicle outright, or passively intercept its full sensor and video feed. Neither requires more
+  than commodity RF equipment against an unauthenticated or unencrypted link.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
-action: "Cryptographically authenticate the command-and-control link and encrypt the telemetry/sensor/video downlink, rather than relying on frequency-hopping or protocol obscurity alone."
+action: 'Authenticate the command-and-control link cryptographically, and encrypt the telemetry, sensor, and video downlink, rather than relying on frequency-hopping or protocol obscurity alone.'
 mitigation: >
-  Cryptographically authenticate every command sent over the control link so the air vehicle
-  can distinguish its legitimate ground control station from an impersonator, rather than
-  relying on frequency-hopping, proprietary protocols, or physical proximity as the control.
-  Encrypt the telemetry, sensor, and video downlink end to end -- unencrypted full-motion
-  video has been intercepted by adversaries in real documented incidents, and the same
-  exposure applies to any unencrypted downlink regardless of platform. Define and test a
-  documented lost-link failsafe behavior (e.g. return-to-home, controlled landing) so a
-  jammed or severed link does not itself become the attack. References: CWE-306 (Missing Authentication for Critical
-  Function); CWE-319 (Cleartext Transmission of Sensitive Information); NIST SP 800-53 SC-8
-  (Transmission Confidentiality and Integrity); NIST SP 800-53 IA-3 (Device Identification and
-  Authentication); DoD UAS cybersecurity guidance.
-check: "Is the command-and-control link cryptographically authenticated, is the telemetry/sensor/video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?"
+  Authenticate every command sent over the control link cryptographically, so that the air vehicle
+  can distinguish its legitimate ground control station from an impersonator, rather than relying on
+  frequency-hopping, proprietary protocols, or physical proximity as the control. Additionally,
+  encrypt the telemetry, sensor, and video downlink end to end, since adversaries have intercepted
+  unencrypted full-motion video in documented real-world incidents, and the same exposure applies to
+  any unencrypted downlink regardless of platform. Finally, define and test a documented lost-link
+  failsafe behavior (for example, return to home or a controlled landing), so that a jammed or
+  severed link does not itself become the attack. References include CWE-306 (Missing Authentication
+  for Critical Function), CWE-319 (Cleartext Transmission of Sensitive Information), NIST SP 800-53
+  SC-8 (Transmission Confidentiality and Integrity) and IA-3 (Device Identification and
+  Authentication), and DoD UAS cybersecurity guidance.
+check: 'Is the command-and-control link cryptographically authenticated, is the telemetry, sensor, and video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?'
 detection_logic: >
-  Audit the command-link protocol for cryptographic authentication versus reliance on
-  frequency-hopping or obscurity alone. Confirm the telemetry/sensor/video downlink is
-  encrypted end to end. Review lost-link failsafe behavior documentation and test records.
+  Audit the command-link protocol for cryptographic authentication, as opposed to reliance on
+  frequency-hopping or obscurity alone. Additionally, confirm that the telemetry, sensor, and video
+  downlink is encrypted end to end. Finally, review the documentation and test records for the
+  lost-link failsafe behavior.
 risk_assessment: >
-  Critical for any air ground station whose command link is not cryptographically
-  authenticated, or whose sensor/video downlink is unencrypted.
+  Critical for any air ground station whose command link is not cryptographically authenticated, or
+  whose sensor or video downlink is unencrypted.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope air-ground-
-  station asset, by design). Dispose of a confirmed-compliant asset through
-  risk_tracking instead: log it as mitigated once command-link authentication and downlink
-  encryption are confirmed.
+  This rule fires on every in-scope air ground station asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once command-link authentication and downlink encryption are confirmed.
 
 risk:
   id:

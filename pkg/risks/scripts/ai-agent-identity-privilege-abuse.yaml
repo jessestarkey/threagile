@@ -5,57 +5,59 @@ stride: elevation-of-privilege
 finding_class: weakness-shown
 cwe: 441
 description: >
-  An AI agent, tool server, or AI gateway calls another asset under its own service identity
-  rather than the identity of the user it is acting for: an authenticated outgoing link whose
-  authorization is not end-user identity propagation. The target then authorizes the agent, not
-  the user, so the agent becomes a confused deputy -- anything that steers it gets every
-  permission its own identity holds, for every user, and its credentials concentrate access to
-  everything it connects to.
+  An AI agent, tool server, or AI gateway calls another asset under its own service identity, rather
+  than under the identity of the user it is acting for. In other words, it has an authenticated
+  outgoing link whose authorization is not end-user identity propagation. The target then authorizes
+  the agent rather than the user, so the agent becomes a confused deputy. As a result, anything that
+  steers the agent gets every permission that the agent's identity holds, for every user, and the
+  agent's credentials concentrate access to everything it connects to.
 impact: >
-  If this risk remains unmitigated, a prompt injection, poisoned tool, or compromised agent can
-  reach any data or action the agent's own identity is allowed, including other users' data, and
-  a stolen agent credential grants the same reach to an attacker directly.
+  If this risk remains unmitigated, a prompt injection, a poisoned tool, or a compromised agent can
+  reach any data or action that the agent's own identity allows, including other users' data.
+  Furthermore, a stolen agent credential grants the same reach to an attacker directly.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Propagate the end user's identity through the agent to every downstream call where the target supports it, and scope each agent credential to the minimum the agent's task needs."
+action: 'Propagate the end user''s identity through the agent to every downstream call where the target supports it, and scope each agent credential to the minimum that the agent''s task needs.'
 mitigation: >
-  Where the target supports it, pass the end user's identity through the agent (OAuth token
-  exchange / on-behalf-of flows, workload identity federation with user context) so each call is
-  authorized as the user, not the agent. Where a service identity is unavoidable, give each agent
-  and each tool its own identity scoped to the specific resources and operations it serves --
-  never one shared broad-scope identity across agents, tools, or backends -- and keep its
-  credentials in a vault, individually rotated. Enforce per-user authorization in the agent before
-  it calls a tool on a user's behalf. Log every downstream call with both the agent identity and
-  the originating user. References: OWASP Top 10 for Agentic Applications 2026 ASI03 (Identity
-  and Privilege Abuse); OWASP GenAI Data Security 2026 DSGAI02 (Agent Identity and Credential
-  Exposure); MITRE ATLAS AML.T0012 (Valid Accounts); MAESTRO layers 6 and 7; CWE-441, CWE-250,
-  CWE-522; NIST SP 800-53 AC-3, AC-6, IA-2, IA-9 (mappings via the OWASP GenAI Security
-  Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Does every downstream call this agent makes carry the end user's identity, or, where it cannot, an agent-specific identity scoped to the minimum resources and operations, with per-user authorization enforced before the call?"
+  Where the target supports it, pass the end user's identity through the agent (with OAuth token
+  exchange, on-behalf-of flows, or workload identity federation with user context), so that each
+  call is authorized as the user rather than the agent. Where a service identity is unavoidable,
+  give each agent and each tool its own identity, scoped to the specific resources and operations it
+  serves, rather than one shared, broad-scope identity across agents, tools, or backends. Keep those
+  credentials in a vault, and rotate each one individually. Additionally, enforce per-user
+  authorization in the agent before it calls a tool on a user's behalf. Finally, log every
+  downstream call with both the agent identity and the originating user. References include the
+  OWASP Top 10 for Agentic Applications 2026 ASI03 (Identity and Privilege Abuse), OWASP GenAI Data
+  Security 2026 DSGAI02 (Agent Identity and Credential Exposure), MITRE ATLAS AML.T0012 (Valid
+  Accounts), MAESTRO layers 6 and 7, CWE-441, CWE-250, and CWE-522, and NIST SP 800-53 AC-3, AC-6,
+  IA-2, and IA-9, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Does every downstream call this agent makes carry the end user''s identity, or, where it cannot, an agent-specific identity scoped to the minimum resources and operations, with per-user authorization enforced before the call?'
 detection_logic: >
-  List every identity the agent, its tools, and any AI gateway authenticate with, and the
-  permissions each holds on its targets; flag shared identities and permissions beyond the task.
-  Test whether a user can reach another user's data through the agent. Audit downstream logs for
-  calls attributable only to the agent identity with no originating user.
+  List every identity that the agent, its tools, and any AI gateway authenticate with, along with
+  the permissions each one holds on its targets, and flag shared identities and permissions beyond
+  the task. Then, test whether a user can reach another user's data through the agent. Finally,
+  audit the downstream logs for calls that are attributable only to the agent identity, with no
+  originating user.
 risk_assessment: >
-  Critical when a shared or broad agent identity reaches assets holding restricted-or-higher data
-  or important-or-higher integrity/availability, especially across users or tenants. High when
-  every reachable asset is low-value.
+  Critical when a shared or broad agent identity reaches assets that hold restricted-or-higher data,
+  or that have important-or-higher integrity or availability, especially across users or tenants.
+  However, the finding is High when every reachable asset is low-value.
 false_positives: >
-  Fires on any in-scope asset with the ai-agent-orchestrator, ai-tool-server, ai-gateway, or ai-
-  multi-agent-gateway technology that has an authenticated outgoing link whose authorization is
-  not end-user-identity-propagation (technical-user, or none). Links from agents and tool servers
-  to model or operational infrastructure (LLM endpoint, model serving, AI gateway, guardrail,
-  observability, monitoring) are ignored, since reaching the model as itself grants nothing; an
-  ai-gateway's links to its model backends do count, because holding those credentials is the
-  gateway's concentration risk. Model a link that passes the user's identity through as
-  authorization: end-user-identity-propagation; such links do not fire. A link with
-  authentication: none is a missing-authentication problem and is ignored here. A credentials or
-  client-certificate link also fires hardcoded-credentials-secrets-sprawl: that rule is about
-  where the secret is stored, this one about the privilege the agent acts with. Dispose of a
-  confirmed-compliant asset through risk_tracking: log it as mitigated once every remaining
-  service identity is confirmed agent-specific, minimally scoped, vaulted, and preceded by per-
-  user authorization.
+  This rule fires on any in-scope asset with the ai-agent-orchestrator, ai-tool-server, ai-gateway,
+  or ai-multi-agent-gateway technology that has an authenticated outgoing link whose authorization
+  is not end-user-identity-propagation (that is, technical-user or none). It ignores links from
+  agents and tool servers to model or operational infrastructure (an LLM endpoint, model serving, an
+  AI gateway, a guardrail, observability, or monitoring), since reaching the model as itself grants
+  nothing. However, an ai-gateway's links to its model backends do count, because holding those
+  credentials is the gateway's concentration risk. Model a link that passes the user's identity
+  through with authorization: end-user-identity-propagation, and such a link does not fire.
+  Additionally, a link with authentication: none is a missing-authentication problem, so this rule
+  ignores it. A credentials or client-certificate link also fires
+  hardcoded-credentials-secrets-sprawl, since that rule concerns where the secret is stored, whereas
+  this one concerns the privilege the agent acts with. Dispose of a confirmed-compliant asset
+  through risk_tracking, logging it as mitigated once every remaining service identity is confirmed
+  to be agent-specific, minimally scoped, vaulted, and preceded by per-user authorization.
 
 risk:
   id:

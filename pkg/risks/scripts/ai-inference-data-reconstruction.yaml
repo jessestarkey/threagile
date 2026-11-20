@@ -5,47 +5,48 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 200
 description: >
-  A model's inference API answers requests from outside its own trust boundary. Systematic
-  querying of that API can reconstruct what the model learned from -- membership inference
-  (whether a given record was in the training set), model inversion (recovering training
-  examples), and model extraction (training a functional copy from its answers) -- without ever
-  touching the training data or weights directly.
+  A model's inference API answers requests from outside its own trust boundary. Thus, systematic
+  querying of that API can reconstruct what the model learned from, without ever touching the
+  training data or weights directly. Specifically, it enables (1) membership inference, meaning
+  whether a given record was in the training set, (2) model inversion, meaning recovery of training
+  examples, and (3) model extraction, meaning training a functional copy from the model's answers.
 impact: >
-  If this risk remains unmitigated, an outside party can confirm or recover sensitive records
-  the model was trained on, which can itself be a data breach, and can replicate the model's
-  capability from its outputs.
+  If this risk remains unmitigated, an outside party can confirm or recover sensitive records that
+  the model was trained on, which can itself be a data breach. Furthermore, that party can replicate
+  the model's capability from its outputs.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Limit what the inference API reveals and how fast it can be queried, and train sensitive models with privacy protections that resist reconstruction."
+action: 'Limit what the inference API reveals and how fast it can be queried, and train sensitive models with privacy protections that resist reconstruction.'
 mitigation: >
-  Authenticate and rate-limit every inference caller, with per-identity query budgets, and alert
-  on systematic or high-volume querying patterns typical of extraction and membership inference.
-  Return only what the use case needs: no logits or full probability vectors, and rounded or
-  top-k confidence scores at most. Train or fine-tune models on sensitive data with
-  privacy-preserving techniques (differential privacy, deduplication, removing rare records) and
-  test them for memorization before release. Watermark outputs where model extraction is a
-  concern. References: OWASP GenAI Data Security 2026 DSGAI18 (Inference and Data
-  Reconstruction); MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API: Infer Training Data
-  Membership, Invert AI Model, Extract AI Model); MAESTRO layers 1, 2 and 5; CWE-200, CWE-327;
-  NIST SP 800-53 AC-3, SI-4, RA-3 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
-  https://github.com/GenAI-Security-Project/crosswalk).
-check: "Are inference callers authenticated and rate-limited with per-identity budgets and extraction monitoring, are outputs limited to what the use case needs, and were sensitive models trained with privacy protections and memorization testing?"
+  Authenticate and rate-limit every inference caller with per-identity query budgets, and alert on
+  the systematic or high-volume querying patterns that are typical of extraction and membership
+  inference. Additionally, return only what the use case needs, which means no logits or full
+  probability vectors, and at most rounded or top-k confidence scores. Train or fine-tune models on
+  sensitive data with privacy-preserving techniques (differential privacy, deduplication, or removal
+  of rare records), and test them for memorization before release. Finally, watermark outputs where
+  model extraction is a concern. References include OWASP GenAI Data Security 2026 DSGAI18
+  (Inference and Data Reconstruction), MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API,
+  covering Infer Training Data Membership, Invert AI Model, and Extract AI Model), MAESTRO layers 1,
+  2, and 5, CWE-200 and CWE-327, and NIST SP 800-53 AC-3, SI-4, and RA-3, with the mappings taken
+  from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Are inference callers authenticated and rate-limited with per-identity budgets and extraction monitoring, are outputs limited to what the use case needs, and were sensitive models trained with privacy protections and memorization testing?'
 detection_logic: >
-  Review inference API authentication, rate limits, and what each response returns. Run
-  membership-inference and extraction tests against a staging copy. Monitor query logs for
-  high-volume, systematic, or boundary-probing patterns from a single identity.
+  Review the inference API's authentication and rate limits, and what each response returns. Then,
+  run membership-inference and extraction tests against a staging copy. Finally, monitor the query
+  logs for high-volume, systematic, or boundary-probing patterns from a single identity.
 risk_assessment: >
-  High when the model was trained or fine-tuned on confidential data and its API is reachable
-  from outside the boundary without per-identity budgets. Medium otherwise.
+  High when the model was trained or fine-tuned on confidential data, and its API is reachable from
+  outside the boundary without per-identity budgets. Otherwise, the finding is Medium.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint or ai-model-serving asset that is internet-facing or has an
-  incoming link from an outside caller (an outside caller is an external entity, an internet-
-  facing or out-of-scope asset, or a frontend (web application, reverse proxy, WAF, load balancer,
-  client) in a different network boundary; execution-environment boundaries are looked through to
-  the enclosing network boundary, as in Threagile's own rules). A model reached only through
-  internal services (for example an agent orchestrator) does not fire. Dispose of a confirmed-
-  compliant asset through risk_tracking: log it as mitigated once authenticated, budgeted access,
-  minimal outputs, and privacy-preserving training are confirmed.
+  This rule fires on an in-scope ai-llm-endpoint or ai-model-serving asset that is internet-facing,
+  or that has an incoming link from an outside caller. An outside caller is an external entity, an
+  internet-facing or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF, load
+  balancer, or client) in a different network boundary. As in Threagile's own rules,
+  execution-environment boundaries are looked through to the enclosing network boundary. Thus, a
+  model reached only through internal services (for example, an agent orchestrator) does not fire.
+  Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  authenticated, budgeted access, minimal outputs, and privacy-preserving training are confirmed.
 
 risk:
   id:

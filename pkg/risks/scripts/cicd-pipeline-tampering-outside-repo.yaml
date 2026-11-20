@@ -5,35 +5,37 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 1357
 description: >
-  An identity with access to the CI/CD platform's own console can modify the pipeline definition
-  or its gate policies directly, bypassing the source-controlled pipeline file and leaving no
-  pull-request trail.
+  An identity with access to the CI/CD platform's own console can modify the pipeline definition or
+  its gate policies directly. In doing so, it bypasses the source-controlled pipeline file and
+  leaves no pull-request trail.
 impact: >
-  If this risk remains unmitigated, a security gate can be silently disabled outside code review,
-  so the gate a reviewer approved is no longer the one that actually runs.
+  If this risk remains unmitigated, a security gate can be silently disabled outside code review.
+  Thus, the gate that a reviewer approved is no longer the one that actually runs.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
-action: "Restrict who can modify this pipeline's definition or admission/gate policies directly through the CI/CD platform's console or API, and log every such change even when it does not originate from a repository commit."
+action: 'Restrict who can modify this pipeline''s definition, or its admission and gate policies, directly through the CI/CD platform''s console or API. Additionally, log every such change, even when it does not originate from a repository commit.'
 mitigation: >
-  Where the CI/CD platform allows pipeline or policy edits outside the repository (console UI,
-  direct API calls), restrict that capability to a minimal administrative group distinct from
-  ordinary contributors, and forward every such change to the SIEM regardless of whether it
-  originated from a commit. Prefer a platform configuration that sources the pipeline definition
-  exclusively from the repository (true pipeline-as-code with no console override capability)
-  where the platform supports it. References: NIST SP 800-218 (Secure Software Development
-  Framework, PO.3, PS.1); NIST SP 800-53 CM-3 (Configuration Change Control).
-check: "Are pipeline/policy edits made outside the repository restricted to a minimal administrative group and logged to the SIEM?"
+  Where the CI/CD platform allows pipeline or policy edits outside the repository (through the
+  console UI or direct API calls), restrict that capability to a minimal administrative group that
+  is distinct from ordinary contributors. Additionally, forward every such change to the SIEM,
+  regardless of whether it originated from a commit. Where the platform supports it, prefer a
+  configuration that sources the pipeline definition exclusively from the repository, namely true
+  pipeline-as-code with no console override capability. References include NIST SP 800-218 (Secure
+  Software Development Framework, PO.3 and PS.1) and NIST SP 800-53 CM-3 (Configuration Change
+  Control).
+check: 'Are pipeline and policy edits made outside the repository restricted to a minimal administrative group and logged to the SIEM?'
 detection_logic: >
   Audit the CI/CD platform's access-control configuration for who can edit pipeline definitions or
-  gate policies outside a repository commit, and confirm such changes are forwarded to the SIEM.
+  gate policies outside a repository commit. Then, confirm that such changes are forwarded to the
+  SIEM.
 risk_assessment: >
   High for any pipeline where a non-administrative identity can alter the pipeline definition or
-  gate policies outside the repository's PR trail.
+  gate policies outside the repository's pull-request trail.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope build-pipeline asset,
-  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once pipeline/policy edits outside the repository are confirmed restricted to a
-  minimal administrative group and logged to the SIEM.
+  This rule fires on every in-scope build pipeline asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once pipeline and policy edits outside the repository are confirmed to be restricted to a minimal
+  administrative group and logged to the SIEM.
 
 risk:
   id:

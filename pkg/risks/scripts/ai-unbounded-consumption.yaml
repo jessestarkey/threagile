@@ -5,48 +5,50 @@ stride: denial-of-service
 finding_class: weakness-shown
 cwe: 400
 description: >
-  An LLM endpoint or AI gateway answers requests from outside its trust boundary, and every
-  request costs real compute, tokens, and money. Without per-caller limits, anyone who can reach
-  it can exhaust capacity with volume or deliberately expensive prompts, run up spend on stolen
-  or shared credentials (denial of wallet), or flood it with chaff that buries real activity and
+  An LLM endpoint or AI gateway answers requests from outside its trust boundary, and every request
+  costs real compute, tokens, and money. Without per-caller limits, anyone who can reach it can (1)
+  exhaust its capacity with volume or deliberately expensive prompts, (2) run up spend on stolen or
+  shared credentials (denial of wallet), or (3) flood it with chaff that buries real activity and
   overwhelms human review.
 impact: >
   If this risk remains unmitigated, the AI service becomes unavailable or unaffordable for its
-  legitimate users, spend can run to thousands of dollars a day before anyone notices, and
-  monitoring and review queues are drowned in noise.
+  legitimate users, and spend can run to thousands of dollars a day before anyone notices.
+  Furthermore, monitoring and review queues are drowned in noise.
 asvs: "V2 - Validation and Business Logic"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"
-action: "Put per-caller rate limits, token and cost budgets, and input-size limits in front of every AI endpoint reachable from outside its boundary, with spend alerting."
+action: 'Put per-caller rate limits, token and cost budgets, and input-size limits in front of every AI endpoint that is reachable from outside its boundary, with spend alerting.'
 mitigation: >
-  Front every externally reachable AI endpoint with an AI gateway or equivalent that
+  Front every externally reachable AI endpoint with an AI gateway, or an equivalent, that
   authenticates callers and enforces per-identity rate limits, concurrency limits, and token and
-  cost budgets. Cap input and output sizes and context length, and reject or truncate
-  pathologically expensive requests. Set hard spend limits and alerts at the provider and gateway.
-  Monitor for volume spikes, repetitive near-duplicate requests, and credential misuse, and be
-  able to revoke a caller quickly. Degrade gracefully rather than failing open when limits are
-  hit. References: OWASP LLM Top 10 2026 LLM06 (Unbounded Consumption); OWASP GenAI Data Security
-  2026 DSGAI17 (Data Availability and Resilience Failures); OWASP API Security Top 10 API4:2023
-  (Unrestricted Resource Consumption); MITRE ATLAS AML.T0029 (Denial of AI Service), AML.T0034
-  (Cost Harvesting), AML.T0046 (Spamming AI System with Chaff Data); MAESTRO layers 3, 4 and 5;
-  CWE-400, CWE-770, CWE-799; NIST SP 800-53 SC-5, SC-7, SI-4 (mappings via the OWASP GenAI
-  Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Does every externally reachable AI endpoint enforce authenticated, per-identity rate, concurrency, token, and cost limits, with input-size caps, hard spend limits, and alerting?"
+  cost budgets. Additionally, cap input and output sizes and context length, and reject or truncate
+  pathologically expensive requests. Set hard spend limits and alerts at the provider and at the
+  gateway. Furthermore, monitor for volume spikes, repetitive near-duplicate requests, and
+  credential misuse, and be able to revoke a caller quickly. Finally, degrade gracefully when limits
+  are hit, rather than failing open. References include the OWASP LLM Top 10 2026 LLM06 (Unbounded
+  Consumption), OWASP GenAI Data Security 2026 DSGAI17 (Data Availability and Resilience Failures),
+  the OWASP API Security Top 10 API4:2023 (Unrestricted Resource Consumption), MITRE ATLAS AML.T0029
+  (Denial of AI Service), AML.T0034 (Cost Harvesting), and AML.T0046 (Spamming AI System with Chaff
+  Data), MAESTRO layers 3, 4, and 5, CWE-400, CWE-770, and CWE-799, and NIST SP 800-53 SC-5, SC-7,
+  and SI-4, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Does every externally reachable AI endpoint enforce authenticated, per-identity rate, concurrency, token, and cost limits, with input-size caps, hard spend limits, and alerting?'
 detection_logic: >
-  Review rate, token, and cost limits on the endpoint and any gateway in front of it, and the
-  provider's spend limits and alerts. Load-test from a single identity to confirm limits engage.
-  Monitor usage for spikes, repetitive requests, and unexpected callers.
+  Review the rate, token, and cost limits on the endpoint and on any gateway in front of it, as well
+  as the provider's spend limits and alerts. Then, load-test from a single identity to confirm that
+  the limits engage. Finally, monitor usage for spikes, repetitive requests, and unexpected callers.
 risk_assessment: >
-  High for an internet-facing AI endpoint with no per-caller limits or spend alerting, or one
-  supporting availability-critical work. Medium otherwise.
+  High for an internet-facing AI endpoint with no per-caller limits or spend alerting, or for one
+  that supports availability-critical work. Otherwise, the finding is Medium.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint or ai-gateway that is internet-facing or has an incoming
-  link from an outside caller (an outside caller is an external entity, an internet-facing or out-
-  of-scope asset, or a frontend (web application, reverse proxy, WAF, load balancer, client) in a
-  different network boundary; execution-environment boundaries are looked through to the enclosing
-  network boundary, as in Threagile's own rules). An LLM endpoint reached only through internal
-  services, such as an ai-gateway that relays outside traffic, does not fire; the gateway carries
-  the finding. Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated
-  once per-caller limits, budgets, input caps, and spend alerting are confirmed.
+  This rule fires on an in-scope ai-llm-endpoint or ai-gateway that is internet-facing, or that has
+  an incoming link from an outside caller. An outside caller is an external entity, an
+  internet-facing or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF, load
+  balancer, or client) in a different network boundary, and as in Threagile's own rules,
+  execution-environment boundaries are looked through to the enclosing network boundary. Thus, an
+  LLM endpoint reached only through internal services, such as an ai-gateway that relays outside
+  traffic, does not fire, since the gateway carries the finding. Dispose of a confirmed-compliant
+  asset through risk_tracking, logging it as mitigated once per-caller limits, budgets, input caps,
+  and spend alerting are confirmed.
 
 risk:
   id:

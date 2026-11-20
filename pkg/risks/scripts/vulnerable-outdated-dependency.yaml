@@ -5,45 +5,45 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 1395
 description: >
-  This asset's own custom-developed code pulls in third-party libraries/packages, and unless their
-  versions are continuously checked against known-vulnerability databases a known-vulnerable one
-  can ship -- distinct from container
-  base-image scanning (which covers the OS/runtime layer, not this asset's own application-level
-  dependency graph) and from End-of-Life component tracking (which covers products that have
-  stopped receiving patches entirely, not an actively-maintained library with an unpatched known
-  CVE).
+  This asset's own custom-developed code pulls in third-party libraries and packages. Unless their
+  versions are continuously checked against known-vulnerability databases, a known-vulnerable one
+  can ship. This differs from container base-image scanning, which covers the OS and runtime layer
+  rather than this asset's own application-level dependency graph. It also differs from End-of-Life
+  component tracking, which covers products that have stopped receiving patches entirely, rather
+  than an actively maintained library with an unpatched known CVE.
 impact: >
-  If this risk remains unmitigated, a publicly disclosed vulnerability in a dependency this asset
-  uses remains exploitable in production for as long as it goes undetected, even though a fix may
-  already be available upstream.
+  If this risk remains unmitigated, a publicly disclosed vulnerability in a dependency that this
+  asset uses remains exploitable in production for as long as it goes undetected, even though a fix
+  may already be available upstream.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
-action: "Integrate automated Software Composition Analysis (SCA) into the CI/CD pipeline, scanning this asset's full application-level dependency graph against a current known-vulnerability database on every build."
+action: 'Integrate automated Software Composition Analysis (SCA) into the CI/CD pipeline, scanning this asset''s full application-level dependency graph against a current known-vulnerability database on every build.'
 mitigation: >
-  Integrate an SCA tool (e.g., Dependabot, Snyk, OWASP Dependency-Check, OSV-Scanner) into the
-  CI/CD pipeline, scanning the complete dependency graph -- including transitive dependencies,
-  not just direct ones -- on every build and on a recurring schedule for newly disclosed CVEs
-  against already-deployed versions. Fail the build on Critical/High severity findings above the
-  org's accepted threshold. Maintain a documented remediation SLA tied to severity. Subscribe to
-  security advisories for the ecosystem's package registry (npm, PyPI, Maven Central, NuGet) used
-  by this asset. References: CWE-1104 (Use of Unmaintained Third Party Components); OWASP Top
-  10:2025 A03 (Software Supply Chain Failures); NIST SP 800-53 RA-5 (Vulnerability Monitoring
-  and Scanning); MITRE ATT&CK T1190 (Exploit Public-Facing Application).
-check: "Is an SCA tool integrated into the CI/CD pipeline, scanning this asset's full transitive dependency graph against a current known-vulnerability database on every build and on a recurring schedule?"
+  Integrate an SCA tool (for example, Dependabot, Snyk, OWASP Dependency-Check, or OSV-Scanner) into
+  the CI/CD pipeline. Specifically, scan the complete dependency graph, including transitive
+  dependencies and not only direct ones, on every build, and on a recurring schedule for newly
+  disclosed CVEs against the versions already deployed. Additionally, fail the build on Critical or
+  High findings above the organization's accepted threshold, and maintain a documented remediation
+  SLA tied to severity. Finally, subscribe to the security advisories for the package registry
+  ecosystem (npm, PyPI, Maven Central, or NuGet) that this asset uses. References include CWE-1104
+  (Use of Unmaintained Third Party Components), the OWASP Top 10:2025 A03 (Software Supply Chain
+  Failures), NIST SP 800-53 RA-5 (Vulnerability Monitoring and Scanning), and MITRE ATT&CK T1190
+  (Exploit Public-Facing Application).
+check: 'Is an SCA tool integrated into the CI/CD pipeline, scanning this asset''s full transitive dependency graph against a current known-vulnerability database on every build and on a recurring schedule?'
 detection_logic: >
-  Confirm an SCA tool runs in the CI/CD pipeline for this asset's build and that its scan report
-  covers the full transitive dependency tree, not direct dependencies alone. Cross-reference the
-  dependency manifest/lockfile against a recent SCA scan timestamp to flag drift between what is
-  actually deployed and what was last scanned.
+  Confirm that an SCA tool runs in the CI/CD pipeline for this asset's build, and that its scan
+  report covers the full transitive dependency tree, not only the direct dependencies. Then,
+  cross-reference the dependency manifest or lockfile against a recent SCA scan timestamp, to flag
+  drift between what is actually deployed and what was last scanned.
 risk_assessment: >
   High for any custom-developed asset with no SCA tooling integrated into its build pipeline.
-  Escalates to Critical if a dependency with a known, actively-exploited CVE is confirmed present
-  in a production deployment.
+  However, the finding rises to Critical if a dependency with a known, actively exploited CVE is
+  confirmed present in a production deployment.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope asset with
-  custom-developed parts, by design). Dispose of a confirmed-compliant asset through
-  risk_tracking instead: log it as mitigated once an SCA tool is confirmed integrated into this
-  asset's CI/CD pipeline with a documented remediation SLA.
+  This rule fires on every in-scope asset with custom-developed parts by design, so no tag
+  suppresses it. Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it
+  as mitigated once an SCA tool is confirmed to be integrated into this asset's CI/CD pipeline, with
+  a documented remediation SLA.
 
 risk:
   id:

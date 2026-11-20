@@ -5,37 +5,37 @@ stride: repudiation
 finding_class: control-not-evidenced
 cwe: 778
 description: >
-  A data store has no operation-level audit logging and no detection tuned to abnormal access
-  patterns such as bulk reads or connections from an unexpected principal.
+  A data store has no operation-level audit logging, and no detection tuned to abnormal access
+  patterns, such as bulk reads or connections from an unexpected principal.
 impact: >
   If this risk remains unmitigated, bulk exfiltration by a compromised or malicious authorized
   identity produces no anomalous signal and no forensic record.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
-action: "Enable operation-level (read/write/delete/list) audit logging on the data store with the requesting identity attached, and apply anomaly detection tuned to bulk-read and abnormal-export patterns."
+action: 'Enable operation-level (read, write, delete, and list) audit logging on the data store, with the requesting identity attached, and apply anomaly detection tuned to bulk-read and abnormal-export patterns.'
 mitigation: >
-  Enable data-plane audit logging on the store (e.g., Azure SQL Auditing, Storage Analytics
-  logging, Key Vault diagnostic logs) capturing the operation, the requesting identity, and the
-  object/record affected, forwarded to the central SIEM. Layer native or platform-provided
-  anomaly detection (e.g., Microsoft Defender for Storage/SQL) tuned to flag bulk-read volume,
-  access from a principal or location outside the established baseline, and access rate spikes.
-  Treat detection tooling that only covers control-plane (management API) operations, not
-  data-plane operations, as not meeting this control. References: NIST SP 800-53 AU-2 (Event
-  Logging); NIST SP 800-53 AU-6 (Audit Record Review, Analysis, and Reporting); NIST SP 800-53
-  SI-4 (System Monitoring).
-check: "Is operation-level data-plane audit logging enabled and forwarded to the SIEM, with anomaly detection tuned to bulk access patterns confirmed active for this asset?"
+  Enable data-plane audit logging on the store (for example, Azure SQL Auditing, Storage Analytics
+  logging, or Key Vault diagnostic logs) that captures the operation, the requesting identity, and
+  the affected object or record, and forward it to the central SIEM. Additionally, layer native or
+  platform-provided anomaly detection (for example, Microsoft Defender for Storage or for SQL) tuned
+  to flag bulk-read volume, access from a principal or location outside the established baseline,
+  and spikes in the access rate. Detection tooling that covers only control-plane (management API)
+  operations, rather than data-plane operations, does not meet this control. References include NIST
+  SP 800-53 AU-2 (Event Logging), AU-6 (Audit Record Review, Analysis, and Reporting), and SI-4
+  (System Monitoring).
+check: 'Is operation-level, data-plane audit logging enabled and forwarded to the SIEM, with anomaly detection tuned to bulk access patterns confirmed active for this asset?'
 detection_logic: >
-  Alert on read/export volume from a single identity exceeding a rolling baseline by a defined
-  multiple within a 1-hour window, and on any data-plane access from a principal or network
-  location not previously observed for this asset.
+  Alert when the read or export volume from a single identity exceeds a rolling baseline by a
+  defined multiple within a one-hour window. Additionally, alert on any data-plane access from a
+  principal or network location not previously observed for this asset.
 risk_assessment: >
-  High for any data store holding CUI where data-plane operations are not logged at the
-  record/object level or where no anomaly detection is applied to access patterns.
+  High for any data store that holds CUI, where data-plane operations are not logged at the record
+  or object level, or where no anomaly detection is applied to access patterns.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope datastore asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once operation-level data-plane audit logging and tuned anomaly detection are
-  confirmed active for this asset.
+  This rule fires on every in-scope datastore asset by design, so no tag suppresses it. Instead,
+  dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  operation-level, data-plane audit logging and tuned anomaly detection are confirmed active for
+  this asset.
 
 risk:
   id:

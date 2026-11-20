@@ -6,36 +6,38 @@ finding_class: control-not-evidenced
 cwe: 915
 description: >
   The backend API binds client request bodies directly to internal models without an explicit
-  per-field allow-list, allowing a client to set privileged fields the UI never exposes, or
-  receives fields in a response that were never meant to be exposed.
+  per-field allow-list. As a result, a client can set privileged fields that the UI never exposes,
+  or can receive fields in a response that were never meant to be exposed.
 impact: >
-  If this risk remains unmitigated, a client can escalate privilege by setting a field the
-  application's own framework silently accepted despite the UI never exposing it, or harvest
-  sensitive fields an endpoint returns without ever intending to.
+  If this risk remains unmitigated, a client can escalate privilege by setting a field that the
+  application's own framework silently accepted, even though the UI never exposes it. Alternatively,
+  the client can harvest sensitive fields that an endpoint returns without ever intending to.
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
-action: "Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request/response bodies directly to internal models."
+action: 'Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request and response bodies directly to internal models.'
 mitigation: >
-  Use explicit request/response DTOs scoped per-endpoint rather than binding client input
-  directly to internal domain/ORM models. Maintain an explicit allow-list of which properties a
-  given role may write and which properties a response may include, enforced server-side
-  regardless of what the client sends. Include automated test cases that attempt to set
-  privileged/internal fields via the API and verify they are rejected. References: OWASP API
-  Security Top 10 API3:2023; NIST SP 800-53 AC-3 (Access Enforcement); CWE-915.
-check: "Does every API endpoint use explicit per-endpoint DTOs with a server-enforced allow-list of client-writable/readable properties?"
+  Use explicit request and response DTOs scoped to each endpoint, rather than binding client input
+  directly to internal domain or ORM models. Additionally, maintain an explicit allow-list of which
+  properties a given role may write, and which properties a response may include, enforced on the
+  server regardless of what the client sends. Finally, include automated test cases that attempt to
+  set privileged or internal fields through the API, and verify that they are rejected. References
+  include the OWASP API Security Top 10 API3:2023, NIST SP 800-53 AC-3 (Access Enforcement), and
+  CWE-915.
+check: 'Does every API endpoint use explicit, per-endpoint DTOs, with a server-enforced allow-list of the properties a client may write and read?'
 detection_logic: >
-  Include automated API test cases that submit requests containing internal/privileged field
-  names not exposed in the documented request schema, and verify the server ignores or rejects
-  them. Diff each endpoint's actual JSON response against its documented response schema in CI.
+  Include automated API test cases that submit requests containing internal or privileged field
+  names that are not in the documented request schema, and verify that the server ignores or rejects
+  them. Additionally, compare each endpoint's actual JSON response against its documented response
+  schema in CI.
 risk_assessment: >
   High for any API that binds request bodies directly to internal models without an explicit
-  per-field allow-list. Escalates to Critical if a privilege-bearing field is client-writable
-  without server-side filtering.
+  per-field allow-list. However, the finding rises to Critical if a privilege-bearing field is
+  client-writable without server-side filtering.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope request-serving API
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once every endpoint is confirmed to use explicit per-endpoint request/response
-  DTOs with a documented, server-enforced allow-list.
+  This rule fires on every in-scope request-serving API asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once every endpoint is confirmed to use explicit, per-endpoint request and response DTOs with a
+  documented, server-enforced allow-list.
 
 risk:
   id:

@@ -5,47 +5,49 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 200
 description: >
-  An LLM endpoint, RAG pipeline, or agent has confidential-or-higher data in reach -- in its
-  prompts, retrieved documents, tools, or training -- and answers requests that come from
-  outside its own trust boundary. A model does not reliably keep what it can see to itself:
-  crafted questions, prompt injection, or plain over-sharing can put that data into a response
+  An LLM endpoint, RAG pipeline, or agent has confidential-or-higher data within reach, whether in
+  its prompts, retrieved documents, tools, or training, and it answers requests that come from
+  outside its own trust boundary. However, a model does not reliably keep what it can see to itself.
+  Thus, crafted questions, prompt injection, or plain over-sharing can put that data into a response
   to a requester who was never authorized for it.
 impact: >
-  If this risk remains unmitigated, confidential data the model can reach leaves the trust
-  boundary inside ordinary-looking responses, bypassing the access controls that protect the
-  same data everywhere else.
+  If this risk remains unmitigated, confidential data that the model can reach leaves the trust
+  boundary inside ordinary-looking responses. As a result, it bypasses the access controls that
+  protect the same data everywhere else.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Keep sensitive data out of what the model can reach unless the requester is authorized for it, and filter outputs for sensitive content before they leave the boundary."
+action: 'Keep sensitive data out of what the model can reach unless the requester is authorized for it, and filter outputs for sensitive content before they leave the boundary.'
 mitigation: >
-  Give the model only data the requesting user is entitled to see: enforce authorization when
-  documents are retrieved and tools are called, not by instructing the model to withhold
-  content. Minimize, mask, or tokenize sensitive fields before they enter prompts or retrieval
-  indexes, and keep confidential data out of training and fine-tuning sets unless the model is
-  confined to users cleared for it. Scan outputs for sensitive patterns and classification
-  markings before they cross the boundary, and block or redact matches. Log responses for
-  review. References: OWASP LLM Top 10 2026 LLM02 (Sensitive Information Disclosure); OWASP
-  GenAI Data Security 2026 DSGAI01 (Sensitive Data Leakage), DSGAI09 (Multimodal Cross-Channel
-  Leakage); MITRE ATLAS AML.T0057, AML.T0024; MAESTRO layers 1, 2 and 5; CWE-200, CWE-201,
-  CWE-359; NIST SP 800-53 AC-3, AC-4, SC-28, SI-4 (mappings via the OWASP GenAI Security
-  Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is the model limited to data each requester is authorized for, with authorization at retrieval and tool time, sensitive fields minimized before they enter the context, and outputs scanned before they leave the boundary?"
+  Give the model only data that the requesting user is entitled to see, enforcing authorization when
+  documents are retrieved and tools are called, rather than instructing the model to withhold
+  content. Additionally, minimize, mask, or tokenize sensitive fields before they enter prompts or
+  retrieval indexes. Keep confidential data out of training and fine-tuning sets, unless the model
+  is confined to users who are cleared for it. Furthermore, scan outputs for sensitive patterns and
+  classification markings before they cross the boundary, and block or redact any matches. Finally,
+  log responses for review. References include the OWASP LLM Top 10 2026 LLM02 (Sensitive
+  Information Disclosure), OWASP GenAI Data Security 2026 DSGAI01 (Sensitive Data Leakage) and
+  DSGAI09 (Multimodal Cross-Channel Leakage), MITRE ATLAS AML.T0057 and AML.T0024, MAESTRO layers 1,
+  2, and 5, CWE-200, CWE-201, and CWE-359, and NIST SP 800-53 AC-3, AC-4, SC-28, and SI-4, with the
+  mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is the model limited to the data each requester is authorized for, with authorization at retrieval and tool time, sensitive fields minimized before they enter the context, and outputs scanned before they leave the boundary?'
 detection_logic: >
-  Inventory what confidential data the model can reach through prompts, retrieval, tools, and
-  training. From outside the trust boundary, attempt to elicit that data with direct questions
-  and prompt-injection payloads. Review output-filtering coverage and response logs.
+  Inventory the confidential data that the model can reach through prompts, retrieval, tools, and
+  training. Then, from outside the trust boundary, attempt to elicit that data with direct questions
+  and prompt-injection payloads. Finally, review the output-filtering coverage and the response
+  logs.
 risk_assessment: >
-  Critical when strictly-confidential data is reachable by a model answering requesters outside
-  its trust boundary with no output filtering. High for confidential data.
+  Critical when a model that answers requesters outside its trust boundary can reach strictly
+  confidential data, with no output filtering. However, the finding is High for confidential data.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that processes a
-  data asset rated confidential or higher and is internet-facing or has an incoming link from an
-  outside caller (an outside caller is an external entity, an internet-facing or out-of-scope
-  asset, or a frontend (web application, reverse proxy, WAF, load balancer, client) in a different
-  network boundary; execution-environment boundaries are looked through to the enclosing network
-  boundary, as in Threagile's own rules). Dispose of a confirmed-compliant asset through
-  risk_tracking: log it as mitigated once retrieval-time authorization, input minimization, and
-  output filtering are confirmed.
+  This rule fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that
+  processes a data asset rated confidential or higher, and that is internet-facing or has an
+  incoming link from an outside caller. An outside caller is an external entity, an internet-facing
+  or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF, load balancer, or
+  client) in a different network boundary. As in Threagile's own rules, execution-environment
+  boundaries are looked through to the enclosing network boundary. Dispose of a confirmed-compliant
+  asset through risk_tracking, logging it as mitigated once retrieval-time authorization, input
+  minimization, and output filtering are confirmed.
 
 risk:
   id:

@@ -5,44 +5,46 @@ stride: repudiation
 finding_class: control-not-evidenced
 cwe: 778
 description: >
-  This security control (WAF, IDS/IPS, HSM, vault, or SIEM/monitoring platform) has no
-  tamper-evident configuration or independently-stored audit trail of its own, letting an
-  adversary who gains a foothold disable, reconfigure, or evade it -- or erase evidence that they
-  did -- without that action being independently detectable outside the control itself.
+  This security control (a WAF, IDS/IPS, HSM, vault, or SIEM or monitoring platform) has no
+  tamper-evident configuration, and no independently stored audit trail of its own. Thus, an
+  adversary who gains a foothold can disable, reconfigure, or evade it, or erase the evidence of
+  having done so, without that action being independently detectable outside the control itself.
 impact: >
   If this risk remains unmitigated, an adversary with a foothold can blind or disable the exact
   control that would otherwise detect or block their next step, and nothing outside that control
-  notices it happened.
+  notices that it happened.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
-action: "Forward this control's own configuration-change and administrative-access events to a destination it cannot itself modify or delete, and alert on any change to its own protective configuration."
+action: 'Forward this control''s own configuration-change and administrative-access events to a destination that it cannot itself modify or delete, and alert on any change to its own protective configuration.'
 mitigation: >
-  Forward this security control's own administrative/configuration-change audit log to a SIEM
-  destination or write-once store that this control's own administrators cannot modify or
-  delete -- the same principle MITRE ATT&CK's Defense Evasion tactic (Indicator Removal,
-  Impair Defenses) assumes an adversary will attempt. Alert on any change to the control's own
-  protective configuration (rule sets, blocking mode toggled to monitor-only, log forwarding
-  disabled) as a high-priority event in its own right, independent of whatever the control is
-  itself monitoring for. Where the platform supports it, require a second approver for any change
-  that weakens the control's own protective posture. Periodically verify the control is still
-  actively enforcing (not silently failed open) via a synthetic test rather than assuming
-  uptime implies correct operation. References: CWE-778 (Insufficient Logging); MITRE ATT&CK
-  T1562 (Impair Defenses), T1070 (Indicator Removal); NIST SP 800-53 AU-9 (Protection of Audit
-  Information); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity).
-check: "Is this control's own configuration-change and administrative-access audit trail forwarded to a destination it cannot itself modify, with alerting on any change to its own protective posture?"
+  Forward this security control's own administrative and configuration-change audit log to a SIEM
+  destination or write-once store that the control's own administrators cannot modify or delete,
+  since MITRE ATT&CK's Defense Evasion tactic (Indicator Removal and Impair Defenses) assumes that
+  an adversary will attempt exactly that. Additionally, alert on any change to the control's own
+  protective configuration (such as rule sets, blocking mode switched to monitor-only, or log
+  forwarding disabled) as a high-priority event in its own right, independent of whatever the
+  control itself monitors for. Where the platform supports it, require a second approver for any
+  change that weakens the control's own protective posture. Finally, verify periodically, through a
+  synthetic test, that the control is still actively enforcing rather than having silently failed
+  open, rather than assuming that uptime implies correct operation. References include CWE-778
+  (Insufficient Logging), MITRE ATT&CK T1562 (Impair Defenses) and T1070 (Indicator Removal), and
+  NIST SP 800-53 AU-9 (Protection of Audit Information) and SI-7 (Software, Firmware, and
+  Information Integrity).
+check: 'Is this control''s own configuration-change and administrative-access audit trail forwarded to a destination that it cannot itself modify, with alerting on any change to its own protective posture?'
 detection_logic: >
-  Monitor for configuration changes to this control (rule/policy edits, mode changes, log
-  forwarding toggles) and alert on any such change not traceable to an approved change record.
-  Run periodic synthetic tests confirming the control is still actively enforcing rather than
-  silently disabled or running in monitor-only mode.
+  Monitor for configuration changes to this control (rule and policy edits, mode changes, and
+  log-forwarding toggles), and alert on any such change that cannot be traced to an approved change
+  record. Additionally, run periodic synthetic tests that confirm the control is still actively
+  enforcing, rather than silently disabled or running in monitor-only mode.
 risk_assessment: >
-  High for any security control whose own administrative/configuration-change events are not
-  independently logged outside the control itself.
+  High for any security control whose own administrative and configuration-change events are not
+  logged independently, outside the control itself.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope security-control
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once this control's own configuration-change audit trail is confirmed forwarded to
-  a destination its own administrators cannot modify, with alerting on protective-posture changes.
+  This rule fires on every in-scope security control asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once the control's own configuration-change audit trail is confirmed to be forwarded to a
+  destination that its own administrators cannot modify, with alerting on changes to its protective
+  posture.
 
 risk:
   id:

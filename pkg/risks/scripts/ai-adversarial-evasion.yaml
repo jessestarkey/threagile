@@ -5,49 +5,48 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 20
 description: >
-  An adversary can craft an input with small, often human-imperceptible perturbations
-  specifically designed to cross the model's decision boundary -- causing it to misclassify
-  or make an incorrect decision -- while the input still appears legitimate to a human
-  reviewer or any downstream system that does not independently re-examine it.
+  An adversary can craft an input with small, often human-imperceptible perturbations designed to
+  cross the model's decision boundary. The input then causes the model to misclassify or make an
+  incorrect decision, while it still appears legitimate to a human reviewer or to any downstream
+  system that does not independently re-examine it.
 impact: >
-  If this risk remains unmitigated, an adversary can reliably make the model produce an
-  incorrect classification or decision on demand, defeating any security or safety control
-  that relies on that model's output being trustworthy, without the crafted input ever
-  looking anomalous to a human.
+  If this risk remains unmitigated, an adversary can make the model produce an incorrect
+  classification or decision on demand. Thus, any security or safety control that relies on the
+  model's output being trustworthy is defeated, without the crafted input ever looking anomalous to
+  a human.
 asvs: "V11 - Business Logic"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
-action: "Apply adversarial training and input-space defenses, and require independent confirmation before acting on any model decision with security or safety consequence."
+action: 'Apply adversarial training and input-space defenses, and require independent confirmation before acting on any model decision with a security or safety consequence.'
 mitigation: >
-  Apply adversarial training using known perturbation techniques so the model's decision
-  boundary is less exploitable by small crafted perturbations. Apply input preprocessing
-  (randomized smoothing, input transformation/compression) that disrupts the precise
-  perturbation an evasion attack depends on without materially degrading legitimate input.
-  Where the model's decision has a security or safety consequence (access control, content
-  moderation, fraud detection, an OT-adjacent action), require independent confirmation --
-  a second signal, a different model, or human review -- rather than trusting a single
-  model's output alone for a high-consequence decision. Monitor confidence-score
-  distributions for the unusual patterns adversarial examples often produce near the decision
-  boundary. This targets classic ML models (classifiers, detectors, vision and identity models),
-  which no OWASP GenAI list covers; evasion of LLMs is prompt injection and jailbreak, covered
-  separately. References: MITRE ATLAS AML.T0015 (Evade AI Model), AML.T0043 (Craft Adversarial
-  Data); NIST AI RMF MANAGE 2.3; NIST
-  SP 800-53 SI-10 (Information Input Validation).
-check: "Is adversarial training or input-space defense applied to the model, and does any security- or safety-consequential decision require independent confirmation rather than trusting the model's output alone?"
+  Apply adversarial training with known perturbation techniques, so that small crafted perturbations
+  exploit the model's decision boundary less easily. Additionally, apply input preprocessing
+  (randomized smoothing, or input transformation and compression) that disrupts the precise
+  perturbation an evasion attack depends on, without materially degrading legitimate input. Where
+  the model's decision has a security or safety consequence (such as access control, content
+  moderation, fraud detection, or an OT-adjacent action), require independent confirmation from a
+  second signal, a different model, or a human reviewer, rather than trusting a single model's
+  output. Finally, monitor confidence-score distributions for the unusual patterns that adversarial
+  examples often produce near the decision boundary. This category targets classic ML models
+  (classifiers, detectors, and vision and identity models), which no OWASP GenAI list covers, since
+  evasion of an LLM is prompt injection and jailbreak, covered separately. References include MITRE
+  ATLAS AML.T0015 (Evade AI Model) and AML.T0043 (Craft Adversarial Data), NIST AI RMF MANAGE 2.3,
+  and NIST SP 800-53 SI-10 (Information Input Validation).
+check: 'Is adversarial training or an input-space defense applied to the model, and does every security- or safety-consequential decision require independent confirmation rather than trusting the model''s output alone?'
 detection_logic: >
-  Audit model training records for adversarial-training coverage against known perturbation
-  techniques. Review input-preprocessing configuration for randomized smoothing or
-  transformation defenses. Confirm high-consequence decisions driven by this model require
-  independent confirmation. Monitor confidence-score distributions for near-boundary anomaly
-  patterns.
+  Audit the model's training records for adversarial-training coverage against known perturbation
+  techniques. Additionally, review the input-preprocessing configuration for randomized smoothing or
+  transformation defenses, and confirm that high-consequence decisions driven by this model require
+  independent confirmation. Finally, monitor confidence-score distributions for anomaly patterns
+  near the decision boundary.
 risk_assessment: >
-  Critical for any model whose decision gates a security or safety consequence with no
-  adversarial training, input-space defense, or independent confirmation step in place.
+  Critical for any model whose decision gates a security or safety consequence, with no adversarial
+  training, input-space defense, or independent confirmation step in place.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope ai-model-serving
-  asset, by design; LLM endpoints are excluded because LLM evasion is prompt injection and
-  jailbreak, covered by the prompt-injection categories). Dispose of a confirmed-compliant asset through risk_tracking
-  instead: log it as mitigated once adversarial training/input-space defenses and independent
-  confirmation for high-consequence decisions are confirmed.
+  This rule fires on every in-scope ai-model-serving asset by design, so no tag suppresses it. LLM
+  endpoints are excluded, since evasion of an LLM is prompt injection and jailbreak, which the
+  prompt-injection categories cover. Instead, dispose of a confirmed-compliant asset through
+  risk_tracking, logging it as mitigated once adversarial training or input-space defenses, and
+  independent confirmation for high-consequence decisions, are confirmed.
 
 risk:
   id:

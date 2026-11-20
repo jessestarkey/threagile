@@ -5,53 +5,57 @@ stride: elevation-of-privilege
 finding_class: weakness-shown
 cwe: 269
 description: >
-  An AI agent orchestrator or tool server can take actions on other assets -- it has at least one
-  outgoing link that is not read-only. Whatever steers the agent (a prompt injection, poisoned
-  retrieved content, a malicious or over-broad tool definition, a compromised orchestrator) can
-  then drive those write-capable tools to change, delete, or send data on the agent's authority,
-  well beyond what the triggering request intended.
+  An AI agent orchestrator or tool server can take actions on other assets, since it has at least
+  one outgoing link that is not read-only. Thus, whatever steers the agent (a prompt injection,
+  poisoned retrieved content, a malicious or over-broad tool definition, or a compromised
+  orchestrator) can drive those write-capable tools to change, delete, or send data on the agent's
+  authority, well beyond what the triggering request intended.
 impact: >
   If this risk remains unmitigated, an adversary who influences the agent inherits every write
-  action its tools can perform, against every asset those tools reach, with the agent's own
+  action that its tools can perform, against every asset those tools reach, with the agent's own
   credentials and without a human in the loop.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Reduce each agent's write-capable tools to the minimum, scope their permissions narrowly, and require human confirmation for consequential actions."
+action: 'Reduce each agent''s write-capable tools to the minimum, scope their permissions narrowly, and require human confirmation for consequential actions.'
 mitigation: >
   Give each agent only the tools its task needs, and make every tool read-only unless the task
-  genuinely requires writes. Scope each tool's own credentials to the specific resources and
-  operations it serves, never a shared broad-scope identity. Require explicit human confirmation
-  before any agent-initiated action that writes data, sends communications, or changes another
-  system. Maintain an immutable allowlist of callable tools and block dynamic tool registration
-  at runtime. Rate-limit and budget tool invocations per session. Log every tool invocation with
-  its originating prompt and the identity it ran under, and alert on calls not traceable to a
-  user turn. References: OWASP LLM Top 10 2026 LLM03 (Excessive Agency); OWASP Top 10 for Agentic
-  Applications 2026 ASI02 (Tool Misuse and Exploitation); OWASP Agentic Skills Top 10 2026 AST03
-  (Over-Privileged Skills); OWASP GenAI Data Security 2026 DSGAI06 (Tool, Plugin and Agent Data
-  Exchange); MITRE ATLAS AML.T0053 (AI Agent Tool Invocation), AML.T0126; MAESTRO layers 3, 6 and
-  7; CWE-269, CWE-272, CWE-284, CWE-862; NIST SP 800-53 AC-3, AC-6, CM-7, AU-2 (mappings via the
-  OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is every write-capable tool this agent can call strictly necessary, scoped to minimum permissions, gated by human confirmation for consequential actions, and logged with its originating prompt?"
+  genuinely requires writes. Additionally, scope each tool's own credentials to the specific
+  resources and operations it serves, rather than to a shared, broad-scope identity. Require
+  explicit human confirmation before any agent-initiated action that writes data, sends
+  communications, or changes another system. Furthermore, maintain an immutable allowlist of
+  callable tools, block dynamic tool registration at runtime, and rate-limit and budget tool
+  invocations per session. Finally, log every tool invocation with its originating prompt and the
+  identity it ran under, and alert on calls that cannot be traced to a user turn. References include
+  the OWASP LLM Top 10 2026 LLM03 (Excessive Agency), the OWASP Top 10 for Agentic Applications 2026
+  ASI02 (Tool Misuse and Exploitation), the OWASP Agentic Skills Top 10 2026 AST03 (Over-Privileged
+  Skills), OWASP GenAI Data Security 2026 DSGAI06 (Tool, Plugin and Agent Data Exchange), MITRE
+  ATLAS AML.T0053 (AI Agent Tool Invocation) and AML.T0126, MAESTRO layers 3, 6, and 7, CWE-269,
+  CWE-272, CWE-284, and CWE-862, and NIST SP 800-53 AC-3, AC-6, CM-7, and AU-2, with the mappings
+  taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is every write-capable tool that this agent can call strictly necessary, scoped to minimum permissions, gated by human confirmation for consequential actions, and logged with its originating prompt?'
 detection_logic: >
-  Enumerate every tool the agent can invoke and classify each as read-only or write-capable;
-  compare against the task's documented needs. Review tool credential scopes against the
-  resources each tool actually serves. Audit tool invocation logs for write actions not
-  traceable to an explicit user turn, and for invocations of tools outside the allowlist.
+  Enumerate every tool that the agent can invoke, classify each one as read-only or write-capable,
+  and compare them against the task's documented needs. Additionally, review each tool's credential
+  scope against the resources it actually serves. Finally, audit the tool invocation logs for write
+  actions that cannot be traced to an explicit user turn, and for invocations of tools outside the
+  allowlist.
 risk_assessment: >
-  Critical when a write-capable tool reaches an asset holding restricted-or-higher data or
-  important-or-higher integrity/availability with no human confirmation gate. High when every
-  reachable asset is low-value.
+  Critical when a write-capable tool reaches an asset that holds restricted-or-higher data, or that
+  has important-or-higher integrity or availability, with no human confirmation gate. However, the
+  finding is High when every reachable asset is low-value.
 false_positives: >
-  Fires on any in-scope ai-agent-orchestrator, or an ai-tool-server that no in-scope agent
-  orchestrator calls (when one does, that agent decides what the tools do and carries the
-  finding), that has at least one outgoing communication link that is not readonly and does not go to model or
-  operational infrastructure (an LLM endpoint, model serving, AI gateway, guardrail, AI
-  observability stack, or monitoring -- calls to the model or telemetry are not tool actions).
-  Model each tool an agent calls as a link from the agent (or from the ai-tool-server hosting it)
-  to the asset the tool acts on, and mark a link readonly: true when the tool can only read; an
-  agent whose tools are all read-only does not fire. Dispose of a confirmed-compliant asset
-  through risk_tracking: log it as mitigated once every write-capable tool is confirmed necessary,
-  minimally scoped, and gated by human confirmation for consequential actions.
+  This rule fires on any in-scope ai-agent-orchestrator that has at least one outgoing communication
+  link that is not readonly and does not go to model or operational infrastructure, namely an LLM
+  endpoint, model serving, an AI gateway, a guardrail, an AI observability stack, or monitoring,
+  since calls to the model or to telemetry are not tool actions. It fires on an ai-tool-server under
+  the same condition only when no in-scope agent orchestrator calls it, because when one does, that
+  agent decides what the tools do and carries the finding. Model each tool an agent calls as a link
+  from the agent (or from the ai-tool-server hosting it) to the asset the tool acts on, and mark a
+  link readonly: true when the tool can only read. Thus, an agent whose tools are all read-only does
+  not fire. Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once every write-capable tool is confirmed to be necessary, minimally scoped, and gated by human
+  confirmation for consequential actions.
 
 risk:
   id:

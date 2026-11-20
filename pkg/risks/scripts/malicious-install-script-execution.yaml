@@ -8,32 +8,32 @@ description: >
   Unless this build pipeline disables them, dependency install scripts run automatically during
   resolution, before any malware or vulnerability scan examines the package.
 impact: >
-  If this risk remains unmitigated, a malicious dependency's install script executes arbitrary
-  code on the CI runner before any downstream scan has a chance to catch it.
+  If this risk remains unmitigated, a malicious dependency's install script executes arbitrary code
+  on the CI runner before any downstream scan has a chance to catch it.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
-action: "Suppress automatic execution of dependency install/post-install scripts in the CI environment, and apply a publish-to-adoption cooldown before newly published dependency versions are eligible for use."
+action: 'Suppress the automatic execution of dependency install and post-install scripts in the CI environment. Additionally, apply a cooldown between a dependency version''s publication and its adoption.'
 mitigation: >
-  Configure the package manager to suppress automatic install-script execution during CI
-  dependency resolution (e.g., npm install --ignore-scripts, pip's build isolation with no
-  arbitrary setup.py execution where avoidable) and only allow specific, reviewed exceptions for
-  packages that genuinely require a build step. Apply a minimum cooldown period (e.g., 3-7 days)
-  between a dependency version's publication and its eligibility for use in this pipeline, since
-  malicious package versions are frequently identified and pulled within days of publication.
-  References: NIST SP 800-218 (Secure Software Development Framework, PW.4, PO.5); NIST SP 800-53
-  SI-3 (Malicious Code Protection); OWASP Software Component Verification Standard.
-check: "Is automatic dependency install-script execution suppressed in CI, and is a publish-to-adoption cooldown enforced?"
+  Configure the package manager to suppress automatic install-script execution during CI dependency
+  resolution (for example, npm install --ignore-scripts, or pip's build isolation with no arbitrary
+  setup.py execution where avoidable), and allow only specific, reviewed exceptions for packages
+  that genuinely require a build step. Additionally, apply a minimum cooldown (for example, 3 to 7
+  days) between a dependency version's publication and its eligibility for use in this pipeline,
+  since malicious package versions are frequently identified and pulled within days of publication.
+  References include NIST SP 800-218 (Secure Software Development Framework, PW.4 and PO.5), NIST SP
+  800-53 SI-3 (Malicious Code Protection), and the OWASP Software Component Verification Standard.
+check: 'Is the automatic execution of dependency install scripts suppressed in CI, and is a cooldown between publication and adoption enforced?'
 detection_logic: >
-  Audit the package manager's CI configuration for install-script suppression flags and for an
-  enforced cooldown period on newly published dependency versions.
+  Audit the package manager's CI configuration for install-script suppression flags, and for an
+  enforced cooldown on newly published dependency versions.
 risk_assessment: >
-  Critical for any build pipeline that executes dependency install scripts automatically with no
-  cooldown period on newly published versions.
+  Critical for any build pipeline that executes dependency install scripts automatically, with no
+  cooldown on newly published versions.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope build-pipeline asset,
-  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once install-script execution is confirmed suppressed by default and a publish-to-
-  adoption cooldown is enforced.
+  This rule fires on every in-scope build pipeline asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once install-script execution is confirmed to be suppressed by default, and a cooldown between
+  publication and adoption is enforced.
 
 risk:
   id:

@@ -6,44 +6,46 @@ finding_class: control-not-evidenced
 cwe: 636
 description: >
   A vector store, feature store, or RAG pipeline that a mission-critical AI capability depends on
-  can fail quietly: an index is corrupted or poisoned and must be rebuilt, a replica serves stale
-  embeddings, a rebuild takes far longer than anyone planned for, or retrieval silently returns
-  nothing and the system falls back to answering without its grounding data. Unlike an outage,
-  these failures often keep the AI answering -- just wrongly or ungrounded.
+  can fail quietly. For example, an index is corrupted or poisoned and must be rebuilt, a replica
+  serves stale embeddings, a rebuild takes far longer than anyone planned for, or retrieval silently
+  returns nothing and the system falls back to answering without its grounding data. Unlike an
+  outage, these failures often keep the AI answering, just wrongly or without grounding.
 impact: >
   If this risk remains unmitigated, a critical AI capability is unavailable for the length of an
-  untested index rebuild, or keeps producing ungrounded or stale answers that users cannot tell
-  apart from grounded ones.
+  untested index rebuild. Alternatively, it keeps producing ungrounded or stale answers that users
+  cannot tell apart from grounded ones.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Back up and version the index and its source data, test the rebuild against a recovery time objective, monitor retrieval health, and fail closed rather than answering ungrounded."
+action: 'Back up and version the index and its source data, and test the rebuild against a recovery time objective. Additionally, monitor retrieval health, and fail closed rather than answering without grounding.'
 mitigation: >
-  Keep versioned, restorable snapshots of the index (or the source data and embedding model
-  version needed to rebuild it), and test a full rebuild against a defined recovery time
-  objective. Monitor index health: document counts, staleness against the source, replica lag,
-  and retrieval hit rates, and alert on sudden drops. When retrieval fails or returns nothing for
-  a query that should match, fail closed -- tell the user grounding is unavailable -- rather than
-  letting the model answer from its own weights. Capacity-plan the store for peak query and
-  re-index load, and keep a warm standby for mission-critical use. References: OWASP GenAI Data
-  Security 2026 DSGAI17 (Data Availability and Resilience Failures); MITRE ATLAS AML.T0029 (Denial
-  of AI Service), AML.T0034, AML.T0036; MAESTRO layers 4, 5 and 7; CWE-636, CWE-400, CWE-770;
-  NIST SP 800-53 CP-9, CP-10, SI-4, CA-7; NIST CSF 2.0 PR.IR-01, RC.RP-01 (mappings via the OWASP
-  GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is the index backed up or rebuildable within a tested recovery time, is retrieval health monitored for staleness and silent failure, and does the system fail closed when grounding is unavailable?"
+  Keep versioned, restorable snapshots of the index, or the source data and embedding model version
+  needed to rebuild it, and test a full rebuild against a defined recovery time objective.
+  Additionally, monitor the index's health, namely its document counts, its staleness against the
+  source, replica lag, and retrieval hit rates, and alert on sudden drops. When retrieval fails, or
+  returns nothing for a query that should match, fail closed by telling the user that grounding is
+  unavailable, rather than letting the model answer from its own weights. Finally, plan the store's
+  capacity for peak query and re-index load, and keep a warm standby for mission-critical use.
+  References include OWASP GenAI Data Security 2026 DSGAI17 (Data Availability and Resilience
+  Failures), MITRE ATLAS AML.T0029 (Denial of AI Service), AML.T0034, and AML.T0036, MAESTRO layers
+  4, 5, and 7, CWE-636, CWE-400, and CWE-770, NIST SP 800-53 CP-9, CP-10, SI-4, and CA-7, and NIST
+  CSF 2.0 PR.IR-01 and RC.RP-01, with the mappings taken from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is the index backed up or rebuildable within a tested recovery time, is retrieval health monitored for staleness and silent failure, and does the system fail closed when grounding is unavailable?'
 detection_logic: >
-  Request evidence of a tested index rebuild with a recorded time against the recovery time
-  objective. Review retrieval-health monitoring and alerting. In a test environment, break
-  retrieval and confirm the system reports grounding as unavailable instead of answering.
+  Request evidence of a tested index rebuild, with a recorded time against the recovery time
+  objective. Additionally, review the retrieval-health monitoring and alerting. Finally, in a test
+  environment, break retrieval, and confirm that the system reports grounding as unavailable instead
+  of answering.
 risk_assessment: >
   High for a mission-critical retrieval capability with no tested rebuild, no retrieval-health
   monitoring, or a fallback that answers without grounding.
 false_positives: >
-  Fires on an in-scope ai-vector-store, ai-feature-store, or ai-rag-pipeline whose availability is
-  rated critical or mission-critical -- the retrieval capabilities a mission depends on. Lower
-  availability ratings do not fire; generic backup and recovery for them is covered by the backup
-  and recovery categories. Dispose of a confirmed-compliant asset through risk_tracking: log it as
-  mitigated once a tested rebuild, retrieval-health monitoring, and fail-closed behaviour are
-  confirmed.
+  This rule fires on an in-scope ai-vector-store, ai-feature-store, or ai-rag-pipeline whose
+  availability is rated critical or mission-critical, since those are the retrieval capabilities
+  that a mission depends on. Lower availability ratings do not fire, since the backup and recovery
+  categories cover generic backup and recovery for them. Dispose of a confirmed-compliant asset
+  through risk_tracking, logging it as mitigated once a tested rebuild, retrieval-health monitoring,
+  and fail-closed behavior are confirmed.
 
 risk:
   id:

@@ -5,33 +5,33 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 732
 description: >
-  The container's root filesystem is writable, allowing an attacker who gains code execution to
+  The container's root filesystem is writable, which allows an attacker who gains code execution to
   modify binaries or persist inside the container.
 impact: >
-  If this risk remains unmitigated, a compromised container provides an attacker a durable
-  foothold for lateral movement rather than resetting on restart.
+  If this risk remains unmitigated, a compromised container gives an attacker a durable foothold for
+  lateral movement, rather than resetting on restart.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
-action: "Enforce readOnlyRootFilesystem."
+action: 'Enforce readOnlyRootFilesystem.'
 mitigation: >
-  Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext. Mount
-  ephemeral emptyDir volumes for any directory the workload genuinely needs to write to at runtime
-  (e.g. /tmp). Enforce this cluster-wide via an OPA Gatekeeper or Kyverno admission policy that
-  rejects deployments without it set, rather than relying on manifest review alone. References:
-  DISA Kubernetes STIG; NIST SP 800-53 CM-6 (Configuration Settings); NIST SP 800-53 SC-39
-  (Process Isolation).
-check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+  Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext.
+  Additionally, mount ephemeral emptyDir volumes for any directory that the workload genuinely needs
+  to write to at runtime (for example, /tmp). Finally, enforce this cluster-wide through an OPA
+  Gatekeeper or Kyverno admission policy that rejects deployments without it, rather than relying on
+  manifest review alone. References include the DISA Kubernetes STIG and NIST SP 800-53 CM-6
+  (Configuration Settings) and SC-39 (Process Isolation).
+check: 'Does the container run with readOnlyRootFilesystem set to true, with writable paths limited to ephemeral volumes, enforced by an admission policy?'
 detection_logic: >
-  Query the cluster (kubectl get pods -o json) or the admission controller's policy audit log for
-  containers whose securityContext omits readOnlyRootFilesystem: true. Run Kubescape or a similar
-  CIS Kubernetes Benchmark scanner against running workloads.
+  Query the cluster (kubectl get pods -o json), or the admission controller's policy audit log, for
+  containers whose securityContext omits readOnlyRootFilesystem: true. Additionally, run Kubescape,
+  or a similar CIS Kubernetes Benchmark scanner, against the running workloads.
 risk_assessment: >
-  Medium risk to node integrity in isolation, but compounding with any code-execution finding on
-  the same container that would otherwise reset on restart instead of persisting.
+  Medium as a risk to node integrity in isolation. However, it compounds with any code-execution
+  finding on the same container, which would otherwise reset on restart instead of persisting.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once the pod's securityContext already sets readOnlyRootFilesystem to true.
+  This rule fires on every in-scope container asset by design, so no tag suppresses it. Instead,
+  dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once the
+  pod's securityContext is confirmed to set readOnlyRootFilesystem to true.
 
 risk:
   id:

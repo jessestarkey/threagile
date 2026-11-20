@@ -5,43 +5,41 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 653
 description: >
-  A CSfC-approved network encryption architecture requires two independent encryption layers
-  built from diverse components so that a flaw in one layer alone cannot expose plaintext
-  (red) traffic to the untrusted (black) side. A collapsed single layer, or two layers sharing
-  a vendor, codebase, or vulnerability, defeats that independence requirement without any
-  outward sign of failure.
+  A CSfC-approved network encryption architecture requires two independent encryption layers, built
+  from diverse components, so that a flaw in one layer alone cannot expose plaintext (red) traffic
+  to the untrusted (black) side. However, a collapsed single layer, or two layers that share a
+  vendor, codebase, or vulnerability, defeats that independence requirement without any outward sign
+  of failure.
 impact: >
-  If this risk remains unmitigated, a single flaw common to both encryption layers -- or a
-  deployment that silently runs only one layer -- lets classified or CUI plaintext cross the
-  red/black boundary with the same apparent assurance as a properly layered deployment.
+  If this risk remains unmitigated, a single flaw common to both encryption layers, or a deployment
+  that silently runs only one layer, lets classified or CUI plaintext cross the red/black boundary
+  with the same apparent assurance as a properly layered deployment.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
-action: "Confirm the two required encryption layers are built from diverse, independently-sourced components with no shared vendor, codebase, or known common vulnerability."
+action: 'Confirm that the two required encryption layers are built from diverse, independently sourced components, with no shared vendor, codebase, or known common vulnerability.'
 mitigation: >
-  Verify both encryption layers required by the CSfC Capability Package are actually present
-  and independently keyed -- not a single layer misconfigured to appear as two, and not two
-  layers sourced from the same vendor or sharing underlying code that a single vulnerability
-  could defeat both at once. Periodically re-verify this independence, since a hardware
-  replacement, firmware update, or configuration change after initial accreditation could
-  silently collapse the two layers into one without any functional symptom. Maintain
-  documented key management and rotation for each layer separately. References: NSA
-  Commercial Solutions for Classified (CSfC) Customer Handbook; NIST SP 800-53 SC-8
-  (Transmission Confidentiality and Integrity); NIST SP 800-53 SC-13 (Cryptographic
-  Protection).
-check: "Are the two required CSfC encryption layers independently sourced and keyed with no shared vendor, codebase, or known common vulnerability, and is that independence periodically re-verified?"
+  Verify that both encryption layers required by the CSfC Capability Package are actually present
+  and independently keyed. In other words, they must not be a single layer misconfigured to appear
+  as two, nor two layers from the same vendor, or sharing underlying code, that a single
+  vulnerability could defeat at once. Additionally, re-verify this independence periodically, since
+  a hardware replacement, a firmware update, or a configuration change after the initial
+  accreditation could silently collapse the two layers into one without any functional symptom.
+  Finally, maintain documented key management and rotation for each layer separately. References
+  include the NSA Commercial Solutions for Classified (CSfC) Customer Handbook and NIST SP 800-53
+  SC-8 (Transmission Confidentiality and Integrity) and SC-13 (Cryptographic Protection).
+check: 'Are the two required CSfC encryption layers independently sourced and keyed, with no shared vendor, codebase, or known common vulnerability, and is that independence re-verified periodically?'
 detection_logic: >
-  Audit the encryption architecture's documentation and configuration for evidence both
+  Audit the encryption architecture's documentation and configuration for evidence that both
   required layers are present, independently keyed, and sourced from diverse components.
-  Confirm a recurring re-verification process exists, distinct from one-time initial
-  accreditation.
+  Additionally, confirm that a recurring re-verification process exists, distinct from the one-time
+  initial accreditation.
 risk_assessment: >
-  Critical for any CSfC-architected transport whose two-layer independence has not been
-  verified since initial accreditation, or where both layers share a vendor or codebase.
+  Critical for any CSfC-architected transport whose two-layer independence has not been verified
+  since the initial accreditation, or where both layers share a vendor or codebase.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope network-encryptor
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
-  it as mitigated once two-layer independence is confirmed and a recurring re-verification
-  process is in place.
+  This rule fires on every in-scope network encryptor asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once the two-layer independence is confirmed and a recurring re-verification process is in place.
 
 risk:
   id:

@@ -5,47 +5,49 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 488
 description: >
-  An LLM endpoint, RAG pipeline, or agent serves more than one tenant, or handles data at more
-  than one sensitivity level. Whatever enters its context window -- conversation history, cached
-  sessions, retrieved documents, memory, tool results -- can then surface in a response to a
-  different user, tenant, or clearance than the one it belongs to, through session or cache
+  An LLM endpoint, RAG pipeline, or agent serves more than one tenant, or handles data at more than
+  one sensitivity level. Thus, whatever enters its context window (conversation history, cached
+  sessions, retrieved documents, memory, and tool results) can surface in a response to a different
+  user, tenant, or clearance than the one it belongs to. This can happen through session or cache
   mix-ups, shared memory, or a context assembled more broadly than the request needs.
 impact: >
-  If this risk remains unmitigated, one user or tenant can receive another's conversation
-  content or retrieved data, or a lower-sensitivity request can be answered with
-  higher-sensitivity material, with nothing in the response marking it as out of place.
+  If this risk remains unmitigated, one user or tenant can receive another's conversation content or
+  retrieved data. Alternatively, a lower-sensitivity request can be answered with higher-sensitivity
+  material, with nothing in the response marking it as out of place.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Isolate every session, cache, memory store, and retrieval index per tenant and per sensitivity level, and build each context from only what the requesting user is entitled to."
+action: 'Isolate every session, cache, memory store, and retrieval index per tenant and per sensitivity level, and build each context from only what the requesting user is entitled to.'
 mitigation: >
   Partition conversation history, caches, agent memory, and retrieval indexes by tenant and by
-  sensitivity level, keyed to the authenticated user -- never a shared store filtered after the
-  fact. Assemble each request's context from only the documents and history the requesting user
-  is authorized for, applying authorization at retrieval time rather than relying on the model to
-  withhold content. Keep context windows to the minimum the task needs. Run separate model
-  instances or deployments for materially different sensitivity levels where data must not mix.
-  Test for cross-session and cross-tenant leakage, including under concurrency and cache reuse.
-  References: OWASP GenAI Data Security 2026 DSGAI11 (Cross-Context Conversation Bleed), DSGAI15
-  (Over-Broad Context Windows); MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API);
-  MAESTRO layers 2 and 6; CWE-488, CWE-200, CWE-285; NIST SP 800-53 AC-3, AC-4, SC-4 (mappings via
-  the OWASP GenAI Security Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Are sessions, caches, memory, and retrieval partitioned per tenant and sensitivity level, with each request's context built from only what the requesting user is authorized to see?"
+  sensitivity level, keyed to the authenticated user, rather than using a shared store filtered
+  after the fact. Additionally, assemble each request's context from only the documents and history
+  that the requesting user is authorized for, applying authorization at retrieval time rather than
+  relying on the model to withhold content. Keep context windows to the minimum the task needs.
+  Furthermore, run separate model instances or deployments for materially different sensitivity
+  levels where data must not mix. Finally, test for cross-session and cross-tenant leakage,
+  including under concurrency and cache reuse. References include OWASP GenAI Data Security 2026
+  DSGAI11 (Cross-Context Conversation Bleed) and DSGAI15 (Over-Broad Context Windows), MITRE ATLAS
+  AML.T0024 (Exfiltration via AI Inference API), MAESTRO layers 2 and 6, CWE-488, CWE-200, and
+  CWE-285, and NIST SP 800-53 AC-3, AC-4, and SC-4, with the mappings taken from the OWASP GenAI
+  Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Are sessions, caches, memory, and retrieval partitioned per tenant and per sensitivity level, with each request''s context built from only what the requesting user is authorized to see?'
 detection_logic: >
-  Review how sessions, caches, memory, and retrieval indexes are keyed and partitioned. Run
-  cross-tenant and cross-session leakage tests, including concurrent sessions and cache reuse,
-  and try to retrieve another user's or a higher sensitivity level's content.
+  Review how sessions, caches, memory, and retrieval indexes are keyed and partitioned. Then, run
+  cross-tenant and cross-session leakage tests, including concurrent sessions and cache reuse, and
+  try to retrieve another user's content or content at a higher sensitivity level.
 risk_assessment: >
-  High when the asset mixes tenants or sensitivity levels that include confidential-or-higher data
-  without per-tenant, per-level isolation. Medium otherwise.
+  High when the asset mixes tenants or sensitivity levels that include confidential-or-higher data,
+  without per-tenant, per-level isolation. Otherwise, the finding is Medium.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that is
-  multi_tenant, or whose context mixes sensitivity levels: among the data it stores, the data
-  callers send into it, and the data it retrieves through outgoing links, at least one data asset
-  is rated restricted or higher and another is rated lower. Data the asset only sends out (for
-  example telemetry) does not count -- Threagile adds every sent data asset to the sender's
-  processed list, so data_assets_processed is not used. Dispose of a confirmed-compliant asset
-  through risk_tracking: log it as mitigated once per-tenant, per-sensitivity-level isolation of
-  sessions, caches, memory, and retrieval is confirmed.
+  This rule fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that is
+  multi_tenant, or whose context mixes sensitivity levels. Specifically, it fires when, among the
+  data the asset stores, the data callers send into it, and the data it retrieves through outgoing
+  links, at least one data asset is rated restricted or higher and another is rated lower. Data that
+  the asset only sends out (for example, telemetry) does not count, because Threagile adds every
+  sent data asset to the sender's processed list, so the rule does not use data_assets_processed.
+  Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  per-tenant, per-sensitivity-level isolation of sessions, caches, memory, and retrieval is
+  confirmed.
 
 risk:
   id:

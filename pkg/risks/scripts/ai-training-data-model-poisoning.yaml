@@ -5,52 +5,54 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 345
 description: >
-  Whatever shapes a model during training decides how it behaves afterwards: training and
-  fine-tuning data, curated features, training configuration and hyperparameters, and the
-  evaluation data and scoring that gate promotion. Anyone who can write to those -- an outside
-  data source, a compromised account, an insider -- can plant a backdoor, bias the model, or
-  quietly degrade it, and a poisoned evaluation lets the result through.
+  Whatever shapes a model during training decides how it behaves afterwards, namely the training and
+  fine-tuning data, curated features, training configuration and hyperparameters, and the evaluation
+  data and scoring that gate promotion. Thus, anyone who can write to those, whether an outside data
+  source, a compromised account, or an insider, can plant a backdoor, bias the model, or quietly
+  degrade it. Furthermore, a poisoned evaluation lets the result through.
 impact: >
   If this risk remains unmitigated, a model can ship with a backdoor or bias that passes its own
-  evaluation and persists until the model is retrained from clean inputs, steering every
-  decision it makes in production.
+  evaluation, and that persists until the model is retrained from clean inputs. As a result, it
+  steers every decision the model makes in production.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Control and verify everything that feeds training and evaluation -- data, features, configuration, and scoring -- and diff each training run against an approved baseline."
+action: 'Control and verify everything that feeds training and evaluation, namely the data, features, configuration, and scoring, and compare each training run against an approved baseline.'
 mitigation: >
-  Restrict write access to training and evaluation data, feature stores, and training
-  configuration to named identities, and record provenance for every dataset and feature
-  (source, version, hash). Validate and filter incoming training data for anomalies and known
-  poisoning patterns, and quarantine data from outside sources until reviewed. Version training
-  configuration and hyperparameters and diff every run against the approved baseline before its
-  output is used. Keep evaluation data and scoring code separate from training, access-controlled,
-  and versioned, and add held-out canary tests for backdoor triggers. Keep lineage from each
-  model back to its exact inputs so a poisoned model can be traced and rebuilt. References:
-  OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning); OWASP GenAI Data Security 2026 DSGAI04
-  (Data, Model and Artifact Poisoning), DSGAI05 (Data Integrity and Validation Failures), DSGAI21
-  (Disinformation via Data Poisoning); MITRE ATLAS AML.T0020 (Poison Training Data), AML.T0018.000
-  (Poison AI Model), AML.T0043.004 (Insert Backdoor Trigger); MAESTRO layers 1, 2 and 5; CWE-345, CWE-346, CWE-20; NIST SP
-  800-53 SI-7, SR-3, CM-3 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
-  https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is write access to training and evaluation data, features, and configuration restricted and logged, with provenance recorded, outside data quarantined, every run diffed against an approved baseline, and evaluation kept separate from training?"
+  Restrict write access to training and evaluation data, feature stores, and training configuration
+  to named identities, and record the provenance (source, version, and hash) of every dataset and
+  feature. Additionally, validate and filter incoming training data for anomalies and known
+  poisoning patterns, and quarantine data from outside sources until it is reviewed. Version the
+  training configuration and hyperparameters, and compare every run against the approved baseline
+  before its output is used. Furthermore, keep evaluation data and scoring code separate from
+  training, access-controlled, and versioned, and add held-out canary tests for backdoor triggers.
+  Finally, keep lineage from each model back to its exact inputs, so that a poisoned model can be
+  traced and rebuilt. References include the OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning),
+  OWASP GenAI Data Security 2026 DSGAI04 (Data, Model and Artifact Poisoning), DSGAI05 (Data
+  Integrity and Validation Failures), and DSGAI21 (Disinformation via Data Poisoning), MITRE ATLAS
+  AML.T0020 (Poison Training Data), AML.T0018.000 (Poison AI Model), and AML.T0043.004 (Insert
+  Backdoor Trigger), MAESTRO layers 1, 2, and 5, CWE-345, CWE-346, and CWE-20, and NIST SP 800-53
+  SI-7, SR-3, and CM-3, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is write access to training and evaluation data, features, and configuration restricted and logged, with provenance recorded, outside data quarantined, every run compared against an approved baseline, and evaluation kept separate from training?'
 detection_logic: >
-  Review who can write to training data, feature stores, training configuration, and evaluation
-  assets. Confirm provenance records and run-to-baseline diffs exist for recent training runs.
-  Test evaluation for backdoor canaries, and look for training inputs with no recorded source.
+  Review who can write to the training data, feature stores, training configuration, and evaluation
+  assets. Then, confirm that provenance records and baseline comparisons exist for recent training
+  runs. Finally, test the evaluation for backdoor canaries, and look for training inputs that have
+  no recorded source.
 risk_assessment: >
-  High for a model gating important decisions whose training or evaluation inputs accept writes
-  from outside its trust boundary without provenance and validation. Medium for curated internal
-  inputs.
+  High for a model that gates important decisions, whose training or evaluation inputs accept writes
+  from outside its trust boundary without provenance and validation. However, the finding is Medium
+  for curated internal inputs.
 false_positives: >
-  Fires on every in-scope ai-training-pipeline, ai-dataset-store, ai-feature-store, and ai-eval-
-  pipeline asset, because insider or compromised-account poisoning needs nothing the model
-  records. Likelihood steps up one level when an outside caller writes into the asset through an
-  incoming link that is not readonly (an outside caller is an external entity, an internet-facing
-  or out-of-scope asset, or a frontend (web application, reverse proxy, WAF, load balancer,
-  client) in a different network boundary; execution-environment boundaries are looked through to
-  the enclosing network boundary, as in Threagile's own rules). Dispose of a confirmed-compliant
-  asset through risk_tracking: log it as mitigated once restricted write access, provenance,
-  validation, baseline diffing, and a separate evaluation are confirmed.
+  This rule fires on every in-scope ai-training-pipeline, ai-dataset-store, ai-feature-store, and
+  ai-eval-pipeline asset, because poisoning by an insider or a compromised account needs nothing
+  that the model records. However, likelihood steps up one level when an outside caller writes into
+  the asset through an incoming link that is not readonly. An outside caller is an external entity,
+  an internet-facing or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF,
+  load balancer, or client) in a different network boundary, and as in Threagile's own rules,
+  execution-environment boundaries are looked through to the enclosing network boundary. Dispose of
+  a confirmed-compliant asset through risk_tracking, logging it as mitigated once restricted write
+  access, provenance, validation, baseline comparison, and a separate evaluation are confirmed.
 
 risk:
   id:

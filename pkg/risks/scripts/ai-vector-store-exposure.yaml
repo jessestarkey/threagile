@@ -5,44 +5,46 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 200
 description: >
-  A vector store holds embeddings of source content, and embeddings are not anonymous: the
-  original text can be largely reconstructed from them (embedding inversion), and similarity
-  queries can surface or confirm records the querier should never see. The store is
-  unencrypted, shared across tenants, or holds embeddings of confidential-or-higher data, so a
-  leaked dump or over-broad query access exposes the underlying content.
+  A vector store holds embeddings of source content, but embeddings are not anonymous. The original
+  text can be largely reconstructed from them (embedding inversion), and similarity queries can
+  surface or confirm records that the querier should never see. This store is unencrypted, shared
+  across tenants, or holds embeddings of confidential-or-higher data, so a leaked dump or over-broad
+  query access exposes the underlying content.
 impact: >
-  If this risk remains unmitigated, an attacker with query access or a copy of the index can
-  recover sensitive source content, or another tenant's records, that was never directly
-  retrievable as plaintext.
+  If this risk remains unmitigated, an attacker with query access, or with a copy of the index, can
+  recover sensitive source content, or another tenant's records, that was never directly retrievable
+  as plaintext.
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Treat embeddings as the data they encode: encrypt the store, partition it per tenant and sensitivity level, and enforce authorization on every similarity query."
+action: 'Treat embeddings as the data they encode. Specifically, encrypt the store, partition it per tenant and per sensitivity level, and enforce authorization on every similarity query.'
 mitigation: >
-  Protect the vector store to the classification of the source content it embeds -- never lower
-  because the data is "just vectors". Encrypt it at rest with keys held outside the store.
-  Partition indexes per tenant and per sensitivity level rather than filtering a shared index by
-  metadata, and enforce the requesting user's authorization on every similarity query. Restrict
-  and log bulk export and raw-vector reads, and alert on enumeration-style query patterns. Where
-  inversion risk is high, avoid embedding the most sensitive fields at all. References: OWASP
-  LLM Top 10 2026 LLM09 (Vector and Embedding Weaknesses); OWASP GenAI Data Security 2026
-  DSGAI13 (Vector Store Platform Security); MITRE ATLAS AML.T0025 (Exfiltration via Cyber
-  Means), AML.T0024 (Exfiltration via AI Inference API); MAESTRO layers 2, 4 and 6; CWE-200,
-  CWE-284, CWE-327; NIST SP 800-53 AC-3, SC-28, AU-2 (mappings via the OWASP GenAI Security
-  Crosswalk 2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is the vector store encrypted at rest, partitioned per tenant and sensitivity level, protected to the classification of its source content, and enforcing per-user authorization on every query?"
+  Protect the vector store to the classification of the source content it embeds, never lower
+  because the data is "just vectors". Additionally, encrypt it at rest with keys held outside the
+  store. Partition the indexes per tenant and per sensitivity level, rather than filtering a shared
+  index by metadata, and enforce the requesting user's authorization on every similarity query.
+  Furthermore, restrict and log bulk export and raw-vector reads, and alert on enumeration-style
+  query patterns. Finally, where the inversion risk is high, avoid embedding the most sensitive
+  fields at all. References include the OWASP LLM Top 10 2026 LLM09 (Vector and Embedding
+  Weaknesses), OWASP GenAI Data Security 2026 DSGAI13 (Vector Store Platform Security), MITRE ATLAS
+  AML.T0025 (Exfiltration via Cyber Means) and AML.T0024 (Exfiltration via AI Inference API),
+  MAESTRO layers 2, 4, and 6, CWE-200, CWE-284, and CWE-327, and NIST SP 800-53 AC-3, SC-28, and
+  AU-2, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is the vector store encrypted at rest, partitioned per tenant and per sensitivity level, protected to the classification of its source content, and enforcing per-user authorization on every query?'
 detection_logic: >
-  Review the store's encryption, index partitioning, and query authorization. Attempt
-  cross-tenant and above-clearance similarity queries. Check that bulk export and raw-vector
-  reads are restricted and logged.
+  Review the store's encryption, index partitioning, and query authorization. Then, attempt
+  cross-tenant and above-clearance similarity queries. Finally, check that bulk export and
+  raw-vector reads are restricted and logged.
 risk_assessment: >
-  High for an unencrypted or multi-tenant store holding embeddings of confidential-or-higher
-  data. Medium otherwise.
+  High for an unencrypted or multi-tenant store that holds embeddings of confidential-or-higher
+  data. Otherwise, the finding is Medium.
 false_positives: >
-  Fires on an in-scope ai-vector-store asset that has no encryption at rest (encryption: none),
-  is multi_tenant, or stores or processes a data asset rated confidential or higher. An
-  encrypted, single-tenant store of lower-sensitivity data does not fire. Dispose of a
-  confirmed-compliant asset through risk_tracking: log it as mitigated once encryption,
-  per-tenant partitioning, and per-query authorization are confirmed.
+  This rule fires on an in-scope ai-vector-store asset that meets any of three conditions: (1) it
+  has no encryption at rest (encryption: none), (2) it is multi_tenant, or (3) it stores or
+  processes a data asset rated confidential or higher. Thus, an encrypted, single-tenant store of
+  lower-sensitivity data does not fire. Dispose of a confirmed-compliant asset through
+  risk_tracking, logging it as mitigated once encryption, per-tenant partitioning, and per-query
+  authorization are confirmed.
 
 risk:
   id:

@@ -5,56 +5,59 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 693
 description: >
-  What this AI asset does in production is set by artifacts that change outside normal code
-  review -- system prompts and other hidden instructions, model versions and fine-tuned adapters,
-  agent skill and tool definitions -- and its behaviour can drift or be subverted at runtime
+  What this AI asset does in production is set by artifacts that change outside normal code review,
+  namely system prompts and other hidden instructions, model versions and fine-tuned adapters, and
+  agent skill and tool definitions. Additionally, its behavior can drift or be subverted at runtime
   through goal hijack, poisoning, or compromise. Without change control (versioned, reviewed,
-  canary-tested changes with a tested rollback), behavioural monitoring, and a kill switch, a
-  silent or malicious change ships unnoticed and a rogue agent or model keeps acting until a full
+  canary-tested changes with a tested rollback), behavioral monitoring, and a kill switch, a silent
+  or malicious change ships unnoticed, and a rogue agent or model keeps acting until a full
   redeployment.
 impact: >
   If this risk remains unmitigated, an unreviewed prompt edit, a swapped or drifted model, an
-  updated skill, or a hijacked agent can widen what the AI does or remove a safety constraint with
-  no runtime signal, and keep calling tools, changing data, or answering users for a full
-  redeployment cycle.
+  updated skill, or a hijacked agent can widen what the AI does, or remove a safety constraint, with
+  no runtime signal. Furthermore, it can keep calling tools, changing data, or answering users for a
+  full redeployment cycle.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Version, review, and canary-test every prompt, model, and skill change with a tested rollback; monitor the asset's behaviour against its intended scope; and provide a tested kill switch."
+action: 'Version, review, and canary-test every prompt, model, and skill change with a tested rollback. Additionally, monitor the asset''s behavior against its intended scope, and provide a tested kill switch.'
 mitigation: >
-  Change control: store system prompts, model and adapter versions, and agent skill/tool
-  definitions as versioned artifacts with the same review as application code, and pin what
-  production loads to a reviewed version -- no auto-updating skills or floating model tags. Keep
-  explicit separation between system instructions and user or tool content in every prompt
-  version. Run a versioned suite of known-answer canary prompts (including ones that confirm
-  guardrails are active) before promotion and on a schedule against production, and alert on
-  deviation. Keep the previous validated version ready to serve and test the rollback.
-  Containment: send the asset's actions, tool calls, and outputs to an AI-aware observability
-  stack and alert on behaviour outside its declared scope. Provide a kill switch independent of
-  the deployment pipeline, with automated and manual triggers and a defined safe mode, that also
-  revokes the asset's credentials; drill it and record the time to halt. References: OWASP Agentic
-  Skills Top 10 2026 AST07 (Update Drift); OWASP Top 10 for Agentic Applications 2026 ASI10 (Rogue
-  Agents); OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning, fine-tuning subversion) and LLM08
-  (Hidden Context Exposure); MITRE ATLAS AML.T0053, AML.T0054; MAESTRO layers 1, 4, 5 and 6;
-  CWE-693, CWE-284; NIST SP 800-53 CM-3, SI-4, SI-6, IR-4, CP-10; NIST AI RMF GOVERN 1.5, MEASURE
-  2.4, MANAGE 2.4, MANAGE 4.1 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
-  https://github.com/GenAI-Security-Project/crosswalk).
-check: "Are prompts, models, and skills version-controlled, reviewed, pinned, canary-gated, and rollback-tested; is the asset's behaviour monitored against its intended scope; and is there a tested, independent kill switch?"
+  The mitigation has two parts. The first is change control. Store system prompts, model and adapter
+  versions, and agent skill and tool definitions as versioned artifacts with the same review as
+  application code, and pin what production loads to a reviewed version, with no auto-updating
+  skills or floating model tags. Keep explicit separation between system instructions and user or
+  tool content in every prompt version. Additionally, run a versioned suite of known-answer canary
+  prompts, including ones that confirm the guardrails are active, before promotion and on a schedule
+  against production, and alert on any deviation. Keep the previous validated version ready to
+  serve, and test the rollback. The second part is containment. Send the asset's actions, tool
+  calls, and outputs to an AI-aware observability stack, and alert on behavior outside its declared
+  scope. Furthermore, provide a kill switch that is independent of the deployment pipeline, with
+  automated and manual triggers and a defined safe mode, and that also revokes the asset's
+  credentials. Drill the kill switch, and record the time to halt. References include the OWASP
+  Agentic Skills Top 10 2026 AST07 (Update Drift), the OWASP Top 10 for Agentic Applications 2026
+  ASI10 (Rogue Agents), the OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning, covering
+  fine-tuning subversion) and LLM08 (Hidden Context Exposure), MITRE ATLAS AML.T0053 and AML.T0054,
+  MAESTRO layers 1, 4, 5, and 6, CWE-693 and CWE-284, NIST SP 800-53 CM-3, SI-4, SI-6, IR-4, and
+  CP-10, and NIST AI RMF GOVERN 1.5, MEASURE 2.4, MANAGE 2.4, and MANAGE 4.1, with the mappings
+  taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Are prompts, models, and skills version-controlled, reviewed, pinned, canary-gated, and rollback-tested, is the asset''s behavior monitored against its intended scope, and is there a tested, independent kill switch?'
 detection_logic: >
-  Trace the production prompt, model, and skill versions back to approved reviews, and review
-  canary run history and a rollback drill record. Confirm the asset's actions reach an AI-aware
-  monitoring stack with out-of-scope alerting, and request evidence of a kill-switch drill with a
-  recorded time to halt.
+  Trace the production prompt, model, and skill versions back to approved reviews, and review the
+  canary run history and a rollback drill record. Then, confirm that the asset's actions reach an
+  AI-aware monitoring stack with out-of-scope alerting. Finally, request evidence of a kill-switch
+  drill with a recorded time to halt.
 risk_assessment: >
-  High for a production agent with write-capable tools, or a model serving consequential output,
-  whose prompts, models, or skills can change without review, canary testing, or rollback, and
-  that has neither behavioural monitoring nor an independent kill switch.
+  High for a production agent with write-capable tools, or a model that serves consequential output,
+  whose prompts, models, or skills can change without review, canary testing, or rollback, and that
+  has neither behavioral monitoring nor an independent kill switch.
 false_positives: >
-  Fires on every in-scope asset with the ai-llm-endpoint, ai-model-serving, ai-rag-pipeline, or
-  ai-agent-orchestrator technology, because change control and kill switches are not something the
-  model can record. Likelihood steps down one level when the asset has an outgoing link to an
-  ai-observability-stack asset (its behaviour is monitored). Dispose of a confirmed-compliant
-  asset through risk_tracking: log it as mitigated once change control with canary gating and
-  tested rollback, behavioural monitoring, and a tested independent kill switch are confirmed.
+  This rule fires on every in-scope asset with the ai-llm-endpoint, ai-model-serving,
+  ai-rag-pipeline, or ai-agent-orchestrator technology, because change control and kill switches are
+  not something the model can record. However, likelihood steps down one level when the asset has an
+  outgoing link to an ai-observability-stack asset, since its behavior is then monitored. Dispose of
+  a confirmed-compliant asset through risk_tracking, logging it as mitigated once change control
+  with canary gating and a tested rollback, behavioral monitoring, and a tested independent kill
+  switch are confirmed.
 
 risk:
   id:

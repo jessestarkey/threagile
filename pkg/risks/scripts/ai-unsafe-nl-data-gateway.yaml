@@ -6,49 +6,51 @@ finding_class: weakness-shown
 cwe: 89
 description: >
   An AI asset connects directly to a datastore and turns natural-language requests into queries
-  against it (NL-to-SQL, NL-to-search, or an agent tool that queries data). The model, not the
-  application, now decides what is asked of the database -- so a prompt injection, a crafted
-  question, or a plain misreading can produce queries that return far more than the user may see,
-  sidestep row- and field-level access rules, or carry injected SQL into the database.
+  against it (NL-to-SQL, NL-to-search, or an agent tool that queries data). As a result, the model
+  rather than the application decides what is asked of the database. Thus, a prompt injection, a
+  crafted question, or a plain misreading can produce queries that return far more than the user may
+  see, sidestep row- and field-level access rules, or carry injected SQL into the database.
 impact: >
-  If this risk remains unmitigated, users and anyone who can steer the model can read data they
-  are not authorized for -- often the whole table or database the model's connection can reach --
-  and, where the connection allows it, change or delete data.
+  If this risk remains unmitigated, users, and anyone who can steer the model, can read data they
+  are not authorized for, often the whole table or database that the model's connection can reach.
+  Furthermore, where the connection allows it, they can change or delete data.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
-action: "Run every model-generated query under the requesting user's own permissions through a constrained, parameterized query layer, never a broad service connection."
+action: 'Run every model-generated query under the requesting user''s own permissions, through a constrained, parameterized query layer rather than a broad service connection.'
 mitigation: >
-  Connect the AI asset to data through a query layer, not a raw database connection: expose only
-  approved, parameterized queries or views, and let the model choose among them and fill
-  parameters rather than writing free-form SQL. Execute every query under the requesting user's
-  identity so database row- and field-level security applies, and give the AI's own connection
-  read-only access to the minimum views needed. Validate generated queries against an allow-list
-  of tables, columns, and operations before running them; cap result sizes; and block DDL, DML,
-  and multi-statement queries unless explicitly required. Log every generated query with the
-  user and prompt that produced it. References: OWASP GenAI Data Security 2026 DSGAI12 (Unsafe
-  Natural Language Data Gateways); MITRE ATLAS AML.T0049, AML.T0036 (Data from Information
-  Repositories), AML.T0024; MAESTRO layers 2, 3 and 6; CWE-89, CWE-20, CWE-284; NIST SP 800-53
-  AC-3, AC-6, AU-2 (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
-  https://github.com/GenAI-Security-Project/crosswalk).
-check: "Does the AI asset reach data only through a parameterized, allow-listed query layer that executes under the requesting user's identity, with a read-only minimum-scope connection, result caps, and query logging?"
+  Connect the AI asset to data through a query layer rather than a raw database connection.
+  Specifically, expose only approved, parameterized queries or views, and let the model choose among
+  them and fill in parameters, rather than writing free-form SQL. Additionally, execute every query
+  under the requesting user's identity, so that the database's row- and field-level security
+  applies, and give the AI's own connection read-only access to the minimum views it needs. Validate
+  generated queries against an allow-list of tables, columns, and operations before running them,
+  cap the result sizes, and block DDL, DML, and multi-statement queries unless they are explicitly
+  required. Finally, log every generated query with the user and prompt that produced it. References
+  include OWASP GenAI Data Security 2026 DSGAI12 (Unsafe Natural Language Data Gateways), MITRE
+  ATLAS AML.T0049, AML.T0036 (Data from Information Repositories), and AML.T0024, MAESTRO layers 2,
+  3, and 6, CWE-89, CWE-20, and CWE-284, and NIST SP 800-53 AC-3, AC-6, and AU-2, with the mappings
+  taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Does the AI asset reach data only through a parameterized, allow-listed query layer that executes under the requesting user''s identity, with a read-only, minimum-scope connection, result caps, and query logging?'
 detection_logic: >
-  Review how the AI asset connects to each datastore and which identity its queries run under.
-  From a low-privilege user, ask for data outside that user's access and try SQL-injection and
-  prompt-injection payloads through the natural-language interface. Review generated-query logs.
+  Review how the AI asset connects to each datastore, and which identity its queries run under.
+  Then, as a low-privilege user, ask for data outside that user's access, and try SQL-injection and
+  prompt-injection payloads through the natural-language interface. Finally, review the
+  generated-query logs.
 risk_assessment: >
-  Critical when the model writes free-form queries over a broad service connection to a
-  datastore holding confidential-or-higher data. High otherwise.
+  Critical when the model writes free-form queries over a broad service connection to a datastore
+  that holds confidential-or-higher data. Otherwise, the finding is High.
 false_positives: >
-  Fires on an in-scope ai-agent-orchestrator, ai-tool-server, ai-llm-endpoint, or ai-rag-pipeline
-  -- the assets that turn requests into queries -- with an outgoing communication link to a
-  datastore-type asset, read-only or not. Vector stores are excluded (ai-vector-store-exposure
-  covers them), and so are training, ingest, and observability pipelines, which do not compose
-  natural-language queries. On a tool server that queries a database with SQL, Threagile's built-
-  in sql-nosql-injection rule can also fire: that rule covers injection through the tool's own
-  input handling, this one the model composing the query and bypassing per-user authorization.
-  Dispose of a confirmed-compliant asset through risk_tracking: log it as mitigated once a
-  parameterized, allow-listed query layer running under the requesting user's identity is
-  confirmed.
+  This rule fires on an in-scope ai-agent-orchestrator, ai-tool-server, ai-llm-endpoint, or
+  ai-rag-pipeline, namely the assets that turn requests into queries, that has an outgoing
+  communication link to a datastore-type asset, whether read-only or not. Vector stores are
+  excluded, since ai-vector-store-exposure covers them. Similarly, training, ingest, and
+  observability pipelines are excluded, since they do not compose natural-language queries. On a
+  tool server that queries a database with SQL, Threagile's built-in sql-nosql-injection rule can
+  also fire. However, that rule covers injection through the tool's own input handling, whereas this
+  one covers the model composing the query and bypassing per-user authorization. Dispose of a
+  confirmed-compliant asset through risk_tracking, logging it as mitigated once a parameterized,
+  allow-listed query layer that runs under the requesting user's identity is confirmed.
 
 risk:
   id:

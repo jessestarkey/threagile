@@ -6,35 +6,35 @@ finding_class: control-not-evidenced
 cwe: 427
 description: >
   This build pipeline's dependency resolver may fall back to a public package index when a package
-  is not found in the internal feed, unless internally-named packages are restricted to that
-  feed.
+  is not found in the internal feed, unless internally named packages are restricted to that feed.
 impact: >
-  If this risk remains unmitigated, an attacker who publishes a higher-versioned package under
-  the internal name on the public index causes the build to pull and execute their code instead.
+  If this risk remains unmitigated, an attacker who publishes a higher-versioned package under the
+  internal name on the public index causes the build to pull and execute the attacker's code
+  instead.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
-action: "Configure the dependency resolver to treat the internal package namespace as authoritative, refusing fallback to a public index for internally-named packages."
+action: 'Configure the dependency resolver to treat the internal package namespace as authoritative, refusing to fall back to a public index for internally named packages.'
 mitigation: >
-  Configure the package manager's scoped registry / upstream source settings so internally-named
-  packages resolve only from the internal feed, with no fallback to a public index for that
-  namespace (npm scoped packages, a private PyPI index with --index-url pinned rather than
-  --extra-index-url, NuGet package source mapping, or equivalent). Where a dependency proxy/
-  artifact repository manager is used, configure it to reserve the internal namespace and block
-  public-index publication under names matching it. References: NIST SP 800-53 SR-4 (Provenance);
-  NIST SP 800-218 (Secure Software Development Framework, PW.4); OWASP Dependency Confusion
-  guidance.
-check: "Does the dependency resolver's configuration restrict internally-named packages to the internal feed with no public-index fallback?"
+  Configure the package manager's scoped registry or upstream source settings, so that internally
+  named packages resolve only from the internal feed, with no fallback to a public index for that
+  namespace. Examples include npm scoped packages, a private PyPI index pinned with --index-url
+  rather than --extra-index-url, and NuGet package source mapping. Additionally, where a dependency
+  proxy or artifact repository manager is used, configure it to reserve the internal namespace and
+  to block public-index publication under names that match it. References include NIST SP 800-53
+  SR-4 (Provenance), NIST SP 800-218 (Secure Software Development Framework, PW.4), and the OWASP
+  Dependency Confusion guidance.
+check: 'Does the dependency resolver''s configuration restrict internally named packages to the internal feed, with no public-index fallback?'
 detection_logic: >
-  Audit the package manager's scoped registry / upstream source configuration for any
-  internally-named package namespace, confirming no fallback to a public index is configured.
+  Audit the package manager's scoped registry or upstream source configuration for every internally
+  named package namespace, and confirm that no fallback to a public index is configured.
 risk_assessment: >
-  Critical for any build pipeline resolving internally-named packages through a resolver
-  configuration that permits public-index fallback.
+  Critical for any build pipeline that resolves internally named packages through a resolver
+  configuration that permits a public-index fallback.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope build-pipeline asset,
-  by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once the resolver is confirmed to restrict internally-named packages to the internal
-  feed with no public-index fallback.
+  This rule fires on every in-scope build pipeline asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once the resolver is confirmed to restrict internally named packages to the internal feed, with no
+  public-index fallback.
 
 risk:
   id:

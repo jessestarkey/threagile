@@ -5,35 +5,36 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 1008
 description: >
-  The workload lacks an explicit, default-deny network policy, allowing unrestricted East-West
-  traffic within the cluster.
+  The workload lacks an explicit, default-deny network policy. As a result, it allows unrestricted
+  east-west traffic within the cluster.
 impact: >
-  If this risk remains unmitigated, compromise of a single pod gives an attacker unrestricted
+  If this risk remains unmitigated, the compromise of a single pod gives an attacker unrestricted
   network reach to every other workload in the cluster.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html"
-action: "Implement strict K8s NetworkPolicies."
+action: 'Implement strict Kubernetes NetworkPolicies.'
 mitigation: >
-  Apply a default-deny NetworkPolicy to the namespace first, then add explicit allow rules scoped
-  to only the specific source/destination pods and ports the workload genuinely requires
-  (label-selector based, not namespace-wide allows). Enforce this via policy-as-code rather than
-  relying on manual application per namespace. References: NIST SP 800-53 SC-7 (Boundary
-  Protection); NIST SP 800-207 (Zero Trust Architecture); CIS Kubernetes Benchmark.
-check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+  Apply a default-deny NetworkPolicy to the namespace first. Then, add explicit allow rules scoped
+  to only the specific source and destination pods and ports that the workload genuinely requires,
+  using label selectors rather than namespace-wide allows. Finally, enforce this through
+  policy-as-code, rather than relying on manual application to each namespace. References include
+  NIST SP 800-53 SC-7 (Boundary Protection), NIST SP 800-207 (Zero Trust Architecture), and the CIS
+  Kubernetes Benchmark.
+check: 'Does a default-deny NetworkPolicy govern this workload''s namespace, with explicit allow rules limited to the pods and ports the workload requires, enforced through policy-as-code?'
 detection_logic: >
-  Run kubectl get networkpolicy --all-namespaces and flag any namespace with zero NetworkPolicy
-  objects, or one that lacks a default-deny baseline. Cross-reference against the cluster's
-  policy-as-code bundle for a cluster-wide enforcement policy.
+  Run kubectl get networkpolicy --all-namespaces, and flag any namespace that has no NetworkPolicy
+  objects, or that lacks a default-deny baseline. Then, cross-reference the result against the
+  cluster's policy-as-code bundle for a cluster-wide enforcement policy.
 risk_assessment: >
-  Medium in isolation, but compounds sharply with any single-pod compromise elsewhere in the
-  cluster -- the absence of segmentation is what turns one compromised pod into unrestricted
-  reach across every other workload sharing the cluster.
+  Medium in isolation. However, it compounds sharply with any single-pod compromise elsewhere in the
+  cluster, since the absence of segmentation is what turns one compromised pod into unrestricted
+  reach across every other workload that shares the cluster.
 false_positives: >
-  Fires on every in-scope container unless it sits in a network-policy-namespace-isolation trust
-  boundary (directly or nested), which is the model showing a namespace-level default-deny
-  policy. Model namespace isolation that way rather than disposing of each container; otherwise
-  log a confirmed-compliant asset as mitigated through risk_tracking once a default-deny
-  NetworkPolicy is confirmed enforced for its namespace.
+  This rule fires on every in-scope container, unless it sits (directly or nested) in a
+  network-policy-namespace-isolation trust boundary, which is how the model shows a namespace-level
+  default-deny policy. Thus, model namespace isolation that way, rather than disposing of each
+  container separately. Otherwise, log a confirmed-compliant asset as mitigated through
+  risk_tracking once a default-deny NetworkPolicy is confirmed to be enforced for its namespace.
 
 risk:
   id:

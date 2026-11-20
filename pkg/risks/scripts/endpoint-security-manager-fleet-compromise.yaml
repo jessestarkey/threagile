@@ -5,39 +5,39 @@ stride: elevation-of-privilege
 finding_class: control-not-evidenced
 cwe: 269
 description: >
-  A centralized endpoint security/EDR management console pushes policy, signature updates,
-  and remediation code to every endpoint it manages, which means compromising the console
-  itself is equivalent to obtaining code execution on the entire managed fleet at once.
+  A centralized endpoint security or EDR management console pushes policy, signature updates, and
+  remediation code to every endpoint it manages. Thus, compromising the console itself is equivalent
+  to obtaining code execution on the entire managed fleet at once.
 impact: >
-  If this risk remains unmitigated, an attacker who compromises the console can push a
-  malicious policy or "remediation" action to every managed endpoint simultaneously, turning
-  the organization's own defensive tooling into the fastest path to total fleet compromise.
+  If this risk remains unmitigated, an attacker who compromises the console can push a malicious
+  policy or "remediation" action to every managed endpoint simultaneously. As a result, the
+  organization's own defensive tooling becomes the fastest path to a total compromise of the fleet.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
-action: "Require MFA and administrative tiering for console access, and verify the integrity of policy/signature content before it is pushed fleet-wide."
+action: 'Require MFA and administrative tiering for console access, and verify the integrity of policy and signature content before it is pushed to the fleet.'
 mitigation: >
-  Require multi-factor authentication and a dedicated, tiered administrative account (never a
-  general-purpose domain admin credential) for access to the endpoint security console.
-  Verify the integrity of policy, signature, and remediation-action content before it is
-  pushed fleet-wide -- a code-signing or change-approval step distinct from the console's own
-  built-in distribution mechanism. Monitor for policy pushes or remediation actions
-  originating outside documented change windows or approved administrative sessions, since the
-  console's own normal operation is indistinguishable from an attacker using it exactly as
-  designed. References: NIST SP 800-53 AC-6 (Least Privilege); NIST SP 800-53 CM-5 (Access
-  Restrictions for Change); DoD Endpoint Security Solutions (ESS) implementation guidance.
-check: "Does console access require MFA and a dedicated tiered administrative account, is pushed policy/signature/remediation content integrity-verified before distribution, and are pushes outside documented change windows monitored?"
+  Require multi-factor authentication and a dedicated, tiered administrative account, never a
+  general-purpose domain admin credential, for access to the endpoint security console.
+  Additionally, verify the integrity of policy, signature, and remediation-action content before it
+  is pushed to the fleet, through a code-signing or change-approval step that is distinct from the
+  console's own built-in distribution mechanism. Finally, monitor for policy pushes or remediation
+  actions that originate outside documented change windows or approved administrative sessions,
+  since the console's normal operation is indistinguishable from an attacker using it exactly as
+  designed. References include NIST SP 800-53 AC-6 (Least Privilege) and CM-5 (Access Restrictions
+  for Change), and the DoD Endpoint Security Solutions (ESS) implementation guidance.
+check: 'Does console access require MFA and a dedicated, tiered administrative account, is pushed policy, signature, and remediation content integrity-verified before distribution, and are pushes outside documented change windows monitored?'
 detection_logic: >
-  Audit console authentication configuration for MFA and administrative tiering. Review the
-  content-signing or change-approval process for pushed policy/signature/remediation actions.
-  Monitor for fleet-wide pushes occurring outside documented change windows.
+  Audit the console's authentication configuration for MFA and administrative tiering. Additionally,
+  review the content-signing or change-approval process for pushed policy, signature, and
+  remediation actions. Finally, monitor for fleet-wide pushes that occur outside documented change
+  windows.
 risk_assessment: >
-  Critical for any endpoint security console with no MFA/tiering on administrative access, or
-  no integrity verification on content pushed fleet-wide.
+  Critical for any endpoint security console with no MFA or tiering on administrative access, or
+  with no integrity verification of the content it pushes to the fleet.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope endpoint-
-  security-manager asset, by design). Dispose of a confirmed-compliant asset through
-  risk_tracking instead: log it as mitigated once MFA/tiering and content integrity
-  verification are confirmed.
+  This rule fires on every in-scope endpoint security manager asset by design, so no tag suppresses
+  it. Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once MFA and tiering, and content integrity verification, are confirmed.
 
 risk:
   id:

@@ -5,50 +5,53 @@ stride: tampering
 finding_class: weakness-shown
 cwe: 74
 description: >
-  Model output leaves this AI asset for something that interprets it: a browser or front end
+  Model output leaves this AI asset for something that interprets it, namely a browser or front end
   that renders it, a database query, a shell or code interpreter, a template engine, or another
-  service's API. Output that is steered by prompt injection -- or is simply wrong, including
-  generated code -- is consumed there without the encoding or validation that untrusted input
-  would get, so it acts on the downstream system exactly as attacker input would.
+  service's API. Output that is steered by prompt injection, or that is simply wrong (including
+  generated code), is then consumed without the encoding or validation that untrusted input would
+  get. As a result, it acts on the downstream system exactly as attacker input would.
 impact: >
-  If this risk remains unmitigated, any upstream prompt manipulation turns directly into XSS,
-  SQL or command injection, SSRF, or unauthorized API calls on whatever consumes the output, and
+  If this risk remains unmitigated, any upstream prompt manipulation turns directly into XSS, SQL or
+  command injection, SSRF, or unauthorized API calls on whatever consumes the output. Additionally,
   insecure generated code ships into the systems that run it.
 asvs: "V1 - Encoding and Sanitization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Treat model output as untrusted input at every place it is consumed, with the encoding, validation, or sandboxing that specific sink needs."
+action: 'Treat model output as untrusted input at every place it is consumed, with the encoding, validation, or sandboxing that the specific sink needs.'
 mitigation: >
-  Apply to model output exactly what you would apply to untrusted user input at the same sink:
-  HTML/markdown-escape anything rendered in a browser and block raw HTML, scripts, and
-  auto-loading images or links; use parameterized queries, never string-built SQL from model
-  text; run any model-produced code or commands in a sandbox with no ambient credentials;
-  enable auto-escaping in template engines; and validate output against an allow-listed schema
-  before forwarding it to another API. Review and scan generated code before it is merged or
-  run. Never trust output because it came from your own model -- it is the product of whatever
-  input, including an indirect injection, the model was given. References: OWASP LLM Top 10 2026
-  LLM10 (Improper Output Handling, widened to cover generated code); OWASP GenAI Data Security
-  2026 DSGAI05 (Data Integrity and Validation Failures); MITRE ATLAS AML.T0037, AML.T0040,
-  AML.T0077 (LLM Response Rendering); MAESTRO layers 1, 3 and 4; CWE-74, CWE-79, CWE-89,
-  CWE-78, CWE-94; NIST SP 800-53 SI-10, SI-15 (mappings via the OWASP GenAI Security Crosswalk
-  2026-Q3, https://github.com/GenAI-Security-Project/crosswalk).
-check: "Is context-appropriate encoding, validation, or sandboxing applied at every place this asset's model output is consumed, and is generated code reviewed and scanned before it runs?"
+  Apply to model output exactly what you would apply to untrusted user input at the same sink.
+  Specifically, (1) HTML- or markdown-escape anything rendered in a browser, and block raw HTML,
+  scripts, and auto-loading images or links, (2) use parameterized queries rather than SQL built
+  from model text, (3) run any model-produced code or commands in a sandbox with no ambient
+  credentials, (4) enable auto-escaping in template engines, and (5) validate output against an
+  allow-listed schema before forwarding it to another API. Additionally, review and scan generated
+  code before it is merged or run. Never trust output because it came from your own model, since it
+  is the product of whatever input the model was given, including an indirect injection. References
+  include the OWASP LLM Top 10 2026 LLM10 (Improper Output Handling, widened to cover generated
+  code), OWASP GenAI Data Security 2026 DSGAI05 (Data Integrity and Validation Failures), MITRE
+  ATLAS AML.T0037, AML.T0040, and AML.T0077 (LLM Response Rendering), MAESTRO layers 1, 3, and 4,
+  CWE-74, CWE-79, CWE-89, CWE-78, and CWE-94, and NIST SP 800-53 SI-10 and SI-15, with the mappings
+  taken from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Is context-appropriate encoding, validation, or sandboxing applied at every place this asset''s model output is consumed, and is generated code reviewed and scanned before it runs?'
 detection_logic: >
-  Trace every consumer of this asset's output -- callers that render it and every outgoing link
-  -- and confirm sink-specific encoding, parameterization, sandboxing, or schema validation.
-  Send injection payloads through the model in a test environment and watch each sink.
+  Trace every consumer of this asset's output, namely the callers that render it and every outgoing
+  link, and confirm sink-specific encoding, parameterization, sandboxing, or schema validation.
+  Then, in a test environment, send injection payloads through the model, and watch each sink.
 risk_assessment: >
-  Critical when output reaches an unsandboxed interpreter or a broadly privileged API. High for
-  any sink without sink-specific encoding or validation.
+  Critical when the output reaches an unsandboxed interpreter or a broadly privileged API.
+  Otherwise, the finding is High for any sink without sink-specific encoding or validation.
 false_positives: >
-  Fires on an in-scope ai-llm-endpoint, ai-model-serving, ai-agent-orchestrator, or ai-rag-
-  pipeline whose output is consumed by something: any asset that calls it (the caller receives the
-  response -- for a model this is where the output goes), except monitoring and AI observability
-  assets and agent orchestrators or RAG pipelines (they pass the output on and carry this finding
-  themselves where it finally lands), or any outgoing link to an asset that is not model or operational infrastructure (LLM
-  endpoint, model serving, AI gateway, guardrail, observability, monitoring). An agent calling its
-  own model is the model's consumer, not a sink of the agent's output. Impact comes from the
-  integrity of those consumers. Dispose of a confirmed-compliant asset through risk_tracking: log
-  it as mitigated once every consumer is confirmed to encode, validate, or sandbox the output.
+  This rule fires on an in-scope ai-llm-endpoint, ai-model-serving, ai-agent-orchestrator, or
+  ai-rag-pipeline whose output something consumes. A consumer is any asset that calls it, since the
+  caller receives the response, and for a model that is where the output goes. However, monitoring
+  and AI observability assets do not count, and neither do agent orchestrators or RAG pipelines,
+  since they pass the output on and carry this finding themselves where it finally lands. A consumer
+  is also any outgoing link to an asset that is not model or operational infrastructure (an LLM
+  endpoint, model serving, an AI gateway, a guardrail, observability, or monitoring). Thus, an agent
+  calling its own model is the model's consumer, not a sink of the agent's output. Impact comes from
+  the integrity of those consumers. Dispose of a confirmed-compliant asset through risk_tracking,
+  logging it as mitigated once every consumer is confirmed to encode, validate, or sandbox the
+  output.
 
 risk:
   id:

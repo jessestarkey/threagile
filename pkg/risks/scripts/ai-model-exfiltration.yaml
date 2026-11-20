@@ -5,47 +5,47 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 200
 description: >
-  Model weights, adapters, and the training code and feature engineering that produced them are
-  the system's most portable intellectual property. They sit in a model registry or training
-  pipeline -- often with weaker access control and egress monitoring than the production
-  serving path -- or are fielded on physical hardware an adversary could take custody of.
-  Copying them hands over the model's full capability in one step.
+  Model weights and adapters, along with the training code and feature engineering that produced
+  them, are the system's most portable intellectual property. They sit in a model registry or
+  training pipeline, often with weaker access control and egress monitoring than the production
+  serving path, or they are fielded on physical hardware that an adversary could take custody of.
+  Thus, copying them hands over the model's full capability in one step.
 impact: >
-  If this risk remains unmitigated, an adversary who copies the weights, or the training
-  methodology that produced them, can run, study, fine-tune, or attack the model offline --
-  including searching it for memorized sensitive data -- with no detection or revocation
-  possible afterward.
+  If this risk remains unmitigated, an adversary who copies the weights, or the training methodology
+  that produced them, can run, study, fine-tune, or attack the model offline, including searching it
+  for memorized sensitive data. Furthermore, no detection or revocation is possible afterward.
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
-action: "Restrict and monitor access to model weights and training code as tightly as the most sensitive data they were trained on, and protect fielded models with hardware-backed isolation."
+action: 'Restrict and monitor access to model weights and training code as tightly as the most sensitive data they were trained on, and protect fielded models with hardware-backed isolation.'
 mitigation: >
-  Store weights, adapters, and training code with access restricted to named identities that
-  need them, encrypted at rest with keys held outside the store, and alert on bulk reads,
+  Store weights, adapters, and training code with access restricted to the named identities that
+  need them, encrypted at rest with keys held outside the store. Additionally, alert on bulk reads,
   unusual download volumes, and egress to unapproved destinations. Apply the same controls to
   training scripts and feature-engineering code as to the weights, since they let an adversary
-  reproduce the model. For models fielded on physical hardware outside a controlled facility,
-  run them inside a trusted execution environment or secure enclave, encrypt them at rest with
-  device-bound keys, and plan for remote revocation. Record model lineage so a leaked copy can be
-  identified. References: OWASP GenAI Data Security 2026 DSGAI20 (Model Exfiltration and IP
-  Replication); MITRE ATLAS AML.T0024.002 (Extract AI Model), AML.T0025 (Exfiltration via Cyber
-  Means); MAESTRO layers 1, 5 and 6; CWE-200, CWE-284; NIST SP 800-53 AC-3, SC-7, SC-28, CM-3
-  (mappings via the OWASP GenAI Security Crosswalk 2026-Q3,
-  https://github.com/GenAI-Security-Project/crosswalk).
-check: "Are weights, adapters, and training code access-restricted to named identities, encrypted with externally held keys, and monitored for bulk reads and egress; and are physically fielded models protected by a TEE or enclave with device-bound keys?"
+  reproduce the model. For models fielded on physical hardware outside a controlled facility, run
+  them inside a trusted execution environment or secure enclave, encrypt them at rest with
+  device-bound keys, and plan for remote revocation. Finally, record the model's lineage, so that a
+  leaked copy can be identified. References include OWASP GenAI Data Security 2026 DSGAI20 (Model
+  Exfiltration and IP Replication), MITRE ATLAS AML.T0024.002 (Extract AI Model) and AML.T0025
+  (Exfiltration via Cyber Means), MAESTRO layers 1, 5, and 6, CWE-200 and CWE-284, and NIST SP
+  800-53 AC-3, SC-7, SC-28, and CM-3, with the mappings taken from the OWASP GenAI Security
+  Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+check: 'Are weights, adapters, and training code access-restricted to named identities, encrypted with externally held keys, and monitored for bulk reads and egress, and are physically fielded models protected by a TEE or enclave with device-bound keys?'
 detection_logic: >
-  Review who can read the registry and training pipeline and how access is logged. Test for bulk
-  download alerting and egress controls. For physically fielded models, confirm enclave or TEE
-  execution and device-bound key protection.
+  Review who can read the registry and the training pipeline, and how that access is logged. Then,
+  test the bulk-download alerting and egress controls. Finally, for physically fielded models,
+  confirm execution in an enclave or TEE and device-bound key protection.
 risk_assessment: >
   Critical for a model trained on confidential-or-higher data whose weights or training code are
-  broadly readable or physically fielded without hardware-backed protection. High otherwise.
+  broadly readable, or are physically fielded without hardware-backed protection. Otherwise, the
+  finding is High.
 false_positives: >
-  Fires on every in-scope ai-model-registry and ai-training-pipeline asset, and on an
-  ai-model-serving or ai-llm-endpoint asset whose machine is physical (not virtual, container, or
-  serverless) -- the case where an adversary could take custody of the hardware. Dispose of a
-  confirmed-compliant asset through risk_tracking: log it as mitigated once access restriction,
-  external-key encryption, exfiltration monitoring, and (for fielded models) hardware-backed
-  isolation are confirmed.
+  This rule fires on every in-scope ai-model-registry and ai-training-pipeline asset. Additionally,
+  it fires on an ai-model-serving or ai-llm-endpoint asset whose machine is physical rather than
+  virtual, container, or serverless, since that is the case where an adversary could take custody of
+  the hardware. Dispose of a confirmed-compliant asset through risk_tracking, logging it as
+  mitigated once access restriction, external-key encryption, exfiltration monitoring, and (for
+  fielded models) hardware-backed isolation are confirmed.
 
 risk:
   id:

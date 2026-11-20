@@ -5,35 +5,36 @@ stride: elevation-of-privilege
 finding_class: control-not-evidenced
 cwe: 269
 description: >
-  A single identity can both perform key operations and administer or audit that same key
-  vault's access policy and activity log.
+  A single identity can both perform key operations and administer or audit the same key vault's
+  access policy and activity log.
 impact: >
-  If this risk remains unmitigated, a single compromised or malicious identity can both misuse a
-  key and erase the trace of that misuse, with no independent party positioned to notice.
+  If this risk remains unmitigated, a single compromised or malicious identity can both misuse a key
+  and erase the trace of that misuse, with no independent party positioned to notice.
 asvs: "V6 - Cryptography"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html"
-action: "Ensure no single identity holds both key-operation permissions and the ability to modify this key vault's own access policy or audit configuration."
+action: 'Ensure that no single identity holds both key-operation permissions and the ability to modify this key vault''s own access policy or audit configuration.'
 mitigation: >
-  Assign key vault management-plane permissions (create/rotate/delete keys, modify access policy)
-  and data-plane permissions (use a key for cryptographic operations) to distinct roles held by
-  different individuals. Route access-policy changes to the vault itself through a change process
-  requiring a second approver. Forward the vault's audit log to a destination this vault's own
-  administrators cannot delete or modify, so a key-management role change is independently
-  visible. References: NIST SP 800-53 AC-5 (Separation of Duties); NIST SP 800-53 SC-12
-  (Cryptographic Key Establishment and Management).
-check: "Are key-operation and vault-administration/audit permissions held by distinct roles or individuals?"
+  Assign the key vault's management-plane permissions (to create, rotate, and delete keys, and to
+  modify the access policy) and its data-plane permissions (to use a key for cryptographic
+  operations) to distinct roles held by different individuals. Additionally, route access-policy
+  changes to the vault itself through a change process that requires a second approver. Finally,
+  forward the vault's audit log to a destination that the vault's own administrators cannot delete
+  or modify, so that a change to a key-management role is independently visible. References include
+  NIST SP 800-53 AC-5 (Separation of Duties) and SC-12 (Cryptographic Key Establishment and
+  Management).
+check: 'Are key-operation permissions and vault administration and audit permissions held by distinct roles or individuals?'
 detection_logic: >
-  Audit the key vault's access-policy assignments for any identity holding both key-operation and
-  management-plane permissions, and confirm the audit log destination is independent of the
+  Audit the key vault's access-policy assignments for any identity that holds both key-operation and
+  management-plane permissions. Then, confirm that the audit log's destination is independent of the
   vault's own administrators.
 risk_assessment: >
-  High for any key vault where a single identity holds both key-operation and vault-
-  administration/audit permissions.
+  High for any key vault where a single identity holds both key-operation permissions and vault
+  administration or audit permissions.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope vault asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once key-operation and vault-administration/audit permissions are confirmed held by
-  distinct roles or individuals.
+  This rule fires on every in-scope vault asset by design, so no tag suppresses it. Instead, dispose
+  of a confirmed-compliant asset through risk_tracking, logging it as mitigated once key-operation
+  permissions and vault administration and audit permissions are confirmed to be held by distinct
+  roles or individuals.
 
 risk:
   id:
