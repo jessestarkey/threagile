@@ -252,6 +252,31 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 	}
 }
 
+func TestUnguardedAccessFromInternetRuleNeedsAnInternetSideCaller(t *testing.T) {
+	for name, tc := range map[string]struct {
+		sourceType       types.TechnicalAssetType
+		sourceOutOfScope bool
+		want             bool
+	}{
+		"external entity":                  {types.ExternalEntity, false, true},
+		"out-of-scope process":             {types.Process, true, true},
+		"in-scope internet-facing gateway": {types.Process, false, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			link := &types.CommunicationLink{Title: "Log Forwarding", SourceId: "source", TargetId: "target", Protocol: types.HTTPS}
+			risks, err := NewUnguardedAccessFromInternetRule().GenerateRisks(&types.Model{
+				TechnicalAssets: map[string]*types.TechnicalAsset{
+					"source": {Id: "source", Title: "Source", Internet: true, Type: tc.sourceType, OutOfScope: tc.sourceOutOfScope},
+					"target": {Id: "target", Title: "Target", Confidentiality: types.Confidential, Integrity: types.Critical},
+				},
+				IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{"target": {link}},
+			})
+			assert.Nil(t, err)
+			assert.Equal(t, tc.want, len(risks) == 1)
+		})
+	}
+}
+
 func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) {
 	rule := NewUnguardedAccessFromInternetRule()
 	model := &types.Model{

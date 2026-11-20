@@ -42,7 +42,8 @@ func (*UnguardedAccessFromInternetRule) Category() *types.RiskCategory {
 		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (excluding " + types.LoadBalancer + ") with confidentiality rating " +
 			"of " + types.Confidential.String() + " (or higher) or with integrity rating of " + types.Critical.String() + " (or higher) when " +
-			"accessed directly from the internet. All " +
+			"accessed directly from the internet, meaning by an internet-facing external entity or out-of-scope asset " +
+			"(an in-scope internet-facing component such as a gateway or firewall calling inward is the guarded path, not internet access). All " +
 			types.WebServer + ", " + types.WebApplication + ", " + types.ReverseProxy + ", " + types.WAF + ", and " + types.Gateway + " assets are exempted from this risk when " +
 			"they do not consist of custom developed code and " +
 			"the data-flow only consists of HTTP or FTP protocols. Access from " + types.Monitoring + " systems " +
@@ -84,7 +85,12 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 			if technicalAsset.Confidentiality < types.Confidential && technicalAsset.Integrity < types.Critical {
 				continue
 			}
-			if !input.TechnicalAssets[incomingAccess.SourceId].Internet {
+			// The caller must be on the internet side itself: an internet-facing external entity
+			// or out-of-scope asset. An in-scope internet-facing component (an application
+			// gateway, a firewall) calling inward is the guarded path, and its log forwarding or
+			// egress traffic is not internet access to the target (2026-11-20 calibration).
+			source := input.TechnicalAssets[incomingAccess.SourceId]
+			if !source.Internet || !(source.OutOfScope || source.Type == types.ExternalEntity) {
 				continue
 			}
 
