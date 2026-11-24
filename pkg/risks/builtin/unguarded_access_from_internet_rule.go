@@ -90,11 +90,11 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 			// firewall) calling inward is the guarded path, and its log forwarding or egress traffic
 			// is not internet access to the target.
 			source := input.TechnicalAssets[incomingAccess.SourceId]
-			if !source.Internet || !(source.OutOfScope || source.Type == types.ExternalEntity) {
+			if !source.Internet || (!source.OutOfScope && source.Type != types.ExternalEntity) {
 				continue
 			}
 
-			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, input.TechnicalAssets[incomingAccess.SourceId]))
+			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, source))
 		}
 	}
 	return risks, nil
