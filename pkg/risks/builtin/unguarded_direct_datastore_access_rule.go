@@ -112,9 +112,10 @@ func fileServerAccessViaFTP(technicalAsset *types.TechnicalAsset, incomingAccess
 }
 
 func (r *UnguardedDirectDatastoreAccessRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink, clientOutsideTrustBoundary *types.TechnicalAsset) *types.Risk {
-	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
-	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
-	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
+	// RAA affects how likely exploitation is, not how severe it is, so it enters through
+	// computeLikelihood(), and Impact follows the asset's own CIA rating. The checks in
+	// GenerateRisks() (boundary crossing, the DevOps exclusion, and the FTP and identity
+	// exemptions) decide whether the risk applies at all.
 	impact := computeImpact(types.LowImpact, r.Category().STRIDE, dataStore)
 	// The GenerateRisks() checks above (trust-boundary crossing, DevOps exclusion, FTP/identity
 	// exemptions) are kept as-is -- that's the detection-logic question of whether this risk

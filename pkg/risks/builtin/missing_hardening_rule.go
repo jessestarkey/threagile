@@ -79,13 +79,9 @@ func (r *MissingHardeningRule) createRisk(input *types.Model, technicalAsset *ty
 	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the data
 	// the asset processes.
 	impact := processedImpact(input, types.LowImpact, r.Category().STRIDE, technicalAsset)
-	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit/
-	// raaLimitReduced gate) -- that detection-logic role is kept as-is. computeLikelihood() is
-	// still applied on top of the flat baseline for consistency with every other rule's scoring:
-	// since both raaLimit (55) and raaLimitReduced (40) already sit at or above
-	// types.RAALikelihoodThreshold (40), every asset that reaches this point already earns the RAA
-	// Likelihood delta too, so Likely becomes VeryLikely here consistently -- the reachability
-	// delta can still vary per asset even though the RAA delta cannot.
+	// The raaLimit gate decides whether this risk fires, and computeLikelihood() then scores it
+	// like every other rule. Both limits (55 and 40) are at or above types.RAALikelihoodThreshold,
+	// so every asset here takes the RAA step, while the internet step still varies per asset.
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

@@ -153,8 +153,8 @@ func applyRiskGeneration(parsedModel *types.Model, rules types.RiskRules,
 		}
 
 		if len(newRisks) > 0 {
-			// Every finding carries its category's class, so risks.json consumers can tell a
-			// weakness the model shows from a control it can't evidence.
+			// Every finding carries its category's class, so a risks.json consumer can tell a
+			// weakness the model shows from a control it cannot evidence.
 			for _, risk := range newRisks {
 				if risk.FindingClass == "" {
 					risk.FindingClass = rule.Category().FindingClass

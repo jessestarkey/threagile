@@ -108,7 +108,7 @@ func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalA
 		title += " (even VPN-protected connections need to encrypt their data in-transit when confidentiality is " +
 			"rated " + types.StrictlyConfidential.String() + " or integrity is rated " + types.MissionCritical.String() + ")"
 	}
-	// Impact: see createRisk -- the higher of the link data's confidentiality and integrity.
+	// Impact: as in createRisk, the higher of the link data's confidentiality and integrity.
 	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, stepIf(isAcrossTrustBoundaryNetworkOnly(input, dataFlow), 1))
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,

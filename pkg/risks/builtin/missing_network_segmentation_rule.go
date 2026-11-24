@@ -74,8 +74,8 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 			continue
 		}
 
-		// Skip what needs no segmentation of its own (IDS/IPS, reverse proxies, service registries,
-		// WAFs). An upstream refactor had inverted this check, so the rule ran only on those assets.
+		// Skip what needs no segmentation of its own (IDS and IPS, reverse proxies, service
+		// registries, and WAFs).
 		if technicalAsset.Technologies.GetAttribute(types.IsNoNetworkSegmentationRequired) {
 			continue
 		}
@@ -112,12 +112,9 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 
 func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAsset) *types.Risk {
 	impact := computeImpact(types.LowImpact, r.Category().STRIDE, techAsset)
-	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit gate,
-	// 50% -- already at or above types.RAALikelihoodThreshold's 40%) -- that detection-logic role is
-	// kept as-is. computeLikelihood() is still applied on top of the flat baseline for
-	// consistency with every other rule's scoring: every asset that reaches this point already
-	// earns the RAA Likelihood delta too, so Unlikely becomes Possible here consistently -- the
-	// reachability delta can still vary per asset even though the RAA delta cannot.
+	// The raaLimit gate (50) decides whether this risk fires, and computeLikelihood() then scores
+	// it like every other rule. The gate is above types.RAALikelihoodThreshold, so every asset here
+	// takes the RAA step, while the internet step still varies per asset.
 	likelihood := computeLikelihood(types.Unlikely, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,

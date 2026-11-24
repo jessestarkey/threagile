@@ -6,11 +6,10 @@ import (
 	"github.com/threagile/threagile/pkg/types"
 )
 
-// ClusterControlPlaneAuditGapRule replaces the script rule of the same id (2026-11-18 review of the
-// non-AI script rules). The audit policy is one cluster-wide setting, but script rules can only
-// attach findings to technical assets, so the script raised it once per container. This rule
-// attaches it to the shared runtime the containers run on -- the model's representation of the
-// cluster -- and falls back to a container that runs on no shared runtime.
+// ClusterControlPlaneAuditGapRule raises a missing control-plane audit policy. The policy is one
+// cluster-wide setting, and script rules can attach findings only to technical assets, so this is a
+// built-in rule. It attaches the finding to the shared runtime the containers run on, which is the
+// model's representation of the cluster, and falls back to a container on no shared runtime.
 type ClusterControlPlaneAuditGapRule struct{}
 
 func NewClusterControlPlaneAuditGapRule() *ClusterControlPlaneAuditGapRule {
@@ -101,9 +100,9 @@ func (r *ClusterControlPlaneAuditGapRule) GenerateRisks(input *types.Model) ([]*
 }
 
 // createRisk raises one finding for a cluster (a shared runtime) or a lone container. Likelihood is
-// the highest any container on it reaches (its RAA and internet exposure: an attacker lands on the
-// most exposed one), and impact follows the highest integrity among them, since a missing audit
-// trail lets tampering go unreconstructed.
+// the highest any of its containers reaches, since an attacker lands on the most exposed one, and
+// impact follows the highest integrity among them, since a missing audit trail lets tampering go
+// unreconstructed.
 func (r *ClusterControlPlaneAuditGapRule) createRisk(id, title string, containers []*types.TechnicalAsset, isRuntime bool) *types.Risk {
 	likelihood := types.Unlikely
 	rank := 0

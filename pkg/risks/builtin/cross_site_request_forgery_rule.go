@@ -76,10 +76,8 @@ func (csrf CrossSiteRequestForgeryRule) skipAsset(technicalAsset *types.Technica
 func (r *CrossSiteRequestForgeryRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset, incomingFlow *types.CommunicationLink) *types.Risk {
 	sourceAsset := parsedModel.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>Cross-Site Request Forgery (CSRF)</b> risk at <b>" + technicalAsset.Title + "</b> via <b>" + incomingFlow.Title + "</b> from <b>" + sourceAsset.Title + "</b>"
-	// Already single-dimension (Integrity, matching this category's STRIDE value) by design, but
-	// scoped to the comm link's own Integrity rating rather than the target asset's, since CSRF's
-	// real consequence is the integrity of the data sent across this specific link -- not reused
-	// via the shared computeImpact() helper, which operates on the asset's own CIA fields.
+	// Integrity, on the link's data rather than the target asset, since CSRF endangers the data
+	// sent across this link. computeImpact() reads asset ratings, so it does not fit here.
 	impact := types.AdjustImpactForRank(types.LowImpact, linkRank(parsedModel, r.Category().STRIDE, incomingFlow))
 	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, devOpsStep(incomingFlow))
 	risk := &types.Risk{
