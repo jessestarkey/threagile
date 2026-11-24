@@ -66,7 +66,7 @@ func (what MissionCriticality) String() string {
 	return MissionCriticalityTypeDescription[what].Name
 }
 
-// Title is the display name used in reports, e.g. "Mission Support".
+// Title is the display name used in reports, such as "Mission Support".
 func (what MissionCriticality) Title() string {
 	return missionCriticalityTitles[what]
 }

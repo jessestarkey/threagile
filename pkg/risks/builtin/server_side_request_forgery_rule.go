@@ -101,12 +101,9 @@ func (r *ServerSideRequestForgeryRule) createRisk(input *types.Model, technicalA
 	}
 	likelihood := types.PossibleLikelihood
 	if outgoingFlow.Usage == types.DevOps {
-		// The asset-level RAA/internet-reachability delta below answers "is this component
-		// worth attacking in general" -- a different question from "is this specific link's
-		// destination attacker-steerable," which DevOps usage already answers no to (a fixed,
-		// operator-configured destination, not one a caller influences). Skip the delta so a
-		// high-RAA or internet-reachable asset's general attractiveness doesn't re-inflate a
-		// link that isn't an SSRF vector regardless of that attractiveness.
+		// A DevOps link has a fixed, operator-configured destination that no caller can steer, so
+		// it is not an SSRF vector, and the asset's general attractiveness (the RAA and internet
+		// steps) is skipped.
 		likelihood = types.Unlikely
 	} else {
 		likelihood = computeLikelihood(likelihood, technicalAsset)

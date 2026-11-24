@@ -20,7 +20,7 @@ type RiskCategory struct {
 	ModelFailurePossibleReason bool         `json:"model_failure_possible_reason,omitempty" yaml:"model_failure_possible_reason,omitempty"`
 	CWE                        int          `json:"cwe,omitempty" yaml:"cwe,omitempty"`
 	// FindingClass says what a finding in this category shows: a weakness the model's own facts
-	// show, or a control the model can't evidence (see FindingClassWeaknessShown).
+	// show, or a control the model cannot evidence (see FindingClassWeaknessShown).
 	FindingClass string `json:"finding_class,omitempty" yaml:"finding_class,omitempty"`
 }
 
@@ -29,7 +29,7 @@ const (
 	// static secret on a link, an unauthenticated agent-to-agent hop).
 	FindingClassWeaknessShown = "weakness-shown"
 	// FindingClassControlNotEvidenced: the rule fires because an interface or capability exists,
-	// and the model can't show whether the control is in place. A reviewer confirms it.
+	// and the model cannot show whether the control is in place. A reviewer confirms it.
 	FindingClassControlNotEvidenced = "control-not-evidenced"
 )
 

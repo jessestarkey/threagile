@@ -2,9 +2,9 @@ package types
 
 import "strings"
 
-// Shared per-asset scoring arithmetic for every rule layer (built-in Go rules and script rules;
-// the custom Python engine in central-security-repo mirrors these values -- see
-// docs/risk-methodology.md, "Risk calibration" and "Keeping this in sync").
+// Shared per-asset scoring arithmetic for the built-in and script rules. The custom Python engine
+// in central-security-repo mirrors these values (see docs/risk-methodology.md, "Risk calibration"
+// and "Keeping this in sync").
 //
 // Likelihood: baseline, plus a -1/0/+1 step from the asset's RAA, plus any rule-specific steps.
 // Impact: baseline, plus a -1/0/+1 step from a CIA rank (0-4, Confidentiality and Criticality
@@ -60,7 +60,7 @@ func AdjustLikelihood(baseline RiskExploitationLikelihood, raa float64, steps ..
 	return ClampLikelihood(index)
 }
 
-// CIARankDelta is the -1/0/+1 impact step for a CIA rank; ranks outside 0-4 are clamped.
+// CIARankDelta is the -1/0/+1 impact step for a CIA rank, with ranks outside 0-4 clamped.
 func CIARankDelta(rank int) int {
 	if rank < 0 {
 		rank = 0
@@ -84,9 +84,9 @@ func CIARank(value string) int {
 	return rank
 }
 
-// ParseCIARank is CIARank that also reports whether value was understood: empty (a dropped zero
-// value) and any confidentiality or criticality name are; anything else, such as a misspelling,
-// is not.
+// ParseCIARank is CIARank that also reports whether value was understood. An empty value (a
+// dropped zero value) and any confidentiality or criticality name are understood, while anything
+// else, such as a misspelling, is not.
 func ParseCIARank(value string) (int, bool) {
 	value = strings.TrimSpace(value)
 	if value == "" {

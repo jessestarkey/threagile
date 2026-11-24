@@ -269,9 +269,9 @@ func (what *ValueExpression) evalStringReference(scope *common.Scope, ref *commo
 			return returnValue, "", nil
 		}
 
-		// An unresolved reference (e.g. a field dropped by omitempty, or a missing map key)
-		// evaluates to an empty value, never a nil Value: assigning a nil Value to a variable
-		// made the next read of that variable panic.
+		// An unresolved reference (such as a field dropped by omitempty, or a missing map key)
+		// evaluates to an empty value, never a nil Value, since a nil Value in a variable made the
+		// next read of it panic.
 		return common.NilValue(), "", nil
 		//		return common.SomeStringValue(value.StringValue()[1:len(value.StringValue())-1], nil), "", nil
 	}

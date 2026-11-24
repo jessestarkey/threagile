@@ -374,10 +374,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 		DataBreachTechnicalAssetIDs: relatedAssets,
 		SyntheticId:                 r.Category().ID + "@" + id + suffix,
 	}
-	// Anchor the finding to whichever model element it was actually scoped to -- without
-	// this, every finding from this rule (technical asset, shared runtime, or trust
-	// boundary scoped alike) left all three MostRelevant*Id fields empty, so nothing could
-	// render or group it by affected asset even though the title names one.
+	// Anchor the finding to the model element it is scoped to, so the report can group it by the
+	// affected asset, shared runtime, or trust boundary.
 	switch scope {
 	case "technical_asset":
 		risk.MostRelevantTechnicalAssetId = id
@@ -391,8 +389,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 
 func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 	input *types.Model, sharedRuntime *types.SharedRuntime, prefix, details string) *types.Risk {
-	// No single technical asset to anchor an RAA/reachability delta on -- a shared runtime is an
-	// aggregate of many assets -- so this stays the flat baseline, unlike createRiskForTechnicalAsset.
+	// A shared runtime aggregates many assets, so there is no single asset for the likelihood
+	// steps, and the baseline stays flat.
 	return r.createCloudHardeningRisk(
 		sharedRuntime.Id,
 		sharedRuntime.Title,
@@ -409,8 +407,8 @@ func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 
 func (r *MissingCloudHardeningRule) createRiskForTrustBoundary(
 	input *types.Model, trustBoundary *types.TrustBoundary, prefix, details string) *types.Risk {
-	// No single technical asset to anchor an RAA/reachability delta on -- a trust boundary is an
-	// aggregate of many assets -- so this stays the flat baseline, unlike createRiskForTechnicalAsset.
+	// A trust boundary aggregates many assets, so there is no single asset for the likelihood
+	// steps, and the baseline stays flat.
 	return r.createCloudHardeningRisk(
 		trustBoundary.Id,
 		trustBoundary.Title,

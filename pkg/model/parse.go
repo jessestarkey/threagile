@@ -25,8 +25,8 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 
 	technologies.PropagateAttributes()
 
-	// mission_criticality is the model-level rating; business_criticality is its older name and
-	// still accepted, as are the five values it used (mapped onto the four-value scale).
+	// mission_criticality is the model-level rating. business_criticality, its older name, is still
+	// accepted, as are the five values it used, mapped onto the four-value scale.
 	missionCriticalityValue := modelInput.MissionCriticality
 	if missionCriticalityValue == "" {
 		missionCriticalityValue = modelInput.BusinessCriticality
@@ -38,8 +38,8 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 				modelInput.MissionCriticality, modelInput.BusinessCriticality)
 		}
 	}
-	// threat_landscape is the narrative of threat vectors, high-value targets and core defenses;
-	// business_overview is its older name and still accepted.
+	// threat_landscape is the narrative of threat vectors, high-value targets, and core defenses.
+	// business_overview, its older name, is still accepted.
 	threatLandscape := modelInput.ThreatLandscape
 	older := modelInput.BusinessOverview
 	if threatLandscape.Description == "" && len(threatLandscape.Images) == 0 {

@@ -81,10 +81,8 @@ func (r *MissingAuthenticationRule) GenerateRisks(input *types.Model) ([]*types.
 	return risks, nil
 }
 
-// Already effectively keyed off the max of multiple dimensions (this category's STRIDE value,
-// ElevationOfPrivilege, is exactly the case computeImpact() itself falls back to max(C,I,A) for),
-// scoped to the comm link's own ratings rather than the target asset's -- not reused via the
-// shared computeImpact() helper, which operates on the asset's own CIA fields, not a link's.
+// The highest of C, I, and A (this category is elevation of privilege), on the link's data rather
+// than the target asset's ratings, so computeImpact() does not fit here.
 func (r *MissingAuthenticationRule) calculateImpact(commLink *types.CommunicationLink, input *types.Model) types.RiskExploitationImpact {
 	rank := linkRank(input, r.Category().STRIDE, commLink)
 	if len(commLink.DataAssetsSent) == 0 && len(commLink.DataAssetsReceived) == 0 {

@@ -85,16 +85,16 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 			if technicalAsset.Confidentiality < types.Confidential && technicalAsset.Integrity < types.Critical {
 				continue
 			}
-			// The caller must be on the internet side itself: an internet-facing external entity
-			// or out-of-scope asset. An in-scope internet-facing component (an application
-			// gateway, a firewall) calling inward is the guarded path, and its log forwarding or
-			// egress traffic is not internet access to the target (2026-11-20 calibration).
+			// The caller must be on the internet side: an internet-facing external entity or
+			// out-of-scope asset. An in-scope internet-facing component (an application gateway, a
+			// firewall) calling inward is the guarded path, and its log forwarding or egress traffic
+			// is not internet access to the target.
 			source := input.TechnicalAssets[incomingAccess.SourceId]
-			if !source.Internet || !(source.OutOfScope || source.Type == types.ExternalEntity) {
+			if !source.Internet || (!source.OutOfScope && source.Type != types.ExternalEntity) {
 				continue
 			}
 
-			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, input.TechnicalAssets[incomingAccess.SourceId]))
+			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, source))
 		}
 	}
 	return risks, nil
@@ -102,9 +102,11 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 
 func (r *UnguardedAccessFromInternetRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink,
 	clientFromInternet *types.TechnicalAsset) *types.Risk {
-	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
-	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
-	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
+	// RAA affects how likely exploitation is, not how severe it is, so it enters through
+	// computeLikelihood(), and Impact follows the asset's own CIA rating.
+	//
+	// The checks in GenerateRisks() decide whether the risk applies at all, from the caller's
+	// side. computeLikelihood() reads the data store's own exposure, which can differ.
 	impact := computeImpact(types.LowImpact, r.Category().STRIDE, dataStore)
 	// The GenerateRisks() check that the caller (clientFromInternet) itself carries
 	// Internet: true is kept as-is -- that's the detection-logic question of whether this risk

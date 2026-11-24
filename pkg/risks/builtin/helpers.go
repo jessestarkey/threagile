@@ -106,25 +106,17 @@ func isSameTrustBoundaryNetworkOnly(parsedModel *types.Model, ta *types.Technica
 
 // --- shared risk-scoring helpers ---
 //
-// computeLikelihood/computeImpact below mirror compute_likelihood()/compute_impact() in
-// models/central-security-repo/core-policies/inject_risks.py -- the custom risk-injection engine
-// that runs on this model before Threagile itself does. That engine nudges each custom category's
-// own author-judged baseline Likelihood/Impact by real per-asset context (RAA, internet
-// reachability, the specific CIA dimension a finding's STRIDE category threatens, gated business
-// criticality) rather than using a flat value for every asset a category fires on. These two
-// functions let built-in rules apply the identical nudges on top of their own existing hardcoded
-// baseline, so a similar-looking finding scores consistently whichever engine produced it -- they
-// do not change what counts as a baseline; each rule keeps its own judgment call about that.
+// These apply the shared scoring steps to a built-in rule's own baseline, the same steps that the
+// script rules and inject_risks.py's compute_likelihood() and compute_impact() apply, so a similar
+// finding scores the same way in every layer. Each rule keeps its own baseline.
 
 // The RAA thresholds, the CIA-rank deltas and clamping live in pkg/types/risk_scoring.go,
 // shared with the script-rule built-ins and mirrored by inject_risks.py.
 
-// strideToCIADimension mirrors STRIDE_TO_CIA_DIMENSION in inject_risks.py: which CIA dimension a
-// finding's STRIDE category most directly threatens, so e.g. a denial-of-service finding is nudged
-// by Availability alone rather than a flat max(C,I,A). ElevationOfPrivilege, and any STRIDE value
-// not listed here, falls back to the max of all three (same as the Python side's dict .get()
-// default), since a privileged attacker can read, alter, or deny at will regardless of which single
-// dimension the category happens to be filed under.
+// strideToCIADimension mirrors STRIDE_TO_CIA_DIMENSION in inject_risks.py: the CIA dimension that a
+// finding's STRIDE category threatens, so a denial-of-service finding steps on Availability alone.
+// Elevation of privilege, and anything unmapped, uses the highest of the three, since a privileged
+// attacker can read, alter, or deny at will.
 var strideToCIADimension = map[types.STRIDE]string{
 	types.InformationDisclosure: "confidentiality",
 	types.Spoofing:              "integrity",
@@ -133,19 +125,12 @@ var strideToCIADimension = map[types.STRIDE]string{
 	types.DenialOfService:       "availability",
 }
 
-// computeLikelihood nudges a rule's own baseline Likelihood by this specific asset's context: a
-// -1/0/+1 delta from the asset's own RAA (+1 at or above raaLikelihoodThreshold, -1 below
-// raaLikelihoodLowThreshold, 0 in between) plus +1 (never negative) if the asset is reachable from
-// the internet -- either directly (the native Internet field, for the literal edge-facing
-// gateway/ALB/WAF) or via the net:internet-reachable tag, an explicit, author-maintained signal
-// for the real application/data asset sitting behind that already-modeled gateway, which itself
-// correctly carries Internet: false. The two signals are deliberately ORed, not substituted for
-// one another: Internet alone would miss exactly the backend-behind-the-gateway case the tag
-// exists for, and that backend is usually the asset actually worth attacking, not the gateway
-// itself. (An earlier version of this reachability signal computed it as a multi-hop walk from
-// DMZ-tagged assets instead of reading an explicit tag; it was replaced after producing real false
-// positives through shared infrastructure hops with multiple independent inbound paths -- see
-// inject_risks.py's own history for compute_internet_reachable_ids().)
+// computeLikelihood applies the RAA step and the internet step to a rule's baseline, plus any
+// rule-specific steps. The internet step (+1, never negative) applies when the asset is
+// internet-facing (the native Internet field, on an edge gateway) or carries the author-placed
+// net:internet-reachable tag (on the application behind the gateway, which carries Internet:
+// false). The two are ORed, since the backend behind a gateway is usually the asset worth
+// attacking.
 func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset *types.TechnicalAsset, steps ...int) types.RiskExploitationLikelihood {
 	exposedDelta := 0
 	if technicalAsset.Internet || contains(technicalAsset.Tags, "net:internet-reachable") {
@@ -154,17 +139,8 @@ func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset
 	return types.AdjustLikelihood(baseline, technicalAsset.RAA, append([]int{exposedDelta}, steps...)...)
 }
 
-// computeImpact nudges a rule's own baseline Impact by this specific asset's context: a -1/0/+1
-// delta from the asset's own rank on whichever single CIA dimension the finding's STRIDE category
-// actually threatens (see strideToCIADimension). This used to also apply a gated +1 if the
-// model's overall Business Criticality was Critical/Mission-Critical, mirroring
-// inject_risks.py's compute_impact() -- removed from here for the same reason it was removed
-// from the Python engine and every native script rule: it mostly inflated assets whose own CIA
-// rating was genuinely lower than the system around them, not the under-rated components it was
-// meant to protect, since every asset already carries an individually-justified CIA rating.
-// Dead code as of this writing -- no built-in rule currently calls this helper (each computes
-// Impact its own way; see the callers' own comments) -- but kept consistent with the other two
-// layers regardless, so it's not a landmine if a future rule is ever wired into it.
+// computeImpact applies the symmetric CIA step for the asset's own rank on the dimension that the
+// finding's STRIDE category threatens (see strideToCIADimension).
 func computeImpact(baseline types.RiskExploitationImpact, stride types.STRIDE, technicalAsset *types.TechnicalAsset) types.RiskExploitationImpact {
 	return impactForRatings(baseline, stride, technicalAsset.Confidentiality, technicalAsset.Integrity, technicalAsset.Availability)
 }
