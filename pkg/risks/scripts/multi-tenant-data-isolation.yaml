@@ -5,8 +5,8 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 668
 description: >
-  The asset serves multiple organizational tenants from a shared deployment, without sufficient
-  isolation in its database queries, caching, or background job processing.
+  The asset's own code serves multiple organizational tenants from a shared deployment, without
+  sufficient isolation in its database queries, caching, or background job processing.
 impact: >
   If this risk remains unmitigated, an authorization failure that would expose one user's data in a
   single-tenant system instead exposes an entire tenant's data to another tenant's users.
@@ -37,11 +37,15 @@ risk_assessment: >
   Critical for multi-tenant systems that handle CUI. Furthermore, the severity of an individual
   isolation failure is at least one level higher than that of an equivalent single-tenant finding.
 false_positives: >
-  Each tenant's data is stored in a completely isolated database schema or database instance, with
-  no shared tables, which is physical isolation rather than logical isolation through tenant ID
-  filtering. In that case, dispose of the asset's finding through risk_tracking rather than a tag,
-  logging it as mitigated once physical, or verified logical, tenant isolation is confirmed across
-  database queries, caching, and background job processing.
+  This rule fires only on an asset that is both multi_tenant and custom_developed_parts, since
+  tenant isolation in queries, caching, and jobs is code that the application team writes. A
+  managed service that the provider shares among its customers is not multi_tenant in this sense.
+  Additionally, the finding does not apply when each tenant's data is stored in a completely
+  isolated database schema or database instance, with no shared tables, which is physical
+  isolation rather than logical isolation through tenant ID filtering. In that case, dispose of
+  the asset's finding through risk_tracking rather than a tag, logging it as mitigated once
+  physical, or verified logical, tenant isolation is confirmed across database queries, caching,
+  and background job processing.
 
 risk:
   id:
@@ -55,6 +59,7 @@ risk:
           and:
             - false: "{tech_asset.out_of_scope}"
             - true: "{tech_asset.multi_tenant}"
+            - true: "{tech_asset.custom_developed_parts}"
           then:
             return: true
 

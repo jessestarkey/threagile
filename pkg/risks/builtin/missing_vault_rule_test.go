@@ -102,7 +102,7 @@ func TestMissingVaultRuleGenerateRisksRiskCreated(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
 			assert.Equal(t, testCase.expectedImpact, risks[0].ExploitationImpact)
-			assert.Equal(t, "<b>Missing Vault (Secret Storage)</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+			assert.Equal(t, "<b>Missing Vault (Secret Storage)</b> in the threat model", risks[0].Title)
 		})
 	}
 }
@@ -145,7 +145,7 @@ func TestMissingVaultRuleGenerateRisksRiskCreatedWithMoreSensitiveAsset(t *testi
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Vault (Secret Storage)</b> in the threat model (referencing asset <b>More Relevant Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Vault (Secret Storage)</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingVaultRuleGenerateRisksRestrictedConfidentialityLowImpact(t *testing.T) {

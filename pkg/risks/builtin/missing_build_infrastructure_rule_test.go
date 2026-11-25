@@ -48,7 +48,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithoutBu
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithBuildPipelineRiskCreated(t *testing.T) {
@@ -77,7 +77,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithBuild
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithBuildPipelineAndSourceCodeRepoRiskCreated(t *testing.T) {
@@ -115,7 +115,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithBuild
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksCustomDevelopedPartWithBuildPipelineAndSourceCodeRepoAndDevOpsClientNoRiskCreated(t *testing.T) {
@@ -185,7 +185,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksProcessingConfidentialDataRi
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksProcessingCriticalIntegrityDataRisksCreatedWithMediumImpact(t *testing.T) {
@@ -210,7 +210,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksProcessingCriticalIntegrityD
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksProcessingCriticalAvailabilityDataRisksCreatedWithMediumImpact(t *testing.T) {
@@ -235,7 +235,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksProcessingCriticalAvailabili
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksConfidentialTechnicalAssetRisksCreatedWithMediumImpact(t *testing.T) {
@@ -254,7 +254,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksConfidentialTechnicalAssetRi
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksTechnicalAssetCriticalIntegrityRisksCreatedWithMediumImpact(t *testing.T) {
@@ -273,7 +273,7 @@ func TestMissingBuildInfrastructureRuleGenerateRisksTechnicalAssetCriticalIntegr
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }
 
 func TestMissingBuildInfrastructureRuleGenerateRisksTechnicalAssetCriticalAvailabilityRisksCreatedWithMediumImpact(t *testing.T) {
@@ -292,5 +292,5 @@ func TestMissingBuildInfrastructureRuleGenerateRisksTechnicalAssetCriticalAvaila
 	assert.NotEmpty(t, risks)
 	assert.Len(t, risks, 1)
 	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
-	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>Test Technical Asset</b> as an example)", risks[0].Title)
+	assert.Equal(t, "<b>Missing Build Infrastructure</b> in the threat model", risks[0].Title)
 }

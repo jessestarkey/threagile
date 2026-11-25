@@ -46,39 +46,21 @@ func (*MissingBuildInfrastructureRule) SupportedTags() []string {
 }
 
 func (r *MissingBuildInfrastructureRule) GenerateRisks(input *types.Model) ([]*types.Risk, error) {
-	risks := make([]*types.Risk, 0)
 	hasCustomDevelopedParts, hasBuildPipeline, hasSourcecodeRepo, hasDevOpsClient := false, false, false, false
-	impact := types.LowImpact
-	var mostRelevantAsset *types.TechnicalAsset
-	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
-		technicalAsset := input.TechnicalAssets[id]
-
+	for _, technicalAsset := range input.TechnicalAssets {
 		getTechFlags(technicalAsset, &hasBuildPipeline, &hasSourcecodeRepo, &hasDevOpsClient)
-
-		if r.skipAsset(technicalAsset) {
-			continue
-		}
-
-		hasCustomDevelopedParts = true
-		if impact == types.LowImpact {
-			mostRelevantAsset = technicalAsset
-			evaluateImpactFromHighestCIAValues(input, technicalAsset, &impact)
-		}
-
-		evaluateImpactFromTechnicalAssetCIAValues(technicalAsset, &impact)
-
-		// just for referencing the most interesting asset
-		if technicalAsset.HighestSensitivityScore() > mostRelevantAsset.HighestSensitivityScore() {
-			mostRelevantAsset = technicalAsset
+		if !r.skipAsset(technicalAsset) {
+			hasCustomDevelopedParts = true
 		}
 	}
 	hasBuildInfrastructure := hasBuildPipeline && hasSourcecodeRepo && hasDevOpsClient
-	if hasCustomDevelopedParts && !hasBuildInfrastructure {
-		// impact above only steers which asset is reported as the example. The finding itself is
-		// fixed at Low: a whole-model check, exempt from the CIA step (docs/risk-methodology.md).
-		risks = append(risks, r.createRisk(mostRelevantAsset, types.LowImpact))
+	if !hasCustomDevelopedParts || hasBuildInfrastructure {
+		return []*types.Risk{}, nil
 	}
-	return risks, nil
+	// A gap in the whole model, so the finding belongs to the system and stays flat at Low, exempt
+	// from the CIA step (docs/risk-methodology.md).
+	return []*types.Risk{wholeModelRisk(r.Category().ID, "<b>Missing Build Infrastructure</b> in the threat model",
+		types.LowImpact)}, nil
 }
 
 func (r *MissingBuildInfrastructureRule) skipAsset(technicalAsset *types.TechnicalAsset) bool {
@@ -86,22 +68,6 @@ func (r *MissingBuildInfrastructureRule) skipAsset(technicalAsset *types.Technic
 		return true
 	}
 	return false
-}
-
-func evaluateImpactFromHighestCIAValues(input *types.Model, technicalAsset *types.TechnicalAsset, impact *types.RiskExploitationImpact) {
-	if input.HighestProcessedConfidentiality(technicalAsset) >= types.Confidential ||
-		input.HighestProcessedIntegrity(technicalAsset) >= types.Critical ||
-		input.HighestProcessedAvailability(technicalAsset) >= types.Critical {
-		*impact = types.MediumImpact
-	}
-}
-
-func evaluateImpactFromTechnicalAssetCIAValues(technicalAsset *types.TechnicalAsset, impact *types.RiskExploitationImpact) {
-	if technicalAsset.Confidentiality >= types.Confidential ||
-		technicalAsset.Integrity >= types.Critical ||
-		technicalAsset.Availability >= types.Critical {
-		*impact = types.MediumImpact
-	}
 }
 
 func getTechFlags(technicalAsset *types.TechnicalAsset, hasBuildPipeline, hasSourcecodeRepo, hasDevOpsClient *bool) {
@@ -114,23 +80,4 @@ func getTechFlags(technicalAsset *types.TechnicalAsset, hasBuildPipeline, hasSou
 	if technicalAsset.Technologies.GetAttribute(types.DevOpsClient) {
 		*hasDevOpsClient = true
 	}
-}
-
-func (r *MissingBuildInfrastructureRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
-	title := "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
-	// Flat, like the impact: the referenced asset is only an example, so its RAA and exposure
-	// say nothing about a gap in the whole model.
-	likelihood := types.Unlikely
-	risk := &types.Risk{
-		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(likelihood, impact),
-		ExploitationLikelihood:       likelihood,
-		ExploitationImpact:           impact,
-		Title:                        title,
-		MostRelevantTechnicalAssetId: technicalAsset.Id,
-		DataBreachProbability:        types.Improbable,
-		DataBreachTechnicalAssetIDs:  []string{},
-	}
-	risk.SyntheticId = risk.CategoryId + "@" + technicalAsset.Id
-	return risk
 }

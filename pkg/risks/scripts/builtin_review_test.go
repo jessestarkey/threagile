@@ -40,12 +40,17 @@ func TestWholeModelChecksKeepAFlatLikelihood(t *testing.T) {
 	for name, rule := range map[string]types.RiskRule{
 		"missing-build-infrastructure": builtin.NewMissingBuildInfrastructureRule(),
 		"missing-identity-store":       builtin.NewMissingIdentityStoreRule(),
+		"missing-vault":                builtin.NewMissingVaultRule(),
 	} {
 		risks, err := rule.GenerateRisks(model)
 		require.NoError(t, err, name)
-		require.NotEmpty(t, risks, name)
+		require.Len(t, risks, 1, name)
 		assert.Equal(t, types.Unlikely, risks[0].ExploitationLikelihood,
-			"%s: the example asset's RAA and exposure say nothing about a gap in the whole model", name)
-		assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact, name)
+			"%s: no asset's RAA or exposure says anything about a gap in the whole model", name)
+		assert.Empty(t, risks[0].MostRelevantTechnicalAssetId, "%s: the system's finding, not an example asset's", name)
+		assert.Equal(t, name, risks[0].SyntheticId, "%s: the risk_tracking key is the category id alone", name)
+		if name != "missing-vault" {
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact, name)
+		}
 	}
 }

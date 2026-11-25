@@ -46,47 +46,17 @@ func (*MissingVaultRule) SupportedTags() []string {
 }
 
 func (r *MissingVaultRule) GenerateRisks(input *types.Model) ([]*types.Risk, error) {
-	risks := make([]*types.Risk, 0)
-	hasVault := false
-	var mostRelevantAsset *types.TechnicalAsset
 	highestRank := 0
-	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
+	for _, id := range input.SortedTechnicalAssetIDs() {
 		techAsset := input.TechnicalAssets[id]
 		if techAsset.Technologies.GetAttribute(types.Vault) {
-			hasVault = true
-			break
+			return []*types.Risk{}, nil
 		}
 		highestRank = max(highestRank, processedRank(input, r.Category().STRIDE, techAsset))
-		// just for referencing the most interesting asset
-		if mostRelevantAsset == nil || techAsset.HighestSensitivityScore() > mostRelevantAsset.HighestSensitivityScore() {
-			mostRelevantAsset = techAsset
-		}
 	}
-	if !hasVault {
-		risks = append(risks, r.createRisk(mostRelevantAsset, types.AdjustImpactForRank(types.LowImpact, highestRank)))
-	}
-	return risks, nil
-}
-
-func (r *MissingVaultRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
-	title := "<b>Missing Vault (Secret Storage)</b> in the threat model"
-	id := "no-components"
-	likelihood := types.Unlikely
-	if technicalAsset != nil {
-		title += " (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
-		id = technicalAsset.Id
-		likelihood = computeLikelihood(types.Unlikely, technicalAsset)
-	}
-	risk := &types.Risk{
-		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(likelihood, impact),
-		ExploitationLikelihood:       likelihood,
-		ExploitationImpact:           impact,
-		Title:                        title,
-		MostRelevantTechnicalAssetId: id,
-		DataBreachProbability:        types.Improbable,
-		DataBreachTechnicalAssetIDs:  []string{},
-	}
-	risk.SyntheticId = risk.CategoryId + "@" + id
-	return risk
+	// A gap in the whole model, so the finding belongs to the system rather than to an example
+	// asset, and its likelihood stays flat. Impact takes the CIA step for the most sensitive data
+	// that some component must then keep its secrets beside.
+	return []*types.Risk{wholeModelRisk(r.Category().ID, "<b>Missing Vault (Secret Storage)</b> in the threat model",
+		types.AdjustImpactForRank(types.LowImpact, highestRank))}, nil
 }

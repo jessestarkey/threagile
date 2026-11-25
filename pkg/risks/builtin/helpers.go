@@ -220,3 +220,20 @@ func stepIf(condition bool, step int) int {
 	}
 	return 0
 }
+
+// wholeModelRisk is the one finding of a whole-model check, such as a model with no vault. It
+// belongs to the system rather than to any one asset, so it names no asset, its synthetic id is the
+// category id alone (which a risk_tracking key matches), and its likelihood stays at Unlikely,
+// since no asset's RAA or exposure says anything about a gap in the whole model.
+func wholeModelRisk(categoryId, title string, impact types.RiskExploitationImpact) *types.Risk {
+	return &types.Risk{
+		CategoryId:                  categoryId,
+		Severity:                    types.CalculateSeverity(types.Unlikely, impact),
+		ExploitationLikelihood:      types.Unlikely,
+		ExploitationImpact:          impact,
+		Title:                       title,
+		DataBreachProbability:       types.Improbable,
+		DataBreachTechnicalAssetIDs: []string{},
+		SyntheticId:                 categoryId,
+	}
+}
