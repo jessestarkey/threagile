@@ -132,7 +132,11 @@ func TestSensitiveDisclosureNeedsConfidentialDataAndOutsideRequests(t *testing.T
 			}
 			require.Len(t, risks, 1)
 			assert.Equal(t, "llm", risks[0].MostRelevantTechnicalAssetId)
-			assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+			likelihood := types.Likely
+			if test.internet {
+				likelihood = types.VeryLikely // the internet step that every rule takes
+			}
+			assert.Equal(t, likelihood, risks[0].ExploitationLikelihood)
 			assert.Equal(t, test.impact, risks[0].ExploitationImpact)
 		})
 	}

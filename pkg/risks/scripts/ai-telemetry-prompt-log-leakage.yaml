@@ -255,14 +255,14 @@ risk:
               - return: false
         - return: true
 
-    # Likelihood: likely baseline plus the RAA step.
+    # Likelihood: likely baseline plus the RAA and internet steps.
     # No step for a modeled telemetry link: the baseline already sits at the cap for a
     # control-not-evidenced finding (see docs/risk-methodology.md, Risk calibration).
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - return: "adjust_likelihood(likely, {tech_asset.raa})"
+        - return: "adjust_likelihood(likely, {tech_asset})"
 
     # Impact baseline: medium.
     # Impact: baseline plus the confidentiality step. The rule fires only when confidential

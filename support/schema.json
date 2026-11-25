@@ -568,6 +568,10 @@
             "description": "Set to true if a technical asset is accessible from the public internet. This increases its exposure and affects the severity and likelihood of certain risks, such as unauthorized access or denial of service.",
             "type": "boolean"
           },
+          "internet_reachable": {
+            "description": "Set to true if internet traffic reaches this asset through an edge component in front of it (such as the application behind an internet-facing gateway), while the asset itself is not the edge. Like internet, it raises the likelihood of risks on the asset.",
+            "type": "boolean"
+          },
           "machine": {
             "description": "Describes the type of environment the technical asset runs on, such as virtual, container, physical, or serverless. This helps assess risks related to deployment, isolation, and infrastructure.",
             "type": "string",

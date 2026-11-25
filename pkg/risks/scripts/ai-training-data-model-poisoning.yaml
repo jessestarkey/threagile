@@ -50,13 +50,15 @@ risk_assessment: >
 false_positives: >
   This rule fires on every in-scope ai-training-pipeline, ai-dataset-store, ai-feature-store, and
   ai-eval-pipeline asset, because poisoning by an insider or a compromised account needs nothing
-  that the model records. However, likelihood steps up one level when an outside caller writes into
-  the asset through an incoming link that is not readonly. An outside caller is an external entity,
+  that the model records. However, likelihood steps up one level when an outside caller writes
+  into the asset through an incoming link that is not readonly, unless the asset is
+  internet-exposed and already takes the internet step. An outside caller is an external entity,
   an internet-facing or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF,
   load balancer, or client) in a different network boundary, and as in Threagile's own rules,
-  execution-environment boundaries are looked through to the enclosing network boundary. Dispose of
-  a confirmed-compliant asset through risk_tracking, logging it as mitigated once restricted write
-  access, provenance, validation, baseline comparison, and a separate evaluation are confirmed.
+  execution-environment boundaries are looked through to the enclosing network boundary. Dispose
+  of a confirmed-compliant asset through risk_tracking, logging it as mitigated once restricted
+  write access, provenance, validation, baseline comparison, and a separate evaluation are
+  confirmed.
 
 risk:
   id:
@@ -229,7 +231,9 @@ risk:
               - return: true
         - return: false
 
-    # Likelihood: unlikely baseline plus the RAA step, one level higher when written from outside the boundary.
+    # Likelihood: unlikely baseline plus the RAA and internet steps, one level higher when written
+    # from outside the boundary. An internet-exposed asset already takes the internet step for that
+    # outside reach, so the writer step applies only to an asset that is not exposed.
     get_likelihood:
       parameters:
         - tech_asset
@@ -238,11 +242,14 @@ risk:
             - step: 0
             - outside: "written_from_outside({tech_asset})"
         - if:
-            true: "{outside}"
+            and:
+              - true: "{outside}"
+              - false: "{tech_asset.internet}"
+              - false: "{tech_asset.internet_reachable}"
             then:
               - assign:
                   step: 1
-        - return: "adjust_likelihood(unlikely, {tech_asset.raa}, {step})"
+        - return: "adjust_likelihood(unlikely, {tech_asset}, {step})"
 
     # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
     get_impact:

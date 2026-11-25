@@ -120,12 +120,12 @@ risk:
                     - return: true
         - return: false
 
-    # Likelihood: possible baseline plus the RAA step.
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - return: "adjust_likelihood(possible, {tech_asset.raa})"
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
     # Impact baseline: medium.
     # Impact: baseline plus the availability step for the highest rank across the agent and

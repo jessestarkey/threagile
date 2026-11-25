@@ -12,9 +12,9 @@ import (
 // A rule that states its baseline once and lets the shared built-ins apply the standard steps.
 var scoringTestYAML = strings.NewReplacer(
 	`severity: "calculate_severity(unlikely, low)"`,
-	`severity: "calculate_severity(adjust_likelihood(likely, {tech_asset.raa}), adjust_impact(medium, {tech_asset.confidentiality}))"`,
+	`severity: "calculate_severity(adjust_likelihood(likely, {tech_asset}), adjust_impact(medium, {tech_asset.confidentiality}))"`,
 	`exploitation_likelihood: unlikely`,
-	`exploitation_likelihood: "adjust_likelihood(likely, {tech_asset.raa})"`,
+	`exploitation_likelihood: "adjust_likelihood(likely, {tech_asset})"`,
 	`exploitation_impact: low`,
 	`exploitation_impact: "adjust_impact(medium, {tech_asset.confidentiality})"`,
 ).Replace(minimalTestYAML)

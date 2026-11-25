@@ -109,7 +109,7 @@ risk:
                     - return: true
         - return: false
 
-    # Likelihood: possible baseline plus the RAA step, one level lower with a link to monitoring or an AI observability stack.
+    # Likelihood: possible baseline plus the RAA and internet steps, one level lower with a link to monitoring or an AI observability stack.
     get_likelihood:
       parameters:
         - tech_asset
@@ -122,7 +122,7 @@ risk:
             then:
               - assign:
                   step: -1
-        - return: "adjust_likelihood(possible, {tech_asset.raa}, {step})"
+        - return: "adjust_likelihood(possible, {tech_asset}, {step})"
 
     # Impact: low baseline plus the CIA step on I (STRIDE tampering).
     get_impact:

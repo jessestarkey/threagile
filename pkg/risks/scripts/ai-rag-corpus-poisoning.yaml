@@ -241,12 +241,12 @@ risk:
               - return: true
         - return: false
 
-    # Likelihood: likely baseline plus the RAA step.
+    # Likelihood: likely baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - return: "adjust_likelihood(likely, {tech_asset.raa})"
+        - return: "adjust_likelihood(likely, {tech_asset})"
 
     # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
     get_impact:

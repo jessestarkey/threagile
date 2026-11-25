@@ -18,12 +18,26 @@ func callText(t *testing.T, name string, parameters ...Value) string {
 func str(value string) Value { return SomeStringValue(value, nil) }
 func num(value int64) Value  { return SomeDecimalValue(decimal.NewFromInt(value), nil) }
 
+// asset is a technical asset as the script engine passes it, a map of its JSON fields.
+func asset(fields map[string]any) Value { return SomeValue(fields, nil) }
+
 func TestAdjustLikelihoodBuiltIn(t *testing.T) {
-	assert.Equal(t, "likely", callText(t, adjustLikelihood, str("likely"), num(30)))
-	assert.Equal(t, "very-likely", callText(t, adjustLikelihood, str("likely"), num(40)))
-	assert.Equal(t, "possible", callText(t, adjustLikelihood, str("likely"), num(10)))
-	assert.Equal(t, "possible", callText(t, adjustLikelihood, str("likely"), num(30), num(-1)))
-	assert.Equal(t, "possible", callText(t, adjustLikelihood, str("likely"), nil), "missing RAA counts as 0, the low band")
+	assert.Equal(t, "likely", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 30.0})))
+	assert.Equal(t, "very-likely", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 40.0})))
+	assert.Equal(t, "possible", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 10.0})))
+	assert.Equal(t, "possible", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 30.0}), num(-1)))
+	assert.Equal(t, "possible", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{})), "missing RAA counts as 0, the low band")
+}
+
+func TestAdjustLikelihoodTakesTheInternetStep(t *testing.T) {
+	for _, field := range []string{"internet", "internet_reachable"} {
+		assert.Equal(t, "very-likely", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 30.0, field: true})), field)
+	}
+	assert.Equal(t, "likely", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 30.0, "internet": false})))
+	assert.Equal(t, "likely", callText(t, adjustLikelihood, str("likely"), asset(map[string]any{"raa": 10.0, "internet": true})),
+		"the low RAA band and the internet step cancel out, as in the built-in rules")
+	_, err := CallBuiltIn(adjustLikelihood, str("likely"), num(30))
+	assert.ErrorContains(t, err, "expected the technical asset", "a bare RAA must not silently skip the internet step")
 }
 
 func TestAdjustImpactBuiltIn(t *testing.T) {
@@ -44,11 +58,11 @@ func TestCIARankBuiltIn(t *testing.T) {
 }
 
 func TestScoringBuiltInsRejectBadInput(t *testing.T) {
-	_, err := CallBuiltIn(adjustLikelihood, str("sometimes"), num(30))
+	_, err := CallBuiltIn(adjustLikelihood, str("sometimes"), asset(map[string]any{"raa": 30.0}))
 	assert.Error(t, err)
 	_, err = CallBuiltIn(adjustImpact, str("medium"))
 	assert.Error(t, err)
-	_, err = CallBuiltIn(adjustLikelihood, str(""), num(30))
+	_, err = CallBuiltIn(adjustLikelihood, str(""), asset(map[string]any{"raa": 30.0}))
 	assert.ErrorContains(t, err, "missing baseline")
 	_, err = CallBuiltIn(adjustImpact, str(""), str("confidential"))
 	assert.ErrorContains(t, err, "missing baseline")

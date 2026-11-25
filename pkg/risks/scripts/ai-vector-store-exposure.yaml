@@ -159,12 +159,12 @@ risk:
                     - return: true
         - return: false
 
-    # Likelihood: unlikely baseline plus the RAA step.
+    # Likelihood: unlikely baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - return: "adjust_likelihood(unlikely, {tech_asset.raa})"
+        - return: "adjust_likelihood(unlikely, {tech_asset})"
 
     # Impact baseline: medium.
     # Impact: baseline plus the confidentiality step; confidential stored or processed data

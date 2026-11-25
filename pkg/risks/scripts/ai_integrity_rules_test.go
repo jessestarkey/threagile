@@ -71,13 +71,30 @@ func TestTrainingPoisoningFiresOnTrainingAssetsWithOutsideWritesRaisingLikelihoo
 	assert.Equal(t, types.LowImpact, fired["eval"].ExploitationImpact)
 }
 
-func TestTrainingPoisoningIgnoresInternetFlagOnItsOwn(t *testing.T) {
+func TestTrainingPoisoningTakesOnlyTheInternetStepForItsOwnFlag(t *testing.T) {
 	store := agencyAsset("data", "ai-dataset-store")
 	store.Internet = true
 
 	fired := firedOn(generateScriptRisks(t, aiTrainingDataModelPoisoning, boundaryModel(map[string]string{}, store)))
 
-	assert.Equal(t, types.Unlikely, fired["data"].ExploitationLikelihood, "no internet-exposure delta in native scripts")
+	assert.Equal(t, types.PossibleLikelihood, fired["data"].ExploitationLikelihood,
+		"the internet step that every rule takes, and no outside-writer step, since nothing writes to it")
+}
+
+func TestTrainingPoisoningDropsTheWriterStepOnAnExposedAsset(t *testing.T) {
+	store := agencyAsset("data", "ai-dataset-store")
+	store.InternetReachable = true
+	writer := external(agencyAsset("src", "web-service-rest", agencyLink("src>data", "data", false)))
+
+	fired := firedOn(generateScriptRisks(t, aiTrainingDataModelPoisoning, boundaryModel(map[string]string{}, store, writer)))
+
+	assert.Equal(t, types.PossibleLikelihood, fired["data"].ExploitationLikelihood,
+		"one step for the outside reach, the internet step, rather than two")
+
+	unexposed := agencyAsset("data", "ai-dataset-store")
+	writer = external(agencyAsset("src", "web-service-rest", agencyLink("src>data", "data", false)))
+	fired = firedOn(generateScriptRisks(t, aiTrainingDataModelPoisoning, boundaryModel(map[string]string{}, unexposed, writer)))
+	assert.Equal(t, types.PossibleLikelihood, fired["data"].ExploitationLikelihood, "the writer step on an asset that is not exposed")
 }
 
 // --- #19 RAG Corpus Poisoning ---
@@ -129,7 +146,8 @@ func TestSupplyChainFiresOnLoadersAndRisesOnlyWhenPullingFromOutside(t *testing.
 	assert.ElementsMatch(t, []string{"registry", "serving", "agent", "tools"}, keys(fired))
 	assert.Equal(t, types.Likely, fired["registry"].ExploitationLikelihood, "pulls from a public hub")
 	assert.Equal(t, types.PossibleLikelihood, fired["serving"].ExploitationLikelihood, "pulls from the internal registry; user callers do not count")
-	assert.Equal(t, types.PossibleLikelihood, fired["agent"].ExploitationLikelihood, "being internet-facing is not a supply-chain pull")
+	assert.Equal(t, types.Likely, fired["agent"].ExploitationLikelihood,
+		"the internet step that every rule takes, while being internet-facing is not a supply-chain pull")
 	assert.Equal(t, types.VeryHighImpact, fired["serving"].ExploitationImpact)
 	assert.Equal(t, types.MediumImpact, fired["agent"].ExploitationImpact)
 }

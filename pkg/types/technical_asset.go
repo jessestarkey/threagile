@@ -18,6 +18,7 @@ type TechnicalAsset struct {
 	Technologies            TechnologyList        `json:"technologies,omitempty" yaml:"technologies,omitempty"`
 	Machine                 TechnicalAssetMachine `json:"machine,omitempty" yaml:"machine,omitempty"`
 	Internet                bool                  `json:"internet,omitempty" yaml:"internet,omitempty"`
+	InternetReachable       bool                  `json:"internet_reachable,omitempty" yaml:"internet_reachable,omitempty"`
 	MultiTenant             bool                  `json:"multi_tenant,omitempty" yaml:"multi_tenant,omitempty"`
 	Redundant               bool                  `json:"redundant,omitempty" yaml:"redundant,omitempty"`
 	CustomDevelopedParts    bool                  `json:"custom_developed_parts,omitempty" yaml:"custom_developed_parts,omitempty"`
@@ -37,6 +38,13 @@ type TechnicalAsset struct {
 	CommunicationLinks      []*CommunicationLink  `json:"communication_links,omitempty" yaml:"communication_links,omitempty"`
 	DiagramTweakOrder       int                   `json:"diagram_tweak_order,omitempty" yaml:"diagram_tweak_order,omitempty"`
 	RAA                     float64               `json:"raa,omitempty" yaml:"raa,omitempty"` // will be set by separate calculation step
+}
+
+// IsInternetExposed reports whether internet traffic reaches this asset, either directly (Internet,
+// the edge component) or through an edge component in front of it (InternetReachable, such as the
+// application behind a gateway). Likelihood takes one step up for either.
+func (what TechnicalAsset) IsInternetExposed() bool {
+	return what.Internet || what.InternetReachable
 }
 
 func (what TechnicalAsset) IsTaggedWithAny(tags ...string) bool {

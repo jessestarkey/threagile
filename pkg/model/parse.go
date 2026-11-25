@@ -374,6 +374,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			Tags:                    tags,
 			Machine:                 technicalAssetMachine,
 			Internet:                asset.Internet,
+			InternetReachable:       asset.InternetReachable,
 			Encryption:              encryption,
 			MultiTenant:             asset.MultiTenant,
 			Redundant:               asset.Redundant,

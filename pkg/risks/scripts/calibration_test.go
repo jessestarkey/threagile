@@ -133,6 +133,11 @@ func TestEveryScriptRuleMatchesItsCalibratedRatingOnProfileT(t *testing.T) {
 			assert.NotEmpty(t, generated, "rule must fire on profile T (or its variant) for the check to mean anything")
 			for _, risk := range generated {
 				want := expected
+				// Profile T is not internet-exposed, but the kitchen sink's LLM endpoint is, so that
+				// exposure-gated rules fire. A finding there takes the internet step on top.
+				if asset := model.TechnicalAssets[risk.MostRelevantTechnicalAssetId]; asset != nil && asset.IsInternetExposed() {
+					want.likelihood = types.ClampLikelihood(int(want.likelihood) + 1)
+				}
 				assert.Equal(t, want.likelihood.String(), risk.ExploitationLikelihood.String(), "likelihood at %s", risk.MostRelevantTechnicalAssetId)
 				assert.Equal(t, want.impact.String(), risk.ExploitationImpact.String(), "impact at %s", risk.MostRelevantTechnicalAssetId)
 				assert.Equal(t, types.CalculateSeverity(want.likelihood, want.impact), risk.Severity, "severity at %s", risk.MostRelevantTechnicalAssetId)

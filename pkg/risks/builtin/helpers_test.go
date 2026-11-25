@@ -508,33 +508,39 @@ func Test_containsCaseInsensitiveAny(t *testing.T) {
 
 func Test_computeLikelihood(t *testing.T) {
 	tests := []struct {
-		name     string
-		baseline types.RiskExploitationLikelihood
-		raa      float64
-		internet bool
-		tags     []string
-		expected types.RiskExploitationLikelihood
+		name      string
+		baseline  types.RiskExploitationLikelihood
+		raa       float64
+		internet  bool
+		reachable bool
+		expected  types.RiskExploitationLikelihood
 	}{
-		{"mid RAA, not reachable, no change", types.Likely, 20, false, nil, types.Likely},
-		{"low RAA pulls down a notch", types.Likely, 14.9, false, nil, types.PossibleLikelihood},
-		{"mid RAA, no change", types.Likely, 15, false, nil, types.Likely},
-		{"mid RAA, no change at upper edge", types.Likely, 39.9, false, nil, types.Likely},
-		{"high RAA pushes up a notch", types.Likely, 40, false, nil, types.VeryLikely},
-		{"internet field pushes up a notch", types.Likely, 20, true, nil, types.VeryLikely},
-		{"net:internet-reachable tag pushes up a notch", types.Likely, 20, false, []string{"net:internet-reachable"}, types.VeryLikely},
-		{"high RAA and internet together still clamp at VeryLikely", types.Likely, 50, true, nil, types.VeryLikely},
-		{"low RAA and internet cancel out", types.Likely, 10, true, nil, types.Likely},
-		{"clamps at Unlikely floor", types.Unlikely, 10, false, nil, types.Unlikely},
-		{"clamps at VeryLikely ceiling", types.VeryLikely, 50, true, nil, types.VeryLikely},
+		{"mid RAA, not reachable, no change", types.Likely, 20, false, false, types.Likely},
+		{"low RAA pulls down a notch", types.Likely, 14.9, false, false, types.PossibleLikelihood},
+		{"mid RAA, no change", types.Likely, 15, false, false, types.Likely},
+		{"mid RAA, no change at upper edge", types.Likely, 39.9, false, false, types.Likely},
+		{"high RAA pushes up a notch", types.Likely, 40, false, false, types.VeryLikely},
+		{"internet field pushes up a notch", types.Likely, 20, true, false, types.VeryLikely},
+		{"internet_reachable field pushes up a notch", types.Likely, 20, false, true, types.VeryLikely},
+		{"high RAA and internet together still clamp at VeryLikely", types.Likely, 50, true, false, types.VeryLikely},
+		{"low RAA and internet cancel out", types.Likely, 10, true, false, types.Likely},
+		{"clamps at Unlikely floor", types.Unlikely, 10, false, false, types.Unlikely},
+		{"clamps at VeryLikely ceiling", types.VeryLikely, 50, true, false, types.VeryLikely},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ta := &types.TechnicalAsset{RAA: test.raa, Internet: test.internet, Tags: test.tags}
+			ta := &types.TechnicalAsset{RAA: test.raa, Internet: test.internet, InternetReachable: test.reachable}
 			result := computeLikelihood(test.baseline, ta)
 			assert.Equal(t, test.expected, result)
 		})
 	}
+}
+
+// The fork reads its own internet_reachable field, not a program's tag (see IsInternetExposed).
+func Test_computeLikelihoodIgnoresTheRetiredTag(t *testing.T) {
+	ta := &types.TechnicalAsset{RAA: 20, Tags: []string{"net:internet-reachable"}}
+	assert.Equal(t, types.Likely, computeLikelihood(types.Likely, ta))
 }
 
 func Test_computeImpact(t *testing.T) {

@@ -126,14 +126,12 @@ var strideToCIADimension = map[types.STRIDE]string{
 }
 
 // computeLikelihood applies the RAA step and the internet step to a rule's baseline, plus any
-// rule-specific steps. The internet step (+1, never negative) applies when the asset is
-// internet-facing (the native Internet field, on an edge gateway) or carries the author-placed
-// net:internet-reachable tag (on the application behind the gateway, which carries Internet:
-// false). The two are ORed, since the backend behind a gateway is usually the asset worth
-// attacking.
+// rule-specific steps. The internet step (+1, never negative) applies when internet traffic reaches
+// the asset, directly or through an edge component in front of it (see IsInternetExposed), since
+// the backend behind a gateway is usually the asset worth attacking.
 func computeLikelihood(baseline types.RiskExploitationLikelihood, technicalAsset *types.TechnicalAsset, steps ...int) types.RiskExploitationLikelihood {
 	exposedDelta := 0
-	if technicalAsset.Internet || contains(technicalAsset.Tags, "net:internet-reachable") {
+	if technicalAsset.IsInternetExposed() {
 		exposedDelta = 1
 	}
 	return types.AdjustLikelihood(baseline, technicalAsset.RAA, append([]int{exposedDelta}, steps...)...)

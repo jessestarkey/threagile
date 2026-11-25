@@ -130,7 +130,7 @@ risk:
               - return: true
         - return: false
 
-    # Likelihood: possible baseline plus the RAA step, one level higher when it pulls from outside the boundary.
+    # Likelihood: possible baseline plus the RAA and internet steps, one level higher when it pulls from outside the boundary.
     get_likelihood:
       parameters:
         - tech_asset
@@ -143,7 +143,7 @@ risk:
             then:
               - assign:
                   step: 1
-        - return: "adjust_likelihood(possible, {tech_asset.raa}, {step})"
+        - return: "adjust_likelihood(possible, {tech_asset}, {step})"
 
     # Impact: high baseline plus the CIA step on I (STRIDE tampering).
     get_impact:

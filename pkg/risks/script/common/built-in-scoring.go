@@ -12,7 +12,7 @@ import (
 // Script-language wrappers around the shared scoring arithmetic in pkg/types/risk_scoring.go, so
 // every script rule states its baseline once and applies the standard steps the same way:
 //
-//	adjust_likelihood(baseline, raa, steps...)  baseline + RAA step + each step, clamped
+//	adjust_likelihood(baseline, asset, steps...) baseline + RAA step + internet step + each step, clamped
 //	adjust_impact(baseline, ratings...)          baseline + CIA step for the highest rating given
 //	adjust_impact_rank(baseline, rank)           baseline + CIA step for a 0-4 rank
 //	cia_rank(ratings...)                         highest 0-4 rank among confidentiality/criticality names
@@ -79,9 +79,28 @@ func textArg(value Value) string {
 	}
 }
 
+// likelihoodAsset reads the RAA and the internet exposure from the technical asset passed to
+// adjust_likelihood, the same two facts that the built-in rules' computeLikelihood reads.
+func likelihoodAsset(value Value) (raa float64, exposed bool, err error) {
+	asset, ok := plainValue(value).(map[string]any)
+	if !ok {
+		return 0, false, fmt.Errorf("expected the technical asset (such as {tech_asset}), got %T", plainValue(value))
+	}
+	raa, err = numberArg(SomeValue(asset["raa"], nil))
+	if err != nil {
+		return 0, false, fmt.Errorf("raa: %w", err)
+	}
+	for _, field := range []string{"internet", "internet_reachable"} {
+		if flag, isBool := plainValue(SomeValue(asset[field], nil)).(bool); isBool && flag {
+			exposed = true
+		}
+	}
+	return raa, exposed, nil
+}
+
 func adjustLikelihoodFunc(parameters []Value) (Value, error) {
 	if len(parameters) < 2 {
-		return nil, fmt.Errorf("%s: expected baseline and raa, got %d parameters", adjustLikelihood, len(parameters))
+		return nil, fmt.Errorf("%s: expected baseline and asset, got %d parameters", adjustLikelihood, len(parameters))
 	}
 	if strings.TrimSpace(textArg(parameters[0])) == "" {
 		return nil, fmt.Errorf("%s: missing baseline", adjustLikelihood)
@@ -90,11 +109,14 @@ func adjustLikelihoodFunc(parameters []Value) (Value, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", adjustLikelihood, err)
 	}
-	raa, err := numberArg(parameters[1])
+	raa, exposed, err := likelihoodAsset(parameters[1])
 	if err != nil {
-		return nil, fmt.Errorf("%s: raa: %w", adjustLikelihood, err)
+		return nil, fmt.Errorf("%s: %w", adjustLikelihood, err)
 	}
-	steps := make([]int, 0, len(parameters)-2)
+	steps := make([]int, 0, len(parameters)-1)
+	if exposed {
+		steps = append(steps, 1)
+	}
 	for _, parameter := range parameters[2:] {
 		step, stepErr := numberArg(parameter)
 		if stepErr != nil {

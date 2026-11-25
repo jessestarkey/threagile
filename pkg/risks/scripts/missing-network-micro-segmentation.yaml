@@ -110,12 +110,12 @@ risk:
                   then:
                     - return: "{candidate.id}"
         - return: ""
-    # Likelihood: possible baseline plus the RAA step.
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - return: "adjust_likelihood(possible, {tech_asset.raa})"
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
     # Impact: low baseline plus the CIA step on the highest of C, I and A: a flat network lets one
     # compromised workload reach every other, whatever it threatens there (aligned with the
