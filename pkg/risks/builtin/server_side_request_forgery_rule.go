@@ -21,18 +21,12 @@ func (*ServerSideRequestForgeryRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
 		Action: "Remove caller control over outbound request destinations, or enforce a destination allowlist validated after " +
 			"DNS resolution, and block egress to metadata endpoints and internal address ranges.",
-		Mitigation: "Avoid building outbound URLs from caller input; map caller choices to server-side configured destinations. " +
-			"Where a caller-supplied URL is unavoidable (webhooks, link previews, document fetch), allow only https and " +
-			"allowlisted hosts, resolve DNS once, reject resolved addresses in loopback, link-local (169.254.0.0/16, " +
-			"including the cloud metadata endpoint 169.254.169.254), RFC 1918, and IPv6 equivalents, and connect to that " +
-			"validated address to defeat DNS rebinding. Disable automatic redirects or revalidate every hop, and disable " +
-			"unused URL schemes in the HTTP client (file, gopher, dict, ftp). Route outbound traffic through an egress " +
-			"proxy or firewall with a default-deny allowlist, require AWS IMDSv2 or the equivalent metadata protection, " +
-			"and give the workload a least-privilege identity so any stolen metadata credentials grant little. Do not " +
-			"return raw upstream responses or error detail to the caller. For third-party products, confirm the vendor's " +
-			"SSRF protection and keep the product patched. References: CWE-918; CAPEC-664 (Server Side Request Forgery); " +
-			"MITRE ATT&CK T1552.005 (Cloud Instance Metadata API); OWASP Top 10:2025 A01 (Broken Access Control); OWASP " +
-			"API Security Top 10:2023 API7 (Server Side Request Forgery).",
+		Mitigation: "Avoid building outbound URLs from caller input, and map caller choices to server-side configured destinations instead.\n" +
+			"Where a caller-supplied URL is unavoidable (webhooks or link previews), allow only https and allowlisted hosts, resolve DNS once, reject loopback, link-local (including 169.254.169.254), RFC 1918, and equivalent IPv6 addresses, and connect to the validated address to defeat DNS rebinding.\n" +
+			"Disable automatic redirects or revalidate every hop, and disable unused URL schemes (file, gopher, dict, and ftp).\n" +
+			"Route outbound traffic through an egress proxy with a default-deny allowlist, require IMDSv2 or the equivalent metadata protection, and give the workload a least-privilege identity so stolen metadata credentials grant little.\n" +
+			"Return no raw upstream responses or error detail to the caller.\n" +
+			"For third-party products, confirm the vendor's SSRF protection, and keep the product patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.InformationDisclosure,

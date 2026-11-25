@@ -28,11 +28,8 @@ func (*ClusterControlPlaneAuditGapRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html",
 		Action: "Deploy an explicit Kubernetes audit policy capturing exec/attach/port-forward, secret access, and " +
 			"admission-controller decisions at Request or RequestResponse level, forwarded to the SIEM.",
-		Mitigation: "Configure the API server audit policy to capture, at minimum, RequestResponse-level logging for " +
-			"pods/exec, pods/attach, pods/portforward subresources; secrets get/list/watch operations; and all admission " +
-			"webhook decisions. Forward the audit log to the central SIEM with retention matching the platform's " +
-			"incident-response window. References: NIST SP 800-53 AU-2 (Event Logging); NIST SP 800-53 AU-12 (Audit " +
-			"Record Generation); CIS Kubernetes Benchmark (Control Plane Logging).",
+		Mitigation: "Configure the API server audit policy to capture, at minimum, RequestResponse-level logging for pods/exec, pods/attach, pods/portforward subresources. Secrets get/list/watch operations. And all admission webhook decisions.\n" +
+			"Forward the audit log to the central SIEM with retention matching the platform's incident-response window.",
 		Check: "Is an explicit API server audit policy covering exec/attach/port-forward, secret access and admission " +
 			"decisions deployed and forwarding to the SIEM?",
 		Function:     types.Operations,

@@ -17,19 +17,24 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Back up and version the index and its source data, and test the rebuild against a recovery time objective. Additionally, monitor retrieval health, and fail closed rather than answering without grounding.'
-mitigation: >
+mitigation: >-
   Keep versioned, restorable snapshots of the index, or the source data and embedding model version
   needed to rebuild it, and test a full rebuild against a defined recovery time objective.
-  Additionally, monitor the index's health, namely its document counts, its staleness against the
-  source, replica lag, and retrieval hit rates, and alert on sudden drops. When retrieval fails, or
-  returns nothing for a query that should match, fail closed by telling the user that grounding is
-  unavailable, rather than letting the model answer from its own weights. Finally, plan the store's
-  capacity for peak query and re-index load, and keep a warm standby for mission-critical use.
-  References include OWASP GenAI Data Security 2026 DSGAI17 (Data Availability and Resilience
-  Failures), MITRE ATLAS AML.T0029 (Denial of AI Service), AML.T0034, and AML.T0036, MAESTRO layers
-  4, 5, and 7, CWE-636, CWE-400, and CWE-770, NIST SP 800-53 CP-9, CP-10, SI-4, and CA-7, and NIST
-  CSF 2.0 PR.IR-01 and RC.RP-01, with the mappings taken from the OWASP GenAI Security Crosswalk
-  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+
+  Monitor the index's health, namely its document counts, its staleness against the source, replica
+  lag, and retrieval hit rates, and alert on sudden drops.
+
+  When retrieval fails, or returns nothing for a query that should match, fail closed by telling the
+  user that grounding is unavailable, rather than letting the model answer from its own weights.
+
+  Plan the store's capacity for peak query and re-index load, and keep a warm standby for
+  mission-critical use.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI17 (Data Availability and Resilience Failures); MITRE ATLAS
+  AML.T0029 (Denial of AI Service), AML.T0034, and AML.T0036; MAESTRO layers 4, 5, and 7; CWE-636;
+  CWE-400; CWE-770; NIST SP 800-53 CP-9, CP-10, SI-4, and CA-7; NIST CSF 2.0 PR.IR-01 and
+  RC.RP-01; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is the index backed up or rebuildable within a tested recovery time, is retrieval health monitored for staleness and silent failure, and does the system fail closed when grounding is unavailable?'
 detection_logic: >
   Request evidence of a tested index rebuild, with a recorded time against the recovery time

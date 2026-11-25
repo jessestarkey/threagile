@@ -18,20 +18,25 @@ impact: >
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Propagate the end user''s identity through the agent to every downstream call where the target supports it, and scope each agent credential to the minimum that the agent''s task needs.'
-mitigation: >
-  Where the target supports it, pass the end user's identity through the agent (with OAuth token
-  exchange, on-behalf-of flows, or workload identity federation with user context), so that each
-  call is authorized as the user rather than the agent. Where a service identity is unavoidable,
-  give each agent and each tool its own identity, scoped to the specific resources and operations it
-  serves, rather than one shared, broad-scope identity across agents, tools, or backends. Keep those
-  credentials in a vault, and rotate each one individually. Additionally, enforce per-user
-  authorization in the agent before it calls a tool on a user's behalf. Finally, log every
-  downstream call with both the agent identity and the originating user. References include the
-  OWASP Top 10 for Agentic Applications 2026 ASI03 (Identity and Privilege Abuse), OWASP GenAI Data
-  Security 2026 DSGAI02 (Agent Identity and Credential Exposure), MITRE ATLAS AML.T0012 (Valid
-  Accounts), MAESTRO layers 6 and 7, CWE-441, CWE-250, and CWE-522, and NIST SP 800-53 AC-3, AC-6,
-  IA-2, and IA-9, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+mitigation: >-
+  Where the target supports it, pass the end user's identity through the agent (OAuth token
+  exchange, on-behalf-of flows, or workload identity federation), so that each call is authorized as
+  the user.
+
+  Where a service identity is unavoidable, give each agent and tool its own identity scoped to the
+  resources it serves, rather than one shared, broad identity.
+
+  Keep those credentials in a vault, and rotate each one individually.
+
+  Enforce per-user authorization in the agent before it calls a tool on a user's behalf.
+
+  Log every downstream call with both the agent identity and the originating user.
+references: >-
+  OWASP Top 10 for Agentic Applications 2026 ASI03 (Identity and Privilege Abuse); OWASP GenAI
+  Data Security 2026 DSGAI02 (Agent Identity and Credential Exposure); MITRE ATLAS AML.T0012
+  (Valid Accounts); MAESTRO layers 6 and 7; CWE-441; CWE-250; CWE-522; NIST SP 800-53 AC-3, AC-6,
+  IA-2, and IA-9; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Does every downstream call this agent makes carry the end user''s identity, or, where it cannot, an agent-specific identity scoped to the minimum resources and operations, with per-user authorization enforced before the call?'
 detection_logic: >
   List every identity that the agent, its tools, and any AI gateway authenticate with, along with

@@ -18,17 +18,22 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Sign provenance credentials cryptographically, so that stripping is detectable as a missing signature rather than a silent absence. Additionally, verify signatures against a trusted issuer list before any content is treated as authenticated.'
-mitigation: >
+mitigation: >-
   Issue provenance or watermark credentials under a cryptographic signature tied to a specific,
   auditable issuer, rather than as a bare metadata tag that silently disappears under re-encoding.
-  Then, verify that signature against a trusted issuer list at consumption time, rather than
-  treating the mere presence of provenance-shaped metadata as sufficient. Additionally, log each
-  verification outcome (valid, missing, or invalid signature) distinctly, since a missing signal and
-  a forged one require different responses. Finally, where content is expected to keep its
-  provenance through a known processing pipeline (for example, a CDN resize step), confirm that the
-  pipeline re-signs or otherwise preserves the chain rather than silently dropping it. References
-  include NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity), NIST AI RMF MANAGE
-  4.1, and the C2PA Technical Specification (Content Credentials).
+
+  Verify that signature against a trusted issuer list at consumption time, rather than treating the
+  mere presence of provenance-shaped metadata as sufficient.
+
+  Log each verification outcome (valid, missing, or invalid signature) distinctly, since a missing
+  signal and a forged one require different responses.
+
+  Where content is expected to keep its provenance through a known processing pipeline (for example,
+  a CDN resize step), confirm that the pipeline re-signs or otherwise preserves the chain rather
+  than silently dropping it.
+references: >-
+  NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity); NIST AI RMF MANAGE 4.1;
+  C2PA Technical Specification (Content Credentials)
 check: 'Are provenance credentials cryptographically signed under an auditable issuer and verified against a trusted issuer list at consumption, and are missing-signature and invalid-signature outcomes logged distinctly?'
 detection_logic: >
   Audit the provenance service's issuance process for cryptographic signing versus bare metadata

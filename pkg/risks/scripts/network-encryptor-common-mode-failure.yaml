@@ -17,16 +17,20 @@ impact: >
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
 action: 'Confirm that the two required encryption layers are built from diverse, independently sourced components, with no shared vendor, codebase, or known common vulnerability.'
-mitigation: >
+mitigation: >-
   Verify that both encryption layers required by the CSfC Capability Package are actually present
   and independently keyed. In other words, they must not be a single layer misconfigured to appear
   as two, nor two layers from the same vendor, or sharing underlying code, that a single
-  vulnerability could defeat at once. Additionally, re-verify this independence periodically, since
-  a hardware replacement, a firmware update, or a configuration change after the initial
-  accreditation could silently collapse the two layers into one without any functional symptom.
-  Finally, maintain documented key management and rotation for each layer separately. References
-  include the NSA Commercial Solutions for Classified (CSfC) Customer Handbook and NIST SP 800-53
-  SC-8 (Transmission Confidentiality and Integrity) and SC-13 (Cryptographic Protection).
+  vulnerability could defeat at once.
+
+  Re-verify this independence periodically, since a hardware replacement, a firmware update, or a
+  configuration change after the initial accreditation could silently collapse the two layers into
+  one without any functional symptom.
+
+  Maintain documented key management and rotation for each layer separately.
+references: >-
+  NSA Commercial Solutions for Classified (CSfC) Customer Handbook; NIST SP 800-53 SC-8
+  (Transmission Confidentiality and Integrity) and SC-13 (Cryptographic Protection)
 check: 'Are the two required CSfC encryption layers independently sourced and keyed, with no shared vendor, codebase, or known common vulnerability, and is that independence re-verified periodically?'
 detection_logic: >
   Audit the encryption architecture's documentation and configuration for evidence that both

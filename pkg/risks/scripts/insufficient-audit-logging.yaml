@@ -16,18 +16,24 @@ impact: >
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
 action: 'Log every AU-2 event type, including each authentication failure, authorization denial, and input-validation rejection, with the calling identity. Then, forward the events to a centralized, tamper-evident SIEM with correlation rules.'
-mitigation: >
+mitigation: >-
   Implement structured (JSON) logging that captures, at a minimum, the timestamp, event type, user
   identity (or the service account, API key, or source IP where the request is unauthenticated),
   target resource, and outcome for every AU-2 event category, including every authentication
-  failure, authorization denial, and input-validation rejection. Additionally, forward the events to
-  a centralized SIEM with retention that meets the applicable data retention policy, and build
-  correlation rules that flag a single identity or source crossing a threshold of failures within a
-  rolling window. Ensure that application-layer authentication events are logged in addition to
-  infrastructure-layer events. Finally, protect the integrity of the logs. References include NIST
-  SP 800-53 AU-2 (Event Logging), AU-6 (Audit Record Review, Analysis, and Reporting), AU-12 (Audit
-  Record Generation), and SI-4 (System Monitoring), the DoD RMF Process Guide, and the DISA
-  Application Security STIG.
+  failure, authorization denial, and input-validation rejection.
+
+  Forward the events to a centralized SIEM with retention that meets the applicable data retention
+  policy, and build correlation rules that flag a single identity or source crossing a threshold of
+  failures within a rolling window.
+
+  Ensure that application-layer authentication events are logged in addition to infrastructure-layer
+  events.
+
+  Protect the integrity of the logs.
+references: >-
+  NIST SP 800-53 AU-2 (Event Logging), AU-6 (Audit Record Review, Analysis, and Reporting), AU-12
+  (Audit Record Generation), and SI-4 (System Monitoring); DoD RMF Process Guide; DISA Application
+  Security STIG
 check: 'Have the AU-2 required event types, including authentication failures, authorization denials, and input-validation rejections, been confirmed, with evidence, as logged and forwarded to the SIEM with active correlation rules?'
 detection_logic: >
   Run automated AU-2 coverage checks by querying the SIEM for the presence of each required event

@@ -13,13 +13,16 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html"
 action: 'Implement strict Kubernetes NetworkPolicies.'
-mitigation: >
-  Apply a default-deny NetworkPolicy to the namespace first. Then, add explicit allow rules scoped
-  to only the specific source and destination pods and ports that the workload genuinely requires,
-  using label selectors rather than namespace-wide allows. Finally, enforce this through
-  policy-as-code, rather than relying on manual application to each namespace. References include
-  NIST SP 800-53 SC-7 (Boundary Protection), NIST SP 800-207 (Zero Trust Architecture), and the CIS
-  Kubernetes Benchmark.
+mitigation: >-
+  Apply a default-deny NetworkPolicy to the namespace first.
+
+  Add explicit allow rules scoped to only the specific source and destination pods and ports that
+  the workload genuinely requires, using label selectors rather than namespace-wide allows.
+
+  Enforce this through policy-as-code, rather than relying on manual application to each namespace.
+references: >-
+  NIST SP 800-53 SC-7 (Boundary Protection); NIST SP 800-207 (Zero Trust Architecture); CIS
+  Kubernetes Benchmark
 check: 'Does a default-deny NetworkPolicy govern this workload''s namespace, with explicit allow rules limited to the pods and ports the workload requires, enforced through policy-as-code?'
 detection_logic: >
   Run kubectl get networkpolicy --all-namespaces, and flag any namespace that has no NetworkPolicy

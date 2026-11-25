@@ -17,18 +17,21 @@ impact: >
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
 action: 'Authenticate the command-and-control link cryptographically, and encrypt the telemetry, sensor, and video downlink, rather than relying on frequency-hopping or protocol obscurity alone.'
-mitigation: >
+mitigation: >-
   Authenticate every command sent over the control link cryptographically, so that the air vehicle
   can distinguish its legitimate ground control station from an impersonator, rather than relying on
-  frequency-hopping, proprietary protocols, or physical proximity as the control. Additionally,
-  encrypt the telemetry, sensor, and video downlink end to end, since adversaries have intercepted
+  frequency-hopping, proprietary protocols, or physical proximity as the control.
+
+  Encrypt the telemetry, sensor, and video downlink end to end, since adversaries have intercepted
   unencrypted full-motion video in documented real-world incidents, and the same exposure applies to
-  any unencrypted downlink regardless of platform. Finally, define and test a documented lost-link
-  failsafe behavior (for example, return to home or a controlled landing), so that a jammed or
-  severed link does not itself become the attack. References include CWE-306 (Missing Authentication
-  for Critical Function), CWE-319 (Cleartext Transmission of Sensitive Information), NIST SP 800-53
-  SC-8 (Transmission Confidentiality and Integrity) and IA-3 (Device Identification and
-  Authentication), and DoD UAS cybersecurity guidance.
+  any unencrypted downlink regardless of platform.
+
+  Define and test a documented lost-link failsafe behavior (for example, return to home or a
+  controlled landing), so that a jammed or severed link does not itself become the attack.
+references: >-
+  CWE-306 (Missing Authentication for Critical Function); CWE-319 (Cleartext Transmission of
+  Sensitive Information); NIST SP 800-53 SC-8 (Transmission Confidentiality and Integrity) and
+  IA-3 (Device Identification and Authentication); DoD UAS cybersecurity guidance
 check: 'Is the command-and-control link cryptographically authenticated, is the telemetry, sensor, and video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?'
 detection_logic: >
   Audit the command-link protocol for cryptographic authentication, as opposed to reliance on

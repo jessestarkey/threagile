@@ -21,17 +21,12 @@ func (*LdapInjectionRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html",
 		Action: "Escape all caller-controlled input with RFC 4515 filter encoding and RFC 4514 DN encoding before it reaches " +
 			"an LDAP query, and bind with a least-privilege read-only service account.",
-		Mitigation: "Never concatenate caller-supplied values into LDAP search filters or distinguished names. Use the directory " +
-			"library's escaping functions (Spring LDAP LdapEncoder, Python ldap3 escape_filter_chars, the OWASP Java " +
-			"Encoder or ESAPI equivalents) to encode the filter metacharacters asterisk, parentheses, backslash, and NUL " +
-			"per RFC 4515 and DN special characters per RFC 4514, or use a filter builder that treats values as data. " +
-			"Validate inputs such as usernames against a strict allowlist pattern first. Bind with a dedicated service " +
-			"account that can read only the attributes and subtrees the application needs, never a directory " +
-			"administrator, and disable anonymous binds. Reject empty passwords before a simple bind, since many " +
-			"directories treat an empty-password bind as an unauthenticated success. Use LDAPS or StartTLS with " +
-			"certificate validation, and log failed and anomalous queries. For third-party products, confirm the vendor " +
-			"encodes LDAP input and keep the product patched. References: CWE-90; CAPEC-136 (LDAP Injection); OWASP Top " +
-			"10:2025 A05 (Injection).",
+		Mitigation: "Never concatenate caller-supplied values into LDAP filters or distinguished names. Encode them with the library's escaping functions (such as Spring LdapEncoder or ldap3 escape_filter_chars), or use a filter builder that treats values as data.\n" +
+			"Validate inputs such as usernames against a strict allowlist pattern first.\n" +
+			"Bind with a service account that reads only the attributes and subtrees the application needs, never a directory administrator, and disable anonymous binds.\n" +
+			"Reject empty passwords before a simple bind, since many directories treat an empty-password bind as an unauthenticated success.\n" +
+			"Use LDAPS or StartTLS with certificate validation, and log failed and anomalous queries.\n" +
+			"For third-party products, confirm the vendor encodes LDAP input, and keep the product patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,

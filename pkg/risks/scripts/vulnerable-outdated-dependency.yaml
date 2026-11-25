@@ -18,17 +18,21 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Integrate automated Software Composition Analysis (SCA) into the CI/CD pipeline, scanning this asset''s full application-level dependency graph against a current known-vulnerability database on every build.'
-mitigation: >
+mitigation: >-
   Integrate an SCA tool (for example, Dependabot, Snyk, OWASP Dependency-Check, or OSV-Scanner) into
   the CI/CD pipeline. Specifically, scan the complete dependency graph, including transitive
   dependencies and not only direct ones, on every build, and on a recurring schedule for newly
-  disclosed CVEs against the versions already deployed. Additionally, fail the build on Critical or
-  High findings above the organization's accepted threshold, and maintain a documented remediation
-  SLA tied to severity. Finally, subscribe to the security advisories for the package registry
-  ecosystem (npm, PyPI, Maven Central, or NuGet) that this asset uses. References include CWE-1104
-  (Use of Unmaintained Third Party Components), the OWASP Top 10:2025 A03 (Software Supply Chain
-  Failures), NIST SP 800-53 RA-5 (Vulnerability Monitoring and Scanning), and MITRE ATT&CK T1190
-  (Exploit Public-Facing Application).
+  disclosed CVEs against the versions already deployed.
+
+  Fail the build on Critical or High findings above the organization's accepted threshold, and
+  maintain a documented remediation SLA tied to severity.
+
+  Subscribe to the security advisories for the package registry ecosystem (npm, PyPI, Maven Central,
+  or NuGet) that this asset uses.
+references: >-
+  CWE-1104 (Use of Unmaintained Third Party Components); OWASP Top 10:2025 A03 (Software Supply
+  Chain Failures); NIST SP 800-53 RA-5 (Vulnerability Monitoring and Scanning); MITRE ATT&CK T1190
+  (Exploit Public-Facing Application)
 check: 'Is an SCA tool integrated into the CI/CD pipeline, scanning this asset''s full transitive dependency graph against a current known-vulnerability database on every build and on a recurring schedule?'
 detection_logic: >
   Confirm that an SCA tool runs in the CI/CD pipeline for this asset's build, and that its scan

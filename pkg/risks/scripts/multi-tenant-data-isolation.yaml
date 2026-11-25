@@ -13,14 +13,20 @@ impact: >
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html"
 action: 'Enforce the tenant context in every database query and cache key, and test cross-tenant isolation on every data-access endpoint.'
-mitigation: >
+mitigation: >-
   Enforce the tenant ID as a mandatory filter in every database query, at the ORM or repository
-  layer. Additionally, implement row-level security at the database layer as a defense-in-depth
-  backstop, and include the tenant context in every cache key. Validate the tenant context in
-  background job processors when jobs are dequeued, not only when they are enqueued. Finally, use
-  opaque, non-sequential tenant identifiers. References include NIST SP 800-53 AC-3 (Access
-  Enforcement) and AC-4 (Information Flow Enforcement), and the DoD Cloud Multi-Tenant Security
-  Requirements.
+  layer.
+
+  Implement row-level security at the database layer as a defense-in-depth backstop, and include the
+  tenant context in every cache key.
+
+  Validate the tenant context in background job processors when jobs are dequeued, not only when
+  they are enqueued.
+
+  Use opaque, non-sequential tenant identifiers.
+references: >-
+  NIST SP 800-53 AC-3 (Access Enforcement) and AC-4 (Information Flow Enforcement); DoD Cloud
+  Multi-Tenant Security Requirements
 check: 'Is the tenant ID enforced as a mandatory filter in every database query, every cache key, and every background job at dequeue time?'
 detection_logic: >
   Run cross-tenant access tests in the automated test suite. Specifically, obtain authenticated

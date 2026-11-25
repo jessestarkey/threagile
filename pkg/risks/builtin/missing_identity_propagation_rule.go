@@ -23,17 +23,10 @@ func (*MissingIdentityPropagationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
 		Action: "Propagate the end user's verified identity to this backend asset in a signed token, and enforce object- and " +
 			"function-level authorization against that identity on every request.",
-		Mitigation: "Pass the end user's identity downstream as a signed, audience-restricted token (an OAuth 2.0 access token, an " +
-			"RFC 8693 token-exchange or on-behalf-of token, or a signed internal JWT) instead of a trusted service-account " +
-			"call that carries no user context. In this asset, validate the token's signature, issuer, audience, and " +
-			"expiry on every request, and authorize each operation against the user's entitlements and ownership of the " +
-			"requested object, so a compromised upstream component cannot read or change other users' records by calling " +
-			"this service directly. Never accept user identifiers from unsigned headers or request bodies. Where a " +
-			"technical identity is unavoidable (batch jobs, DevOps flows), use a dedicated least-privilege service " +
-			"identity per caller, scoped to only the operations that caller needs, and log the originating user or job " +
-			"identifier for audit. References: CWE-639, CWE-285; OWASP API Security Top 10:2023 API1 (Broken Object Level " +
-			"Authorization), API5 (Broken Function Level Authorization); OWASP Top 10:2025 A01 (Broken Access Control); " +
-			"NIST SP 800-53 AC-3, AC-6; NIST SP 800-207.",
+		Mitigation: "Pass the end user's identity downstream as a signed, audience-restricted token (an OAuth access token, an RFC 8693 token-exchange or on-behalf-of token, or a signed internal JWT), instead of a service-account call with no user context.\n" +
+			"In this asset, validate each token's signature, issuer, audience, and expiry, and authorize each operation against the user's entitlements and object ownership, so a compromised upstream component cannot reach other users' records.\n" +
+			"Never accept user identifiers from unsigned headers or request bodies.\n" +
+			"Where a technical identity is unavoidable (batch jobs or DevOps flows), use a least-privilege identity per caller, and log the originating user or job for audit.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Architecture,
 		STRIDE:       types.ElevationOfPrivilege,

@@ -15,16 +15,20 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Require MFA and administrative tiering for console access, and verify the integrity of policy and signature content before it is pushed to the fleet.'
-mitigation: >
+mitigation: >-
   Require multi-factor authentication and a dedicated, tiered administrative account, never a
   general-purpose domain admin credential, for access to the endpoint security console.
-  Additionally, verify the integrity of policy, signature, and remediation-action content before it
-  is pushed to the fleet, through a code-signing or change-approval step that is distinct from the
-  console's own built-in distribution mechanism. Finally, monitor for policy pushes or remediation
-  actions that originate outside documented change windows or approved administrative sessions,
-  since the console's normal operation is indistinguishable from an attacker using it exactly as
-  designed. References include NIST SP 800-53 AC-6 (Least Privilege) and CM-5 (Access Restrictions
-  for Change), and the DoD Endpoint Security Solutions (ESS) implementation guidance.
+
+  Verify the integrity of policy, signature, and remediation-action content before it is pushed to
+  the fleet, through a code-signing or change-approval step that is distinct from the console's own
+  built-in distribution mechanism.
+
+  Monitor for policy pushes or remediation actions that originate outside documented change windows
+  or approved administrative sessions, since the console's normal operation is indistinguishable
+  from an attacker using it exactly as designed.
+references: >-
+  NIST SP 800-53 AC-6 (Least Privilege) and CM-5 (Access Restrictions for Change); DoD Endpoint
+  Security Solutions (ESS) implementation guidance
 check: 'Does console access require MFA and a dedicated, tiered administrative account, is pushed policy, signature, and remediation content integrity-verified before distribution, and are pushes outside documented change windows monitored?'
 detection_logic: >
   Audit the console's authentication configuration for MFA and administrative tiering. Additionally,

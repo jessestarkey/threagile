@@ -24,15 +24,9 @@ func (*MissingBuildInfrastructureRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Add the developer endpoints, source repository, build pipeline, and artifact registry that produce this " +
 			"system's custom code to the threat model, with their data flows to the deployment targets.",
-		Mitigation: "Model the full software delivery path for every custom-developed component: developer workstations " +
-			"(devops-client), the source code repository, the CI/CD pipeline and its runners, the artifact or container " +
-			"registry, and the communication links from each to the deployment targets, with their real trust boundaries " +
-			"and CIA ratings. Once these assets exist in the model, the supply-chain rules (code backdooring, unchecked " +
-			"deployment, accidental secret leak, push instead of pull deployment, container base image backdooring) can " +
-			"evaluate them; without them, the most direct path to compromising production is invisible to the analysis. If " +
-			"the build platform is owned by a shared enterprise team, model it as out-of-scope assets so its data flows " +
-			"into this system still appear, and cite that platform's own authorization package. References: NIST SP " +
-			"800-218 (SSDF) PO.3, PO.5; NIST SP 800-53 SA-15, SR-3; MITRE ATT&CK T1195.002.",
+		Mitigation: "Model the delivery path for every custom component, namely developer workstations, the source repository, the CI/CD pipeline and its runners, the artifact registry, and their links to the deployment targets, with real trust boundaries and CIA ratings.\n" +
+			"With these assets in the model, the supply-chain rules (such as code backdooring and unchecked deployment) can evaluate them. Without them, the most direct path to compromising production is invisible to the analysis.\n" +
+			"If a shared enterprise team owns the build platform, model it as out of scope so its data flows still appear, and cite that platform's authorization package.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Architecture,
 		STRIDE:       types.Tampering,

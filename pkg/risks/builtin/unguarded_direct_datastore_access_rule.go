@@ -20,16 +20,11 @@ func (*UnguardedDirectDatastoreAccessRule) Category() *types.RiskCategory {
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Remove direct cross-boundary access to this datastore by placing an application service or API in front of " +
 			"it, and restrict the datastore's network rules to that service alone.",
-		Mitigation: "Route every cross-boundary data access through an application tier or data-access API that authenticates the " +
-			"caller, authorizes each operation against the caller's entitlements, validates input, and exposes only the " +
-			"queries the business function needs, so no external component holds raw database credentials or a database " +
-			"network path. Restrict the datastore's firewall or network security group to the application tier's subnet or " +
-			"private endpoint, and disable public network access. For reporting and analytics consumers, provide a " +
-			"read-only replica, a curated view, or an export pipeline instead of direct access to the primary store. Where " +
-			"direct access is operationally unavoidable (DBA administration), require a bastion or just-in-time privileged " +
-			"access path with MFA and session recording. Send database connection and privileged-statement audit logs to " +
-			"the SIEM. References: CWE-668, CWE-284; MITRE ATT&CK T1213 (Data from Information Repositories), T1078 (Valid " +
-			"Accounts); NIST SP 800-53 AC-3, AC-4, SC-7.",
+		Mitigation: "Route every cross-boundary data access through an application tier or API that authenticates the caller, authorizes each operation, validates input, and exposes only the queries the business needs, so no external component holds database credentials or a network path.\n" +
+			"Restrict the datastore's firewall to the application tier's subnet or private endpoint, and disable public network access.\n" +
+			"Give reporting and analytics consumers a read-only replica, a curated view, or an export pipeline instead of the primary store.\n" +
+			"Where direct access is unavoidable (DBA administration), require a bastion or just-in-time access path with MFA and session recording.\n" +
+			"Send connection and privileged-statement audit logs to the SIEM.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Architecture,
 		STRIDE:       types.ElevationOfPrivilege,

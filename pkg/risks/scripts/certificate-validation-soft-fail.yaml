@@ -17,18 +17,22 @@ impact: >
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
 action: 'Configure revocation checking to fail closed, and confirm that every relying system uses a DoD-approved OCSP or CRL source, consistent with the CAC and PIV authentication requirements.'
-mitigation: >
+mitigation: >-
   Configure every relying party's revocation check to fail closed. In other words, reject the
   authentication attempt when the OCSP responder or the CRL cannot be reached, or does not respond
   in time, rather than treating the absence of a definitive answer as implicit non-revocation.
-  Additionally, confirm that the revocation source itself is a DoD-approved OCSP or CRL source, as
-  CAC two-factor authentication of privileged users requires. Finally, where degraded or
-  disconnected (DDIL) operation is a genuine requirement, address it with a short-validity cached
-  response signed by the responder, rather than an unconditional fail-open default. References
-  include CWE-299 (Improper Check for Certificate Revocation), MITRE ATT&CK T1557
-  (Adversary-in-the-Middle), NIST SP 800-53 IA-5(2) (Public Key-Based Authentication) and SC-17
-  (Public Key Infrastructure Certificates), and the DoD Cloud Computing Mission Owner Network
-  Security Requirements Guide (for the CAC and OCSP revocation requirements).
+
+  Confirm that the revocation source itself is a DoD-approved OCSP or CRL source, as CAC two-factor
+  authentication of privileged users requires.
+
+  Where degraded or disconnected (DDIL) operation is a genuine requirement, address it with a
+  short-validity cached response signed by the responder, rather than an unconditional fail-open
+  default.
+references: >-
+  CWE-299 (Improper Check for Certificate Revocation); MITRE ATT&CK T1557
+  (Adversary-in-the-Middle); NIST SP 800-53 IA-5(2) (Public Key-Based Authentication) and SC-17
+  (Public Key Infrastructure Certificates); DoD Cloud Computing Mission Owner Network Security
+  Requirements Guide (for the CAC and OCSP revocation requirements)
 check: 'Does revocation checking fail closed when the OCSP responder or CRL is unreachable, and does every relying system use a DoD-approved OCSP or CRL source?'
 detection_logic: >
   Audit the relying parties' configuration for fail-open versus fail-closed behavior when a

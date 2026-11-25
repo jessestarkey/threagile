@@ -25,17 +25,11 @@ func (*AccidentalSecretLeakRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Block secrets from entering source repositories and artifact registries with pre-commit and server-side push " +
 			"scanning, scan the existing history, and revoke and rotate any secret ever found.",
-		Mitigation: "Enforce secret scanning at three points: a pre-commit hook on developer workstations (gitleaks, git-secrets, " +
-			"or detect-secrets); a server-side push-protection rule on the source repository that rejects commits " +
-			"containing known credential formats or high-entropy strings; and a CI stage that scans every build artifact " +
-			"and container image layer (trufflehog, gitleaks, or the registry's native scanner) before it is published. " +
-			"Keep .gitignore and .dockerignore entries for local credential files (.env, *.pem, *.pfx, kubeconfig, " +
-			"terraform.tfstate) and use multi-stage container builds so build-time credentials never persist into a " +
-			"published layer. Run a one-time full-history scan of every in-scope repository and registry. Treat any secret " +
-			"found as compromised: revoke and rotate it at its issuer first, then purge it from history (git filter-repo " +
-			"or BFG), because deleting the file in a new commit leaves it in history and in every existing clone. Replace " +
-			"static credentials in code and configuration with references resolved at runtime from a vault or a workload " +
-			"identity. References: CWE-798, CWE-540; MITRE ATT&CK T1552.001 (Credentials In Files); NIST SP 800-53 IA-5(7).",
+		Mitigation: "Scan for secrets at three points, namely (1) a pre-commit hook on developer workstations (gitleaks or detect-secrets), (2) server-side push protection that rejects known credential formats and high-entropy strings, and (3) a CI stage that scans every artifact and image layer before it is published.\n" +
+			"Exclude local credential files (.env, *.pem, kubeconfig, and terraform.tfstate) in .gitignore and .dockerignore, and use multi-stage builds so build-time credentials never persist in a published layer.\n" +
+			"Run a one-time full-history scan of every in-scope repository and registry.\n" +
+			"Treat any secret found as compromised. Revoke and rotate it at its issuer first, then purge it from history (git filter-repo or BFG), since deleting the file in a new commit leaves it in every existing clone.\n" +
+			"Replace static credentials with references resolved at runtime from a vault or a workload identity.",
 		Check:                      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:                   types.Operations,
 		STRIDE:                     types.InformationDisclosure,

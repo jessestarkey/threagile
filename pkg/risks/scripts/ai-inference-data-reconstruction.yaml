@@ -17,19 +17,25 @@ impact: >
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Limit what the inference API reveals and how fast it can be queried, and train sensitive models with privacy protections that resist reconstruction.'
-mitigation: >
+mitigation: >-
   Authenticate and rate-limit every inference caller with per-identity query budgets, and alert on
   the systematic or high-volume querying patterns that are typical of extraction and membership
-  inference. Additionally, return only what the use case needs, which means no logits or full
-  probability vectors, and at most rounded or top-k confidence scores. Train or fine-tune models on
-  sensitive data with privacy-preserving techniques (differential privacy, deduplication, or removal
-  of rare records), and test them for memorization before release. Finally, watermark outputs where
-  model extraction is a concern. References include OWASP GenAI Data Security 2026 DSGAI18
-  (Inference and Data Reconstruction), MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API,
-  covering Infer Training Data Membership, Invert AI Model, and Extract AI Model), MAESTRO layers 1,
-  2, and 5, CWE-200 and CWE-327, and NIST SP 800-53 AC-3, SI-4, and RA-3, with the mappings taken
-  from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  inference.
+
+  Return only what the use case needs, which means no logits or full probability vectors, and at
+  most rounded or top-k confidence scores.
+
+  Train or fine-tune models on sensitive data with privacy-preserving techniques (differential
+  privacy, deduplication, or removal of rare records), and test them for memorization before
+  release.
+
+  Watermark outputs where model extraction is a concern.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI18 (Inference and Data Reconstruction); MITRE ATLAS
+  AML.T0024 (Exfiltration via AI Inference API, covering Infer Training Data Membership, Invert AI
+  Model, and Extract AI Model); MAESTRO layers 1, 2, and 5; CWE-200; CWE-327; NIST SP 800-53 AC-3,
+  SI-4, and RA-3; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Are inference callers authenticated and rate-limited with per-identity budgets and extraction monitoring, are outputs limited to what the use case needs, and were sensitive models trained with privacy protections and memorization testing?'
 detection_logic: >
   Review the inference API's authentication and rate limits, and what each response returns. Then,

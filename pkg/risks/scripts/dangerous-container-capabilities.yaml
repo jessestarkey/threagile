@@ -13,13 +13,17 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
 action: 'Drop all capabilities, and add back only the specific capabilities that the workload''s function requires.'
-mitigation: >
+mitigation: >-
   Set securityContext.capabilities.drop: [ALL] in the container spec, and add back only the specific
-  capabilities that are required. Additionally, enforce this through a Kubernetes admission
-  controller that blocks the deployment of containers with disallowed capabilities. Finally, apply
-  AppArmor or seccomp profiles to further restrict the system call surface. References include the
-  DISA Kubernetes STIG (K8S-00-000150), NIST SP 800-53 CM-7 (Least Functionality), and the CIS
-  Kubernetes Benchmark.
+  capabilities that are required.
+
+  Enforce this through a Kubernetes admission controller that blocks the deployment of containers
+  with disallowed capabilities.
+
+  Apply AppArmor or seccomp profiles to further restrict the system call surface.
+references: >-
+  DISA Kubernetes STIG (K8S-00-000150); NIST SP 800-53 CM-7 (Least Functionality); CIS Kubernetes
+  Benchmark
 check: 'Does the container drop all Linux capabilities and add back only those its function requires, with an admission controller blocking containers that request disallowed capabilities?'
 detection_logic: >
   Integrate a Kubernetes capability audit into the CI/CD pipeline. Additionally, run Trivy or

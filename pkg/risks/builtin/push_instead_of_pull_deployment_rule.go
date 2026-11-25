@@ -24,16 +24,10 @@ func (*PushInsteadPullDeploymentRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Replace push-based deployment from the build pipeline with a pull-based GitOps agent inside the target " +
 			"environment that fetches and verifies signed artifacts itself.",
-		Mitigation: "Run a deployment agent inside the target environment (Argo CD or Flux for Kubernetes, or an equivalent pull " +
-			"agent for VMs) that watches a Git repository and artifact registry and applies changes itself, so production " +
-			"needs no inbound administrative interface reachable from the pipeline and the pipeline holds no production " +
-			"credentials. The pipeline's job ends at publishing a signed artifact and updating the desired-state " +
-			"repository through a reviewed pull request. Configure the agent to verify artifact signatures and provenance " +
-			"before applying, and scope its own permissions to the namespaces or resources it manages. Where push " +
-			"deployment cannot be eliminated, use short-lived, environment-scoped credentials issued per run through OIDC " +
-			"federation, require manual approval gates for production, and restrict the deployment endpoint to the " +
-			"runner's private network. References: CWE-668; MITRE ATT&CK T1072 (Software Deployment Tools), T1195.002; " +
-			"NIST SP 800-53 CM-5, AC-17; NIST SP 800-204D.",
+		Mitigation: "Run a deployment agent inside the target environment (Argo CD or Flux, or an equivalent for VMs) that pulls from a Git repository and artifact registry, so production exposes no inbound administrative interface and the pipeline holds no production credentials.\n" +
+			"End the pipeline's job at publishing a signed artifact and updating the desired-state repository through a reviewed pull request.\n" +
+			"Configure the agent to verify artifact signatures and provenance before applying, and scope its permissions to the resources it manages.\n" +
+			"Where push deployment must remain, use short-lived, environment-scoped credentials issued per run through OIDC federation, require approval gates for production, and restrict the deployment endpoint to the runner's private network.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Architecture,
 		STRIDE:       types.Tampering,

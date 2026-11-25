@@ -14,16 +14,20 @@ impact: >
 asvs: "V6 - Cryptography"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html"
 action: 'Generate and store consequential keys in an HSM-backed service rather than in software, and confirm that the key ownership tier (customer-managed or platform-managed) matches this asset''s data classification requirement.'
-mitigation: >
+mitigation: >-
   Generate and store keys that protect CUI, or signing and root credentials, in a hardware-backed
   key vault (for example, a Premium or Managed HSM tier, or an equivalent), rather than in
-  application memory or a software keystore. Additionally, where policy requires customer control
-  over key material for a given classification tier, provision the resource with a customer-managed
-  key (CMK) in that hardware-backed vault, rather than accepting the platform's default
-  platform-managed key (PMK). Verify this for each resource, since PMK is frequently the default,
-  and it satisfies "encrypted at rest" scans without satisfying the ownership requirement.
-  References include NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management), NIST SP
-  800-57 (Recommendation for Key Management), and FIPS 140-3.
+  application memory or a software keystore.
+
+  Where policy requires customer control over key material for a given classification tier,
+  provision the resource with a customer-managed key (CMK) in that hardware-backed vault, rather
+  than accepting the platform's default platform-managed key (PMK).
+
+  Verify this for each resource, since PMK is frequently the default, and it satisfies "encrypted at
+  rest" scans without satisfying the ownership requirement.
+references: >-
+  NIST SP 800-53 SC-12 (Cryptographic Key Establishment and Management); NIST SP 800-57
+  (Recommendation for Key Management); FIPS 140-3
 check: 'Are consequential keys generated and held in a hardware-backed vault, with the key ownership tier (CMK or PMK) matching this asset''s data classification requirement?'
 detection_logic: >
   Audit the key vault's resource configuration for HSM-backed key generation, and for whether keys

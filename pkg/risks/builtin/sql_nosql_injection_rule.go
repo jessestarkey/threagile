@@ -21,18 +21,13 @@ func (*SqlNoSqlInjectionRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
 		Action: "Use parameterized queries or prepared statements for every database call, prohibit string-built query text, " +
 			"and connect with a least-privilege database account.",
-		Mitigation: "Execute all SQL with bound parameters (JDBC PreparedStatement, ADO.NET SqlParameter, driver placeholders, ORM " +
-			"query builders) and never concatenate or format caller input into query text. Identifiers that cannot be " +
-			"parameterized (ORDER BY columns, table names, sort direction) must be validated against a fixed allowlist. " +
-			"Audit ORM raw-query escapes (raw(), FromSqlRaw, createNativeQuery, text()) and stored procedures that build " +
-			"dynamic SQL internally. For NoSQL stores, reject operator keys in caller-supplied JSON (MongoDB $where, $ne, " +
-			"$gt, $regex), disable server-side JavaScript execution, and bind input to typed query objects. Connect with " +
-			"an account limited to the specific tables and DML operations required, with no DDL, no file or OS access " +
-			"(xp_cmdshell, COPY ... PROGRAM, LOAD_FILE, INTO OUTFILE), and no administrative rights, so a successful " +
-			"injection cannot escalate to code execution. Add SAST rules for injection sinks in CI and DAST (sqlmap, ZAP) " +
-			"against staging. For third-party products, confirm the vendor's query handling and keep the product patched. " +
-			"References: CWE-89, CWE-943; CAPEC-66 (SQL Injection), CAPEC-676 (NoSQL Injection); MITRE ATT&CK T1190; OWASP " +
-			"Top 10:2025 A05 (Injection).",
+		Mitigation: "Execute all SQL with bound parameters (prepared statements, driver placeholders, or ORM query builders), and never concatenate caller input into query text.\n" +
+			"Validate identifiers that cannot be parameterized (ORDER BY columns, table names, and sort direction) against a fixed allowlist.\n" +
+			"Audit ORM raw-query escapes (such as FromSqlRaw or createNativeQuery) and stored procedures that build dynamic SQL.\n" +
+			"For NoSQL stores, reject operator keys such as $where and $ne in caller-supplied JSON, disable server-side JavaScript, and bind input to typed query objects.\n" +
+			"Connect with an account limited to the required tables and DML operations, with no DDL, file, OS, or administrative rights, so a successful injection cannot escalate to code execution.\n" +
+			"Add SAST rules for injection sinks in CI, and run DAST (sqlmap or ZAP) against staging.\n" +
+			"For third-party products, confirm the vendor's query handling, and keep the product patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,

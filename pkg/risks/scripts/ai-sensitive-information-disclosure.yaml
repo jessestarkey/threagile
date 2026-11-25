@@ -17,19 +17,26 @@ impact: >
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Keep sensitive data out of what the model can reach unless the requester is authorized for it, and filter outputs for sensitive content before they leave the boundary.'
-mitigation: >
+mitigation: >-
   Give the model only data that the requesting user is entitled to see, enforcing authorization when
   documents are retrieved and tools are called, rather than instructing the model to withhold
-  content. Additionally, minimize, mask, or tokenize sensitive fields before they enter prompts or
-  retrieval indexes. Keep confidential data out of training and fine-tuning sets, unless the model
-  is confined to users who are cleared for it. Furthermore, scan outputs for sensitive patterns and
-  classification markings before they cross the boundary, and block or redact any matches. Finally,
-  log responses for review. References include the OWASP LLM Top 10 2026 LLM02 (Sensitive
-  Information Disclosure), OWASP GenAI Data Security 2026 DSGAI01 (Sensitive Data Leakage) and
-  DSGAI09 (Multimodal Cross-Channel Leakage), MITRE ATLAS AML.T0057 and AML.T0024, MAESTRO layers 1,
-  2, and 5, CWE-200, CWE-201, and CWE-359, and NIST SP 800-53 AC-3, AC-4, SC-28, and SI-4, with the
-  mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  content.
+
+  Minimize, mask, or tokenize sensitive fields before they enter prompts or retrieval indexes.
+
+  Keep confidential data out of training and fine-tuning sets, unless the model is confined to users
+  who are cleared for it.
+
+  Scan outputs for sensitive patterns and classification markings before they cross the boundary,
+  and block or redact any matches.
+
+  Log responses for review.
+references: >-
+  OWASP LLM Top 10 2026 LLM02 (Sensitive Information Disclosure); OWASP GenAI Data Security 2026
+  DSGAI01 (Sensitive Data Leakage) and DSGAI09 (Multimodal Cross-Channel Leakage); MITRE ATLAS
+  AML.T0057 and AML.T0024; MAESTRO layers 1, 2, and 5; CWE-200; CWE-201; CWE-359; NIST SP 800-53
+  AC-3, AC-4, SC-28, and SI-4; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is the model limited to the data each requester is authorized for, with authorization at retrieval and tool time, sensitive fields minimized before they enter the context, and outputs scanned before they leave the boundary?'
 detection_logic: >
   Inventory the confidential data that the model can reach through prompts, retrieval, tools, and

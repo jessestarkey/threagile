@@ -20,26 +20,31 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Version, review, and canary-test every prompt, model, and skill change with a tested rollback. Additionally, monitor the asset''s behavior against its intended scope, and provide a tested kill switch.'
-mitigation: >
-  The mitigation has two parts. The first is change control. Store system prompts, model and adapter
-  versions, and agent skill and tool definitions as versioned artifacts with the same review as
-  application code, and pin what production loads to a reviewed version, with no auto-updating
-  skills or floating model tags. Keep explicit separation between system instructions and user or
-  tool content in every prompt version. Additionally, run a versioned suite of known-answer canary
-  prompts, including ones that confirm the guardrails are active, before promotion and on a schedule
-  against production, and alert on any deviation. Keep the previous validated version ready to
-  serve, and test the rollback. The second part is containment. Send the asset's actions, tool
-  calls, and outputs to an AI-aware observability stack, and alert on behavior outside its declared
-  scope. Furthermore, provide a kill switch that is independent of the deployment pipeline, with
-  automated and manual triggers and a defined safe mode, and that also revokes the asset's
-  credentials. Drill the kill switch, and record the time to halt. References include the OWASP
-  Agentic Skills Top 10 2026 AST07 (Update Drift), the OWASP Top 10 for Agentic Applications 2026
-  ASI10 (Rogue Agents), the OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning, covering
-  fine-tuning subversion) and LLM08 (Hidden Context Exposure), MITRE ATLAS AML.T0053 and AML.T0054,
-  MAESTRO layers 1, 4, 5, and 6, CWE-693 and CWE-284, NIST SP 800-53 CM-3, SI-4, SI-6, IR-4, and
-  CP-10, and NIST AI RMF GOVERN 1.5, MEASURE 2.4, MANAGE 2.4, and MANAGE 4.1, with the mappings
-  taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+mitigation: >-
+  Store system prompts, model and adapter versions, and skill and tool definitions as versioned
+  artifacts with the same review as code, and pin production to a reviewed version, with no
+  auto-updating skills or floating model tags.
+
+  Keep system instructions separate from user and tool content in every prompt version.
+
+  Run a versioned suite of canary prompts, including guardrail checks, before promotion and on a
+  schedule against production, and alert on any deviation.
+
+  Keep the previous validated version ready to serve, and test the rollback.
+
+  Send the asset's actions, tool calls, and outputs to AI-aware monitoring, and alert on behavior
+  outside its declared scope.
+
+  Provide a kill switch that is independent of the deployment pipeline, has automated and manual
+  triggers and a defined safe mode, and revokes the asset's credentials. Drill it, and record the
+  time to halt.
+references: >-
+  OWASP Agentic Skills Top 10 2026 AST07 (Update Drift); OWASP Top 10 for Agentic Applications
+  2026 ASI10 (Rogue Agents); OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning, covering
+  fine-tuning subversion) and LLM08 (Hidden Context Exposure); MITRE ATLAS AML.T0053 and
+  AML.T0054; MAESTRO layers 1, 4, 5, and 6; CWE-693; CWE-284; NIST SP 800-53 CM-3, SI-4, SI-6,
+  IR-4, and CP-10; NIST AI RMF GOVERN 1.5, MEASURE 2.4, MANAGE 2.4, and MANAGE 4.1; Mappings from
+  the OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Are prompts, models, and skills version-controlled, reviewed, pinned, canary-gated, and rollback-tested, is the asset''s behavior monitored against its intended scope, and is there a tested, independent kill switch?'
 detection_logic: >
   Trace the production prompt, model, and skill versions back to approved reviews, and review the

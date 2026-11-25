@@ -17,19 +17,25 @@ impact: >
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Restrict and monitor access to model weights and training code as tightly as the most sensitive data they were trained on, and protect fielded models with hardware-backed isolation.'
-mitigation: >
+mitigation: >-
   Store weights, adapters, and training code with access restricted to the named identities that
-  need them, encrypted at rest with keys held outside the store. Additionally, alert on bulk reads,
-  unusual download volumes, and egress to unapproved destinations. Apply the same controls to
-  training scripts and feature-engineering code as to the weights, since they let an adversary
-  reproduce the model. For models fielded on physical hardware outside a controlled facility, run
-  them inside a trusted execution environment or secure enclave, encrypt them at rest with
-  device-bound keys, and plan for remote revocation. Finally, record the model's lineage, so that a
-  leaked copy can be identified. References include OWASP GenAI Data Security 2026 DSGAI20 (Model
-  Exfiltration and IP Replication), MITRE ATLAS AML.T0024.002 (Extract AI Model) and AML.T0025
-  (Exfiltration via Cyber Means), MAESTRO layers 1, 5, and 6, CWE-200 and CWE-284, and NIST SP
-  800-53 AC-3, SC-7, SC-28, and CM-3, with the mappings taken from the OWASP GenAI Security
-  Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+  need them, encrypted at rest with keys held outside the store.
+
+  Alert on bulk reads, unusual download volumes, and egress to unapproved destinations.
+
+  Apply the same controls to training scripts and feature-engineering code as to the weights, since
+  they let an adversary reproduce the model.
+
+  For models fielded on physical hardware outside a controlled facility, run them inside a trusted
+  execution environment or secure enclave, encrypt them at rest with device-bound keys, and plan for
+  remote revocation.
+
+  Record the model's lineage, so that a leaked copy can be identified.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI20 (Model Exfiltration and IP Replication); MITRE ATLAS
+  AML.T0024.002 (Extract AI Model) and AML.T0025 (Exfiltration via Cyber Means); MAESTRO layers 1,
+  5, and 6; CWE-200; CWE-284; NIST SP 800-53 AC-3, SC-7, SC-28, and CM-3; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Are weights, adapters, and training code access-restricted to named identities, encrypted with externally held keys, and monitored for bulk reads and egress, and are physically fielded models protected by a TEE or enclave with device-bound keys?'
 detection_logic: >
   Review who can read the registry and the training pipeline, and how that access is logged. Then,

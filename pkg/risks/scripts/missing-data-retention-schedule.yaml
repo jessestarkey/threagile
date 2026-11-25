@@ -13,16 +13,19 @@ impact: >
 asvs: "V8 - Data Protection"
 cheat_sheet: "https://csrc.nist.gov/pubs/sp/800/60/v1/r1/final"
 action: 'Document a retention period and a specific disposition action, not merely "delete", for each data or classification type that this asset holds, and enforce it automatically where the platform supports it.'
-mitigation: >
+mitigation: >-
   Define a retention schedule for each data classification or record type, sourced from the
   applicable NARA General Records Schedule or a program-specific records disposition schedule, that
   specifies both a minimum retention period and the disposition action required at expiry.
-  Additionally, automate its enforcement (for example, through lifecycle policies on the storage
-  layer) wherever possible, rather than relying on manual review. Finally, ensure that the schedule
-  explicitly protects audit and provenance records for at least the minimum period required to
-  support an incident investigation opened near the end of the retention window. References include
-  NIST SP 800-53 SI-12 (Information Management and Retention) and AU-11 (Audit Record Retention),
-  and the NARA General Records Schedules.
+
+  Automate its enforcement (for example, through lifecycle policies on the storage layer) wherever
+  possible, rather than relying on manual review.
+
+  Ensure that the schedule explicitly protects audit and provenance records for at least the minimum
+  period required to support an incident investigation opened near the end of the retention window.
+references: >-
+  NIST SP 800-53 SI-12 (Information Management and Retention) and AU-11 (Audit Record Retention);
+  NARA General Records Schedules
 check: 'Does a documented retention and disposition schedule exist for every data or classification type that this asset holds, enforced automatically or verified on a recurring audit cadence?'
 detection_logic: >
   Audit the storage layer's lifecycle policy configuration against the documented retention schedule

@@ -17,20 +17,25 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat content from outside the trust boundary as untrusted when indexing it. Specifically, verify its source, keep provenance for each chunk, and keep untrusted content out of indexes that serve high-trust answers.'
-mitigation: >
+mitigation: >-
   Ingest only from approved sources, and record the provenance (source, author, time, and hash) of
-  every indexed chunk, so that poisoned content can be found and purged. Additionally, separate
-  indexes by trust level, and never let content from open sources (public pages, inbound email, or
-  broadly writable shares) feed an index that answers high-trust questions. Validate and sanitize
-  content at ingest, including hidden text and embedded instructions. Furthermore, show sources with
-  answers, so that users can see where a claim came from. Finally, re-validate the corpus
-  periodically, and alert on sudden bulk additions from one source. References include the OWASP LLM
-  Top 10 2026 LLM09 (Vector and Embedding Weaknesses), the OWASP Top 10 for Agentic Applications
-  2026 ASI06 (Memory and Context Poisoning), OWASP GenAI Data Security 2026 DSGAI04 (Data, Model and
-  Artifact Poisoning), MITRE ATLAS AML.T0070 (RAG Poisoning), AML.T0071 (False RAG Entry Injection),
-  and AML.T0059 (Erode Dataset Integrity), MAESTRO layers 2 and 4, CWE-349 and CWE-345, and NIST SP
-  800-53 SI-7, SI-10, and SR-3, with the mappings taken from the OWASP GenAI Security Crosswalk
-  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+  every indexed chunk, so that poisoned content can be found and purged.
+
+  Separate indexes by trust level, and never let content from open sources (public pages, inbound
+  email, or broadly writable shares) feed an index that answers high-trust questions.
+
+  Validate and sanitize content at ingest, including hidden text and embedded instructions.
+
+  Show sources with answers, so that users can see where a claim came from.
+
+  Re-validate the corpus periodically, and alert on sudden bulk additions from one source.
+references: >-
+  OWASP LLM Top 10 2026 LLM09 (Vector and Embedding Weaknesses); OWASP Top 10 for Agentic
+  Applications 2026 ASI06 (Memory and Context Poisoning); OWASP GenAI Data Security 2026 DSGAI04
+  (Data, Model and Artifact Poisoning); MITRE ATLAS AML.T0070 (RAG Poisoning), AML.T0071 (False
+  RAG Entry Injection), and AML.T0059 (Erode Dataset Integrity); MAESTRO layers 2 and 4; CWE-349;
+  CWE-345; NIST SP 800-53 SI-7, SI-10, and SR-3; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is content from outside the trust boundary ingested only from approved sources, with per-chunk provenance, ingest-time validation, and separation from indexes that serve high-trust answers?'
 detection_logic: >
   List every source that the ingest path reads from, and who can write to each one. Then, in a test

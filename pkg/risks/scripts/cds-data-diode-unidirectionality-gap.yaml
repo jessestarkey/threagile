@@ -17,17 +17,21 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Independently verify the diode''s unidirectionality on a recurring schedule, and verify content integrity on the receiving side, rather than relying on the diode for any inspection.'
-mitigation: >
-  Independently test, and periodically re-verify, the diode's physical unidirectionality. Vendor
-  accreditation at the initial installation is not a substitute for recurring verification, since a
-  hardware fault or an unauthorized modification after installation would not report itself.
-  Additionally, apply cryptographic integrity verification (signed manifests or hashes) to content
-  on the receiving side of the feed, since the diode itself performs no content inspection and
-  cannot be relied on to catch corruption or injected content introduced before the diode. Finally,
-  treat the sending-side system, not the diode, as responsible for any content-level assurance that
-  the mission actually needs. References include NIST SP 800-53 SC-7 (Boundary Protection) and SI-7
-  (Software, Firmware, and Information Integrity), and the DoD Raise-the-Bar Cross Domain Solution
-  requirements.
+mitigation: >-
+  Independently test, and periodically re-verify, the diode's physical unidirectionality.
+
+  Vendor accreditation at the initial installation is not a substitute for recurring verification,
+  since a hardware fault or an unauthorized modification after installation would not report itself.
+
+  Apply cryptographic integrity verification (signed manifests or hashes) to content on the
+  receiving side of the feed, since the diode itself performs no content inspection and cannot be
+  relied on to catch corruption or injected content introduced before the diode.
+
+  Treat the sending-side system, not the diode, as responsible for any content-level assurance that
+  the mission actually needs.
+references: >-
+  NIST SP 800-53 SC-7 (Boundary Protection) and SI-7 (Software, Firmware, and Information
+  Integrity); DoD Raise-the-Bar Cross Domain Solution requirements
 check: 'Is the diode''s physical unidirectionality independently verified on a recurring schedule, and is content integrity checked on the receiving side, rather than assumed from the diode''s own forwarding?'
 detection_logic: >
   Audit the records of the diode's recurring, independent unidirectionality verification testing,

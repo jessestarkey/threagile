@@ -17,20 +17,23 @@ impact: >
 asvs: "V8 - Authorization"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
 action: 'Run every model-generated query under the requesting user''s own permissions, through a constrained, parameterized query layer rather than a broad service connection.'
-mitigation: >
-  Connect the AI asset to data through a query layer rather than a raw database connection.
-  Specifically, expose only approved, parameterized queries or views, and let the model choose among
-  them and fill in parameters, rather than writing free-form SQL. Additionally, execute every query
-  under the requesting user's identity, so that the database's row- and field-level security
-  applies, and give the AI's own connection read-only access to the minimum views it needs. Validate
-  generated queries against an allow-list of tables, columns, and operations before running them,
-  cap the result sizes, and block DDL, DML, and multi-statement queries unless they are explicitly
-  required. Finally, log every generated query with the user and prompt that produced it. References
-  include OWASP GenAI Data Security 2026 DSGAI12 (Unsafe Natural Language Data Gateways), MITRE
-  ATLAS AML.T0049, AML.T0036 (Data from Information Repositories), and AML.T0024, MAESTRO layers 2,
-  3, and 6, CWE-89, CWE-20, and CWE-284, and NIST SP 800-53 AC-3, AC-6, and AU-2, with the mappings
-  taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+mitigation: >-
+  Connect the model to data through a query layer that exposes only approved, parameterized queries
+  or views, and let the model choose among them and fill in parameters rather than write free-form
+  SQL.
+
+  Run every query under the requesting user's identity, so that row- and field-level security
+  applies, and give the AI's own connection read-only access to the minimum views it needs.
+
+  Validate generated queries against an allow-list of tables, columns, and operations, cap result
+  sizes, and block DDL, DML, and multi-statement queries unless they are required.
+
+  Log every generated query with the user and prompt that produced it.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI12 (Unsafe Natural Language Data Gateways); MITRE ATLAS
+  AML.T0049, AML.T0036 (Data from Information Repositories), and AML.T0024; MAESTRO layers 2, 3,
+  and 6; CWE-89; CWE-20; CWE-284; NIST SP 800-53 AC-3, AC-6, and AU-2; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Does the AI asset reach data only through a parameterized, allow-listed query layer that executes under the requesting user''s identity, with a read-only, minimum-scope connection, result caps, and query logging?'
 detection_logic: >
   Review how the AI asset connects to each datastore, and which identity its queries run under.

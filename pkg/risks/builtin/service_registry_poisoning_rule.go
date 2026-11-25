@@ -21,16 +21,11 @@ func (*ServiceRegistryPoisoningRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html",
 		Action: "Require authenticated, ACL-restricted writes to the service registry, and verify every discovered endpoint's " +
 			"identity with mutual TLS before trusting it.",
-		Mitigation: "Enable the registry's access control with default deny (Consul ACLs, etcd client-certificate authentication " +
-			"and RBAC, Eureka behind authenticated endpoints, Kubernetes RBAC on Services, Endpoints, and EndpointSlices) " +
-			"so each service can register and deregister only its own entries and only operators can change configuration " +
-			"keys. Encrypt and mutually authenticate all registry traffic, including gossip. Do not treat a registry " +
-			"lookup as proof of identity: callers must verify the discovered endpoint over mutual TLS against a service " +
-			"identity (SPIFFE ID or certificate SAN) issued by the internal CA, which a service mesh (Istio, Linkerd, " +
-			"Consul service mesh) enforces automatically. Restrict network access to the registry API to the cluster or " +
-			"service subnet, audit all write operations, and alert on registrations from unexpected sources or for " +
-			"unexpected service names. Keep secrets out of the registry's key-value store. References: CWE-923, CWE-345; " +
-			"MITRE ATT&CK T1557 (Adversary-in-the-Middle); NIST SP 800-53 SC-23, AC-3; NIST SP 800-204A.",
+		Mitigation: "Enable the registry's access control with default deny (Consul ACLs, etcd RBAC, or Kubernetes RBAC on Services and EndpointSlices), so each service can change only its own entries and only operators can change configuration.\n" +
+			"Encrypt and mutually authenticate all registry traffic, including gossip.\n" +
+			"Do not treat a registry lookup as proof of identity. Callers verify each discovered endpoint over mutual TLS against a service identity (a SPIFFE ID or certificate SAN), which a service mesh enforces automatically.\n" +
+			"Restrict network access to the registry API, audit all writes, and alert on registrations from unexpected sources or for unexpected service names.\n" +
+			"Keep secrets out of the registry's key-value store.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Spoofing,

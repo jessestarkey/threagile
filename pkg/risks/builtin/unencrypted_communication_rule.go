@@ -23,17 +23,13 @@ func (*UnencryptedCommunicationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html",
 		Action: "Encrypt this link with TLS 1.2 or higher (TLS 1.3 preferred) using FIPS-approved cipher suites and full " +
 			"certificate validation, or mutual TLS between services.",
-		Mitigation: "Replace the plaintext protocol on this link with its TLS-protected equivalent (HTTPS, LDAPS, SMTPS, AMQPS, " +
-			"Kafka SSL, or database TLS such as SQL Server Encrypt=Strict, PostgreSQL sslmode=verify-full, MySQL REQUIRE " +
-			"X509). Configure TLS 1.2 minimum and TLS 1.3 preferred, restricted to FIPS-approved cipher suites with " +
-			"forward secrecy per NIST SP 800-52 Rev. 2, and disable SSL, TLS 1.0, and TLS 1.1. Clients must validate the " +
-			"server certificate chain and hostname; never disable verification in code or configuration. For " +
-			"service-to-service traffic inside a cluster or VNet, use mutual TLS through a service mesh or application " +
-			"configuration so both ends authenticate. Enable HSTS on browser-facing endpoints. Manage certificates " +
-			"centrally with automated renewal from an internal CA, or DoD PKI for DoD systems. Where a legacy protocol " +
-			"cannot be upgraded, tunnel it through IPsec or a TLS wrapper. References: CWE-319; CAPEC-94 (Adversary in the " +
-			"Middle); MITRE ATT&CK T1040 (Network Sniffing), T1557 (Adversary-in-the-Middle); OWASP Top 10:2025 A04 " +
-			"(Cryptographic Failures); NIST SP 800-53 SC-8, SC-8(1), SC-13.",
+		Mitigation: "Replace the plaintext protocol with its TLS equivalent (HTTPS, LDAPS, AMQPS, or database TLS such as PostgreSQL sslmode=verify-full).\n" +
+			"Restrict TLS to FIPS-approved cipher suites with forward secrecy (NIST SP 800-52 Rev. 2), and disable SSL, TLS 1.0, and TLS 1.1.\n" +
+			"Validate the server certificate chain and hostname in every client, and never disable verification in code or configuration.\n" +
+			"Use mutual TLS for service-to-service traffic inside a cluster or VNet, through a service mesh or application configuration.\n" +
+			"Enable HSTS on browser-facing endpoints.\n" +
+			"Manage certificates centrally with automated renewal from an internal CA, or DoD PKI for DoD systems.\n" +
+			"Where a legacy protocol cannot be upgraded, tunnel it through IPsec or a TLS wrapper.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.InformationDisclosure,

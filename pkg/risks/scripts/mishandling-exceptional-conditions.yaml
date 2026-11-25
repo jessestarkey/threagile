@@ -17,14 +17,19 @@ impact: >
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
 action: 'Ensure that every authorization- or validation-critical code path fails closed on an unhandled exception, and that client-facing error responses never include internal implementation detail.'
-mitigation: >
+mitigation: >-
   Wrap every authorization- and validation-critical code path in explicit exception handling that
-  defaults to a deny, or fail-closed, outcome. Additionally, return generic, non-identifying error
-  messages to the client, and log the full exception detail only on the server, correlated to a
-  request ID. Add explicit test coverage for the exception paths themselves, not only the happy
-  path. Finally, apply resource limits, so that a resource-exhaustion condition degrades gracefully.
-  References include the OWASP Top 10:2025 A10 (Mishandling of Exceptional Conditions), NIST SP
-  800-53 SI-11 (Error Handling), and CWE-755.
+  defaults to a deny, or fail-closed, outcome.
+
+  Return generic, non-identifying error messages to the client, and log the full exception detail
+  only on the server, correlated to a request ID.
+
+  Add explicit test coverage for the exception paths themselves, not only the happy path.
+
+  Apply resource limits, so that a resource-exhaustion condition degrades gracefully.
+references: >-
+  OWASP Top 10:2025 A10 (Mishandling of Exceptional Conditions); NIST SP 800-53 SI-11 (Error
+  Handling); CWE-755
 check: 'Does every authorization- and validation-critical exception path fail closed, with client-facing responses confirmed to be free of internal implementation detail?'
 detection_logic: >
   Run fuzz and negative testing (malformed input, boundary values, and forced resource exhaustion)

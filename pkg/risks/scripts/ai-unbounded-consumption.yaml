@@ -17,20 +17,27 @@ impact: >
 asvs: "V2 - Validation and Business Logic"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"
 action: 'Put per-caller rate limits, token and cost budgets, and input-size limits in front of every AI endpoint that is reachable from outside its boundary, with spend alerting.'
-mitigation: >
+mitigation: >-
   Front every externally reachable AI endpoint with an AI gateway, or an equivalent, that
   authenticates callers and enforces per-identity rate limits, concurrency limits, and token and
-  cost budgets. Additionally, cap input and output sizes and context length, and reject or truncate
-  pathologically expensive requests. Set hard spend limits and alerts at the provider and at the
-  gateway. Furthermore, monitor for volume spikes, repetitive near-duplicate requests, and
-  credential misuse, and be able to revoke a caller quickly. Finally, degrade gracefully when limits
-  are hit, rather than failing open. References include the OWASP LLM Top 10 2026 LLM06 (Unbounded
-  Consumption), OWASP GenAI Data Security 2026 DSGAI17 (Data Availability and Resilience Failures),
-  the OWASP API Security Top 10 API4:2023 (Unrestricted Resource Consumption), MITRE ATLAS AML.T0029
-  (Denial of AI Service), AML.T0034 (Cost Harvesting), and AML.T0046 (Spamming AI System with Chaff
-  Data), MAESTRO layers 3, 4, and 5, CWE-400, CWE-770, and CWE-799, and NIST SP 800-53 SC-5, SC-7,
-  and SI-4, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  cost budgets.
+
+  Cap input and output sizes and context length, and reject or truncate pathologically expensive
+  requests.
+
+  Set hard spend limits and alerts at the provider and at the gateway.
+
+  Monitor for volume spikes, repetitive near-duplicate requests, and credential misuse, and be able
+  to revoke a caller quickly.
+
+  Degrade gracefully when limits are hit, rather than failing open.
+references: >-
+  OWASP LLM Top 10 2026 LLM06 (Unbounded Consumption); OWASP GenAI Data Security 2026 DSGAI17
+  (Data Availability and Resilience Failures); OWASP API Security Top 10 API4:2023 (Unrestricted
+  Resource Consumption); MITRE ATLAS AML.T0029 (Denial of AI Service), AML.T0034 (Cost
+  Harvesting), and AML.T0046 (Spamming AI System with Chaff Data); MAESTRO layers 3, 4, and 5;
+  CWE-400; CWE-770; CWE-799; NIST SP 800-53 SC-5, SC-7, and SI-4; Mappings from the OWASP GenAI
+  Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Does every externally reachable AI endpoint enforce authenticated, per-identity rate, concurrency, token, and cost limits, with input-size caps, hard spend limits, and alerting?'
 detection_logic: >
   Review the rate, token, and cost limits on the endpoint and on any gateway in front of it, as well

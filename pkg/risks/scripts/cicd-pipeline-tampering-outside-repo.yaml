@@ -14,15 +14,18 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/CI_CD_Security_Cheat_Sheet.html"
 action: 'Restrict who can modify this pipeline''s definition, or its admission and gate policies, directly through the CI/CD platform''s console or API. Additionally, log every such change, even when it does not originate from a repository commit.'
-mitigation: >
+mitigation: >-
   Where the CI/CD platform allows pipeline or policy edits outside the repository (through the
   console UI or direct API calls), restrict that capability to a minimal administrative group that
-  is distinct from ordinary contributors. Additionally, forward every such change to the SIEM,
-  regardless of whether it originated from a commit. Where the platform supports it, prefer a
-  configuration that sources the pipeline definition exclusively from the repository, namely true
-  pipeline-as-code with no console override capability. References include NIST SP 800-218 (Secure
-  Software Development Framework, PO.3 and PS.1) and NIST SP 800-53 CM-3 (Configuration Change
-  Control).
+  is distinct from ordinary contributors.
+
+  Forward every such change to the SIEM, regardless of whether it originated from a commit.
+
+  Where the platform supports it, prefer a configuration that sources the pipeline definition
+  exclusively from the repository, namely true pipeline-as-code with no console override capability.
+references: >-
+  NIST SP 800-218 (Secure Software Development Framework, PO.3 and PS.1); NIST SP 800-53 CM-3
+  (Configuration Change Control)
 check: 'Are pipeline and policy edits made outside the repository restricted to a minimal administrative group and logged to the SIEM?'
 detection_logic: >
   Audit the CI/CD platform's access-control configuration for who can edit pipeline definitions or

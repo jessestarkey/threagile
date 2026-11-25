@@ -19,19 +19,26 @@ impact: >
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat all hidden context as eventually disclosable. Specifically, keep secrets and access-control decisions out of it, and filter responses for hidden-context echoes before they leave the boundary.'
-mitigation: >
+mitigation: >-
   Never place secrets, credentials, or access-control logic in system prompts, developer
-  instructions, retrieved configuration, or tool descriptions. Instead, assume that anything in the
-  model's context can be disclosed, and enforce authorization outside the model. Additionally,
-  expose only the tool schemas that a given user's session needs, and use provider features that
+  instructions, retrieved configuration, or tool descriptions.
+
+  Instead, assume that anything in the model's context can be disclosed, and enforce authorization
+  outside the model.
+
+  Expose only the tool schemas that a given user's session needs, and use provider features that
   separate system instructions from user turns at the API level, rather than string concatenation.
+
   Filter responses for verbatim or near-verbatim hidden-context content before they cross the
-  boundary. Finally, red-team the endpoint with prompt-extraction techniques on a schedule, and
-  treat a successful extraction as a design finding. References include the OWASP LLM Top 10 2026
-  LLM08 (Hidden Context Exposure, formerly LLM07:2025 System Prompt Leakage), MITRE ATLAS AML.T0056
-  (Extract LLM System Prompt) and AML.T0051.000, MAESTRO layers 1 and 6, CWE-200, CWE-312, and
-  CWE-215, and NIST SP 800-53 AC-3 and SC-28, with the mappings taken from the OWASP GenAI Security
-  Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+  boundary.
+
+  Red-team the endpoint with prompt-extraction techniques on a schedule, and treat a successful
+  extraction as a design finding.
+references: >-
+  OWASP LLM Top 10 2026 LLM08 (Hidden Context Exposure, formerly LLM07:2025 System Prompt
+  Leakage); MITRE ATLAS AML.T0056 (Extract LLM System Prompt) and AML.T0051.000; MAESTRO layers 1
+  and 6; CWE-200; CWE-312; CWE-215; NIST SP 800-53 AC-3 and SC-28; Mappings from the OWASP GenAI
+  Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is all hidden context (the system prompt, developer instructions, retrieved configuration, and tool schemas) free of secrets and access-control logic, with authorization enforced outside the model and responses filtered for hidden-context echoes?'
 detection_logic: >
   Inventory what the model's hidden context contains for each session type. Then, from outside the

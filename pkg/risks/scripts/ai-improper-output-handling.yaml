@@ -17,21 +17,23 @@ impact: >
 asvs: "V1 - Encoding and Sanitization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat model output as untrusted input at every place it is consumed, with the encoding, validation, or sandboxing that the specific sink needs.'
-mitigation: >
-  Apply to model output exactly what you would apply to untrusted user input at the same sink.
-  Specifically, (1) HTML- or markdown-escape anything rendered in a browser, and block raw HTML,
-  scripts, and auto-loading images or links, (2) use parameterized queries rather than SQL built
-  from model text, (3) run any model-produced code or commands in a sandbox with no ambient
-  credentials, (4) enable auto-escaping in template engines, and (5) validate output against an
-  allow-listed schema before forwarding it to another API. Additionally, review and scan generated
-  code before it is merged or run. Never trust output because it came from your own model, since it
-  is the product of whatever input the model was given, including an indirect injection. References
-  include the OWASP LLM Top 10 2026 LLM10 (Improper Output Handling, widened to cover generated
-  code), OWASP GenAI Data Security 2026 DSGAI05 (Data Integrity and Validation Failures), MITRE
-  ATLAS AML.T0037, AML.T0040, and AML.T0077 (LLM Response Rendering), MAESTRO layers 1, 3, and 4,
-  CWE-74, CWE-79, CWE-89, CWE-78, and CWE-94, and NIST SP 800-53 SI-10 and SI-15, with the mappings
-  taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+mitigation: >-
+  Treat model output as untrusted user input at each sink. Specifically, (1) escape anything
+  rendered in a browser or template, and block raw HTML, scripts, and auto-loading images or links,
+  (2) use parameterized queries instead of SQL built from model text, (3) run model-produced code or
+  commands in a sandbox with no ambient credentials, and (4) validate output against an allow-listed
+  schema before forwarding it to another API.
+
+  Review and scan generated code before it is merged or run.
+
+  Never trust output because it came from the application's own model, since it reflects whatever
+  input the model received, including an indirect injection.
+references: >-
+  OWASP LLM Top 10 2026 LLM10 (Improper Output Handling, widened to cover generated code); OWASP
+  GenAI Data Security 2026 DSGAI05 (Data Integrity and Validation Failures); MITRE ATLAS
+  AML.T0037, AML.T0040, and AML.T0077 (LLM Response Rendering); MAESTRO layers 1, 3, and 4;
+  CWE-74; CWE-79; CWE-89; CWE-78; CWE-94; NIST SP 800-53 SI-10 and SI-15; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is context-appropriate encoding, validation, or sandboxing applied at every place this asset''s model output is consumed, and is generated code reviewed and scanned before it runs?'
 detection_logic: >
   Trace every consumer of this asset's output, namely the callers that render it and every outgoing

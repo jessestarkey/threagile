@@ -18,18 +18,24 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Contain faults at every agent-to-agent hand-off with validation, bounded retries and recursion, timeouts, and circuit breakers.'
-mitigation: >
+mitigation: >-
   Treat every message from another agent as untrusted input, and validate its structure and bounds
-  before acting on it. Additionally, cap the delegation depth, fan-out, retries, and total tool
-  calls per workflow, and give every hand-off a timeout. Add circuit breakers that stop sending work
-  to an agent that is failing or behaving anomalously, with a defined degraded mode rather than
-  indefinite retries. Furthermore, isolate each agent's resource budget, so that one runaway agent
-  cannot starve the others. Finally, trace each workflow end to end, so that a fault can be located
-  and the chain halted. References include the OWASP Top 10 for Agentic Applications 2026 ASI08
-  (Cascading Agent Failures), MITRE ATLAS AML.T0029 (Denial of AI Service) and AML.T0034 (Cost
-  Harvesting), MAESTRO layers 4, 5, and 7, CWE-400, CWE-674, CWE-703, and CWE-755, and NIST SP
-  800-53 SC-5, SC-7, SI-4, and IR-4, with the mappings taken from the OWASP GenAI Security Crosswalk
-  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+  before acting on it.
+
+  Cap the delegation depth, fan-out, retries, and total tool calls per workflow, and give every
+  hand-off a timeout.
+
+  Add circuit breakers that stop sending work to an agent that is failing or behaving anomalously,
+  with a defined degraded mode rather than indefinite retries.
+
+  Isolate each agent's resource budget, so that one runaway agent cannot starve the others.
+
+  Trace each workflow end to end, so that a fault can be located and the chain halted.
+references: >-
+  OWASP Top 10 for Agentic Applications 2026 ASI08 (Cascading Agent Failures); MITRE ATLAS
+  AML.T0029 (Denial of AI Service) and AML.T0034 (Cost Harvesting); MAESTRO layers 4, 5, and 7;
+  CWE-400; CWE-674; CWE-703; CWE-755; NIST SP 800-53 SC-5, SC-7, SI-4, and IR-4; Mappings from the
+  OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is every agent-to-agent hand-off validated and bounded (in depth, fan-out, retries, and timeouts), with circuit breakers and per-agent resource budgets that stop a fault from propagating down the chain?'
 detection_logic: >
   Map every agent-to-agent hand-off, and review its validation, limits, and timeout settings. Then,

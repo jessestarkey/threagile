@@ -24,18 +24,12 @@ func (*UnguardedAccessFromInternetRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Remove direct internet reachability from this asset and route all inbound traffic through a reverse proxy, " +
 			"API gateway, or WAF in a DMZ, with administrative access only through a bastion or VPN.",
-		Mitigation: "Remove public IP addresses and public endpoints from this asset and place it in a private subnet. Expose only " +
-			"the application paths that must be public through an internet-facing guarding component (Azure Application " +
-			"Gateway or Front Door with WAF, AWS ALB with WAF, an API gateway, or a hardened reverse proxy) that " +
-			"terminates TLS, normalizes and filters requests, enforces authentication where possible, and rate-limits. " +
-			"Restrict the asset's inbound rules to accept traffic only from that component's subnet. Route administrative " +
-			"access (SSH, RDP, management consoles) through Azure Bastion, AWS Systems Manager Session Manager, a bastion " +
-			"host, or a zero-trust access broker with MFA and session logging, never through a public port. For file " +
-			"exchange, use a store-and-forward transfer host in the DMZ instead of exposing internal file servers. " +
-			"Enumerate the external attack surface regularly (external port scans, cloud asset inventory, attack surface " +
-			"management tooling) to confirm nothing else is exposed. For DoD systems, follow the DISA SCCA boundary " +
-			"architecture for internet-facing traffic. References: CWE-668; MITRE ATT&CK T1190 (Exploit Public-Facing " +
-			"Application), T1133 (External Remote Services); NIST SP 800-53 SC-7, SC-7(5), AC-17.",
+		Mitigation: "Remove public IP addresses and endpoints from this asset, and place it in a private subnet.\n" +
+			"Expose only the paths that must be public through a guarding component (an application gateway or load balancer with WAF, an API gateway, or a hardened reverse proxy) that terminates TLS, filters requests, and rate-limits.\n" +
+			"Restrict the asset's inbound rules to that component's subnet.\n" +
+			"Route administrative access (SSH, RDP, and management consoles) through a bastion or zero-trust access broker with MFA and session logging, never through a public port.\n" +
+			"For file exchange, use a store-and-forward transfer host in the DMZ instead of exposing internal file servers.\n" +
+			"Scan the external attack surface regularly to confirm nothing else is exposed, and for DoD systems, follow the DISA SCCA boundary architecture.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Architecture,
 		STRIDE:       types.ElevationOfPrivilege,

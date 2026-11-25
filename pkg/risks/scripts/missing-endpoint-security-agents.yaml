@@ -13,13 +13,14 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
 action: 'Deploy EDR and centralized logging agents.'
-mitigation: >
+mitigation: >-
   Ensure that platform policy enforces the automated deployment of an EDR agent and a centralized
   log forwarder on every VM (for example, Microsoft Defender for Endpoint and the Azure Monitor
-  Agent, or the equivalent for the hosting platform). References include CWE-778 (Insufficient
-  Logging), NIST SP 800-53 SI-4 (System Monitoring) and SI-3 (Malicious Code Protection), MITRE
-  ATT&CK TA0005 (Defense Evasion), and the DoD Zero Trust Reference Architecture (the Device
-  pillar).
+  Agent, or the equivalent for the hosting platform).
+references: >-
+  CWE-778 (Insufficient Logging); NIST SP 800-53 SI-4 (System Monitoring) and SI-3 (Malicious Code
+  Protection); MITRE ATT&CK TA0005 (Defense Evasion); DoD Zero Trust Reference Architecture (the
+  Device pillar)
 check: 'Are EDR and centralized logging agents deployed and reporting on this host?'
 detection_logic: >
   Query the cloud platform's resource inventory for missing endpoint-security VM extensions, or

@@ -19,19 +19,22 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Cross-check GPS and PNT against an independent navigation source to detect spoofing. Additionally, ensure that anti-tamper or zeroization protects the onboard cryptographic material and mission data in the event of physical capture.'
-mitigation: >
+mitigation: >-
   Cross-check the GPS or PNT position against an independent navigation source (inertial navigation,
   terrain reference, or a military anti-spoofing GPS variant where available), so that a spoofed
-  civilian GPS signal is detected as a disagreement rather than silently trusted. Additionally,
-  equip the vehicle with an anti-tamper or zeroization capability that destroys, or renders
+  civilian GPS signal is detected as a disagreement rather than silently trusted.
+
+  Equip the vehicle with an anti-tamper or zeroization capability that destroys, or renders
   unusable, the onboard cryptographic keys and sensitive mission data if an unauthorized party
-  captures or recovers the vehicle, rather than assuming that recovery will not happen. Finally,
-  define and test a documented lost-navigation failsafe behavior that is distinct from the ground
-  control station's own lost-link failsafe. References include CWE-290 (Authentication Bypass by
-  Spoofing), Executive Order 13905 (Strengthening National Resilience through Responsible Use of PNT
-  Services), NIST IR 8323 (Foundational PNT Profile), the DHS Resilient PNT Conformance Framework,
-  NIST SP 800-53 SR-9 (Tamper Resistance and Detection), and DoD anti-tamper policy for unmanned
-  systems.
+  captures or recovers the vehicle, rather than assuming that recovery will not happen.
+
+  Define and test a documented lost-navigation failsafe behavior that is distinct from the ground
+  control station's own lost-link failsafe.
+references: >-
+  CWE-290 (Authentication Bypass by Spoofing); Executive Order 13905 (Strengthening National
+  Resilience through Responsible Use of PNT Services); NIST IR 8323 (Foundational PNT Profile);
+  DHS Resilient PNT Conformance Framework; NIST SP 800-53 SR-9 (Tamper Resistance and Detection);
+  DoD anti-tamper policy for unmanned systems
 check: 'Does the vehicle cross-check GPS and PNT against an independent navigation source to detect spoofing, and does an anti-tamper or zeroization capability protect the onboard cryptographic material and mission data in the event of physical capture?'
 detection_logic: >
   Review the vehicle's navigation architecture for independent cross-checking, as opposed to sole

@@ -13,15 +13,18 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Suppress the automatic execution of dependency install and post-install scripts in the CI environment. Additionally, apply a cooldown between a dependency version''s publication and its adoption.'
-mitigation: >
+mitigation: >-
   Configure the package manager to suppress automatic install-script execution during CI dependency
   resolution (for example, npm install --ignore-scripts, or pip's build isolation with no arbitrary
   setup.py execution where avoidable), and allow only specific, reviewed exceptions for packages
-  that genuinely require a build step. Additionally, apply a minimum cooldown (for example, 3 to 7
-  days) between a dependency version's publication and its eligibility for use in this pipeline,
-  since malicious package versions are frequently identified and pulled within days of publication.
-  References include NIST SP 800-218 (Secure Software Development Framework, PW.4 and PO.5), NIST SP
-  800-53 SI-3 (Malicious Code Protection), and the OWASP Software Component Verification Standard.
+  that genuinely require a build step.
+
+  Apply a minimum cooldown (for example, 3 to 7 days) between a dependency version's publication and
+  its eligibility for use in this pipeline, since malicious package versions are frequently
+  identified and pulled within days of publication.
+references: >-
+  NIST SP 800-218 (Secure Software Development Framework, PW.4 and PO.5); NIST SP 800-53 SI-3
+  (Malicious Code Protection); OWASP Software Component Verification Standard
 check: 'Is the automatic execution of dependency install scripts suppressed in CI, and is a cooldown between publication and adoption enforced?'
 detection_logic: >
   Audit the package manager's CI configuration for install-script suppression flags, and for an

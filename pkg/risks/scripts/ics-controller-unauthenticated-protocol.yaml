@@ -16,18 +16,22 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Segment ICS and PACS controller traffic from the general IT network, and apply the strongest authentication that the protocol supports, such as OSDP Secure Channel for access control and protocol-aware filtering for industrial protocols.'
-mitigation: >
+mitigation: >-
   Place ICS and PACS controllers on a dedicated, segmented network that is isolated from the general
   IT network, with protocol-aware filtering (an industrial firewall or a protocol-aware IDS) at the
-  boundary, rather than relying on the controller's own protocol to enforce anything. Additionally,
-  replace legacy, unauthenticated access-control wiring (Wiegand) with OSDP Secure Channel where the
+  boundary, rather than relying on the controller's own protocol to enforce anything.
+
+  Replace legacy, unauthenticated access-control wiring (Wiegand) with OSDP Secure Channel where the
   hardware supports it, since Wiegand's cleartext credential transmission is trivially sniffed and
-  replayed. Finally, where the industrial protocol itself has no authentication option at all, treat
-  network segmentation and physical access to the wiring as the only real controls, and document
-  them as such, rather than assuming the protocol provides any assurance. References include CWE-306
-  (Missing Authentication for Critical Function), MITRE ATT&CK for ICS T0855 (Unauthorized Command
-  Message) and T0836 (Modify Parameter), UFC 4-010-06 (Cybersecurity of Facility-Related Control
-  Systems), and NIST SP 800-82 (Guide to Operational Technology Security).
+  replayed.
+
+  Where the industrial protocol itself has no authentication option at all, treat network
+  segmentation and physical access to the wiring as the only real controls, and document them as
+  such, rather than assuming the protocol provides any assurance.
+references: >-
+  CWE-306 (Missing Authentication for Critical Function); MITRE ATT&CK for ICS T0855 (Unauthorized
+  Command Message) and T0836 (Modify Parameter); UFC 4-010-06 (Cybersecurity of Facility-Related
+  Control Systems); NIST SP 800-82 (Guide to Operational Technology Security)
 check: 'Are ICS and PACS controllers segmented from the general IT network with protocol-aware filtering at the boundary, and has legacy, unauthenticated access-control wiring been replaced with an authenticated protocol where supported?'
 detection_logic: >
   Audit the network segmentation of ICS and PACS controller traffic, and confirm its isolation from

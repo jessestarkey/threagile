@@ -13,13 +13,17 @@ impact: >
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html"
 action: 'Enforce server-side role verification on every API endpoint, including administrative and internal endpoints, regardless of whether they are documented or discoverable.'
-mitigation: >
+mitigation: >-
   Implement server-side role-based access control (RBAC) on every API endpoint, and never rely on
   client-supplied role claims, obscure URLs, or UI visibility controls as an authorization boundary.
-  Additionally, apply deny by default, and enforce endpoint-level authorization in a centralized
-  middleware layer rather than in individual controller logic. Finally, include BFLA test cases in
-  the automated API test suite. References include the OWASP API Security Top 10 API5:2023 and NIST
-  SP 800-53 AC-3 (Access Enforcement) and AC-6 (Least Privilege).
+
+  Apply deny by default, and enforce endpoint-level authorization in a centralized middleware layer
+  rather than in individual controller logic.
+
+  Include BFLA test cases in the automated API test suite.
+references: >-
+  OWASP API Security Top 10 API5:2023; NIST SP 800-53 AC-3 (Access Enforcement) and AC-6 (Least
+  Privilege)
 check: 'Does a centralized authorization middleware enforce server-side role verification on every API endpoint, including undocumented or administrative ones?'
 detection_logic: >
   Include cross-role endpoint access tests in the automated API test suite. Additionally, run DAST

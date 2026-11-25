@@ -13,13 +13,19 @@ impact: >
 asvs: "V3 - Session Management"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
 action: 'Enforce the Secure and HttpOnly cookie flags, implement absolute and idle session timeouts, and rotate session tokens on authentication events.'
-mitigation: >
+mitigation: >-
   Set the Secure and HttpOnly flags on every session cookie, and set SameSite=Strict or SameSite=Lax
-  to mitigate CSRF. Additionally, implement both an absolute session timeout and an idle timeout.
+  to mitigate CSRF.
+
+  Implement both an absolute session timeout and an idle timeout.
+
   Rotate session tokens immediately after a successful authentication and after any privilege
-  escalation. Finally, require re-authentication for sensitive operations. References include NIST
-  SP 800-53 AC-12 (Session Termination), the DISA Application Security and Development STIG
-  (APSC-DV-001460 and APSC-DV-001480), and OWASP ASVS V3.
+  escalation.
+
+  Require re-authentication for sensitive operations.
+references: >-
+  NIST SP 800-53 AC-12 (Session Termination); DISA Application Security and Development STIG
+  (APSC-DV-001460 and APSC-DV-001480); OWASP ASVS V3
 check: 'Has the session management configuration been audited and confirmed to enforce the Secure, HttpOnly, and SameSite flags, timeouts, and token rotation?'
 detection_logic: >
   Run DAST tools with session management checks against every login and authenticated endpoint, and

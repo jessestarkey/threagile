@@ -20,17 +20,11 @@ func (*MissingAuthenticationRule) Category() *types.RiskCategory {
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
 		Action: "Require every request to this asset to carry a verified identity: enterprise identity provider authentication " +
 			"for users, and mutual TLS or short-lived workload identity tokens for services.",
-		Mitigation: "Authenticate every interface of this asset rather than relying on network location. For human users, " +
-			"integrate with the enterprise identity provider over OIDC or SAML using DoD CAC/PIV or another " +
-			"phishing-resistant authenticator. For service-to-service calls, use mutual TLS with certificates from an " +
-			"internal CA or service mesh, or short-lived workload identity tokens (managed identity, IAM roles for service " +
-			"accounts, SPIFFE/SPIRE) validated on every request for signature, issuer, audience, and expiry; avoid " +
-			"long-lived shared API keys. Enforce authentication with a default-deny filter at the framework or gateway so " +
-			"new endpoints are protected unless explicitly marked public, and review every public exception. Disable or " +
-			"authenticate management, metrics, and debug endpoints that ship unauthenticated by default (Spring Boot " +
-			"Actuator, Elasticsearch, Redis, etcd, database admin consoles). References: CWE-306, CWE-287; MITRE ATT&CK " +
-			"T1190 (Exploit Public-Facing Application); OWASP Top 10:2025 A07 (Authentication Failures); OWASP API " +
-			"Security Top 10:2023 API2 (Broken Authentication); NIST SP 800-53 IA-2, IA-9.",
+		Mitigation: "Authenticate every interface of this asset rather than relying on network location.\n" +
+			"For users, integrate with the enterprise identity provider over OIDC or SAML, with DoD CAC/PIV or another phishing-resistant authenticator.\n" +
+			"For services, use mutual TLS or short-lived workload identity tokens (such as managed identities or SPIFFE), validated on every request for signature, issuer, audience, and expiry, rather than long-lived shared API keys.\n" +
+			"Enforce authentication with a default-deny filter at the framework or gateway, so new endpoints are protected unless explicitly marked public, and review every public exception.\n" +
+			"Disable or authenticate management, metrics, and debug endpoints that ship unauthenticated (such as Spring Boot Actuator or database admin consoles).",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Architecture,
 		STRIDE:       types.ElevationOfPrivilege,

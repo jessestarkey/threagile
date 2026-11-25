@@ -21,18 +21,10 @@ func (*UnencryptedAssetRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
 		Action: "Enable encryption at rest for this asset and all of its backups and snapshots using FIPS 140-validated " +
 			"cryptography, with customer-managed keys held in a separate key vault for sensitive data.",
-		Mitigation: "Turn on storage-level encryption for every volume, database, bucket, backup, and snapshot of this asset " +
-			"(Azure Storage Service Encryption and Transparent Data Encryption; AWS EBS, S3, and RDS encryption; LUKS or " +
-			"BitLocker on self-managed hosts) using FIPS 140-2/140-3 validated modules. For CUI and higher-sensitivity " +
-			"data, use customer-managed keys held in a separate key vault or HSM, restricted to the storage service's " +
-			"identity, rotated on a defined schedule, with key access logged. Where the threat includes privileged " +
-			"insiders or an attacker with filesystem or database access on a running host, add application- or field-level " +
-			"encryption (SQL Always Encrypted, envelope encryption with per-record data keys) for the most sensitive " +
-			"fields, because volume encryption only protects against offline media access. Encrypt temporary files, " +
-			"caches, swap, and logs that may contain sensitive data, and enforce encryption through policy (Azure Policy, " +
-			"AWS Config) so unencrypted resources cannot be created. References: CWE-311, CWE-312; MITRE ATT&CK T1005 " +
-			"(Data from Local System), T1530 (Data from Cloud Storage); OWASP Top 10:2025 A04 (Cryptographic Failures); " +
-			"NIST SP 800-53 SC-28, SC-28(1), SC-12, SC-13.",
+		Mitigation: "Encrypt every volume, database, bucket, backup, and snapshot of this asset (Azure Storage Service Encryption and TDE, AWS EBS, S3, and RDS encryption, or LUKS or BitLocker on self-managed hosts) with FIPS 140-2 or 140-3 validated modules.\n" +
+			"For CUI and more sensitive data, restrict the customer-managed keys to the storage service's identity, rotate them on a defined schedule, and log key access.\n" +
+			"Where the threat includes privileged insiders or a running-host compromise, add field-level encryption (SQL Always Encrypted or envelope encryption) for the most sensitive fields, since volume encryption protects only against offline media access.\n" +
+			"Encrypt temporary files, caches, swap, and logs that may hold sensitive data, and enforce encryption through policy (Azure Policy or AWS Config) so unencrypted resources cannot be created.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.InformationDisclosure,

@@ -22,6 +22,9 @@ type RiskCategory struct {
 	// FindingClass says what a finding in this category shows: a weakness the model's own facts
 	// show, or a control the model cannot evidence (see FindingClassWeaknessShown).
 	FindingClass string `json:"finding_class,omitempty" yaml:"finding_class,omitempty"`
+	// References lists the standards behind the mitigation, separated by "; ". Only the script rules
+	// set it, since central-security-repo's library 10 holds the references for the built-in rules.
+	References string `json:"references,omitempty" yaml:"references,omitempty"`
 }
 
 const (

@@ -19,6 +19,7 @@ asvs: V1
 cheat_sheet: https://example.com
 action: Test Action
 mitigation: Test mitigation
+references: CWE-200; NIST SP 800-53 AC-3
 check: Is it mitigated?
 detection_logic: Always
 risk_assessment: Low
@@ -69,6 +70,7 @@ func TestRiskRule_Category_ReturnsCorrectValues(t *testing.T) {
 	assert.Equal(t, "https://example.com", cat.CheatSheet)
 	assert.Equal(t, "Test Action", cat.Action)
 	assert.Equal(t, "Test mitigation", cat.Mitigation)
+	assert.Equal(t, "CWE-200; NIST SP 800-53 AC-3", cat.References)
 	assert.Equal(t, "Is it mitigated?", cat.Check)
 	assert.Equal(t, "Always", cat.DetectionLogic)
 	assert.Equal(t, "Low", cat.RiskAssessment)

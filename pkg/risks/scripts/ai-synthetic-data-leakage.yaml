@@ -19,19 +19,23 @@ impact: >
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Before release, measure whether each synthetic or anonymized dataset leaks or re-identifies its source, and handle it at the source''s classification until it passes.'
-mitigation: >
+mitigation: >-
   Test every synthetic or anonymized dataset before release. Specifically, check for verbatim and
   near-duplicate source records, run membership-inference and linkage (re-identification) tests
-  against the available auxiliary data, and record the results with the dataset. Additionally, where
-  the source is sensitive, use generation methods with formal privacy guarantees (differential
-  privacy), and remove the rare or outlier records that are easiest to re-identify. Until a dataset
-  passes, label and handle it at the classification of its source, rather than as unrestricted.
-  Finally, keep lineage from each synthetic set back to its source, so that a leak can be scoped.
-  References include OWASP GenAI Data Security 2026 DSGAI10 (Synthetic Data and Anonymization
-  Pitfalls), MITRE ATLAS AML.T0024.000 (Infer Training Data Membership) and AML.T0025, MAESTRO
-  layers 1 and 2, CWE-359 and CWE-330, and NIST SP 800-53 SI-4, RA-5, and CA-7, with the mappings
-  taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  against the available auxiliary data, and record the results with the dataset.
+
+  Where the source is sensitive, use generation methods with formal privacy guarantees (differential
+  privacy), and remove the rare or outlier records that are easiest to re-identify.
+
+  Until a dataset passes, label and handle it at the classification of its source, rather than as
+  unrestricted.
+
+  Keep lineage from each synthetic set back to its source, so that a leak can be scoped.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI10 (Synthetic Data and Anonymization Pitfalls); MITRE ATLAS
+  AML.T0024.000 (Infer Training Data Membership) and AML.T0025; MAESTRO layers 1 and 2; CWE-359;
+  CWE-330; NIST SP 800-53 SI-4, RA-5, and CA-7; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is every synthetic or anonymized dataset tested for source leakage and re-identification before release, generated with privacy guarantees where the source is sensitive, and handled at the source''s classification until it passes?'
 detection_logic: >
   Review the release records for leakage and re-identification test results. Then, compare a sample

@@ -13,15 +13,19 @@ impact: >
 asvs: "V6 - Cryptography"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html"
 action: 'Ensure that no single identity holds both key-operation permissions and the ability to modify this key vault''s own access policy or audit configuration.'
-mitigation: >
+mitigation: >-
   Assign the key vault's management-plane permissions (to create, rotate, and delete keys, and to
   modify the access policy) and its data-plane permissions (to use a key for cryptographic
-  operations) to distinct roles held by different individuals. Additionally, route access-policy
-  changes to the vault itself through a change process that requires a second approver. Finally,
-  forward the vault's audit log to a destination that the vault's own administrators cannot delete
-  or modify, so that a change to a key-management role is independently visible. References include
+  operations) to distinct roles held by different individuals.
+
+  Route access-policy changes to the vault itself through a change process that requires a second
+  approver.
+
+  Forward the vault's audit log to a destination that the vault's own administrators cannot delete
+  or modify, so that a change to a key-management role is independently visible.
+references: >-
   NIST SP 800-53 AC-5 (Separation of Duties) and SC-12 (Cryptographic Key Establishment and
-  Management).
+  Management)
 check: 'Are key-operation permissions and vault administration and audit permissions held by distinct roles or individuals?'
 detection_logic: >
   Audit the key vault's access-policy assignments for any identity that holds both key-operation and

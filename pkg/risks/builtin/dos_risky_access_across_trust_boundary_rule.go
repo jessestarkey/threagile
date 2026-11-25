@@ -21,18 +21,12 @@ func (*DosRiskyAccessAcrossTrustBoundaryRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html",
 		Action: "Rate-limit and quota every cross-boundary entry point to this availability-critical asset, move maintenance " +
 			"access behind VPN or IP filtering, and deploy the asset redundantly.",
-		Mitigation: "Enforce per-client and global rate limits, concurrency caps, request-size limits, timeouts, and pagination " +
-			"limits at the API gateway or ingress in front of this asset, returning HTTP 429 instead of queuing unbounded " +
-			"work. Bound expensive operations (search, report generation, file processing, regular expressions, GraphQL " +
-			"depth and cost) with explicit resource budgets, and move long-running work to asynchronous queues with " +
-			"backpressure. Restrict administrative and maintenance data flows to a VPN, private endpoint, or " +
-			"IP-allowlisted management network. Deploy the asset redundantly across availability zones behind a " +
-			"health-checked load balancer with bounded autoscaling, and use circuit breakers and bulkheads in callers so " +
-			"one saturated dependency does not cascade. Put internet-facing entry points behind the provider's DDoS " +
-			"protection (Azure DDoS Protection, AWS Shield Advanced) and WAF rate-based rules. Load-test against the " +
-			"documented availability objective to confirm the limits hold. References: CWE-400, CWE-770; CAPEC-125 " +
-			"(Flooding); MITRE ATT&CK T1498 (Network Denial of Service), T1499 (Endpoint Denial of Service); OWASP API " +
-			"Security Top 10:2023 API4 (Unrestricted Resource Consumption); NIST SP 800-53 SC-5.",
+		Mitigation: "Enforce per-client and global rate limits, concurrency caps, request-size limits, timeouts, and pagination limits at the gateway in front of this asset, returning HTTP 429 instead of queuing unbounded work.\n" +
+			"Bound expensive operations (search, report generation, file processing, regular expressions, and GraphQL depth) with resource budgets, and move long-running work to queues with backpressure.\n" +
+			"Restrict administrative and maintenance flows to a VPN, private endpoint, or IP-allowlisted management network.\n" +
+			"Deploy the asset across availability zones behind a health-checked load balancer, and use circuit breakers in callers so one saturated dependency does not cascade.\n" +
+			"Put internet-facing entry points behind the provider's DDoS protection and WAF rate-based rules.\n" +
+			"Load-test against the documented availability objective to confirm the limits hold.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.DenialOfService,

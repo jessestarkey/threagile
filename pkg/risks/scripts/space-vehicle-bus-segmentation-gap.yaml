@@ -19,18 +19,22 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Authenticate commands at the spacecraft''s own receiver, independent of ground-segment controls, and segment the command-and-data-handling subsystem from the other onboard buses and payloads.'
-mitigation: >
+mitigation: >-
   Require the spacecraft's own command-and-data-handling subsystem to authenticate every command it
   receives cryptographically, independent of any trust already established by the ground segment. In
   other words, the vehicle should not assume that a command is legitimate solely because it arrived
-  through the expected uplink path. Additionally, segment the command-and-data-handling subsystem
-  from attitude control, the payload, and other critical buses, so that a single accepted but
-  malicious command cannot reach every subsystem at once. Since the vehicle cannot be physically
-  patched or re-hardened after launch, validate this architecture during pre-launch integration and
-  test, rather than relying on an on-orbit fix. References include MITRE SPARTA (Space Attack
-  Research and Tactic Analysis) for the space segment's command and data handling techniques, NIST
-  IR 8401 (Satellite Ground Segment Security, including its space segment considerations), and NIST
-  SP 800-53 SC-7 (Boundary Protection).
+  through the expected uplink path.
+
+  Segment the command-and-data-handling subsystem from attitude control, the payload, and other
+  critical buses, so that a single accepted but malicious command cannot reach every subsystem at
+  once.
+
+  Since the vehicle cannot be physically patched or re-hardened after launch, validate this
+  architecture during pre-launch integration and test, rather than relying on an on-orbit fix.
+references: >-
+  MITRE SPARTA (Space Attack Research and Tactic Analysis) for the space segment's command and
+  data handling techniques; NIST IR 8401 (Satellite Ground Segment Security, including its space
+  segment considerations); NIST SP 800-53 SC-7 (Boundary Protection)
 check: 'Does the spacecraft''s own command-and-data-handling subsystem authenticate every command cryptographically, independent of ground-segment trust, and is it segmented from the other onboard buses and payloads?'
 detection_logic: >
   Review the spacecraft's command-authentication design for independence from ground-segment trust,

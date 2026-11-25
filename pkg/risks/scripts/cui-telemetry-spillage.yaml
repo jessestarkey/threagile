@@ -13,14 +13,19 @@ impact: >
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
 action: 'Audit every log emission point for CUI content, and redact it before emission.'
-mitigation: >
+mitigation: >-
   Disable verbose and debug logging in production through environment-specific configuration.
-  Additionally, use a structured logging wrapper that applies regex or pattern-based redaction to
-  known CUI field patterns before any log emission. Configure ORM and HTTP client libraries to
-  suppress parameter and body logging, and apply the same redaction pipeline to distributed tracing
-  span attributes. Finally, restrict access to log storage to personnel with the appropriate
-  clearance and need to know. References include NIST SP 800-53 AU-3 (Content of Audit Records) and
-  AU-9 (Protection of Audit Information), and the DoD CUI Registry's spillage handling requirements.
+
+  Use a structured logging wrapper that applies regex or pattern-based redaction to known CUI field
+  patterns before any log emission.
+
+  Configure ORM and HTTP client libraries to suppress parameter and body logging, and apply the same
+  redaction pipeline to distributed tracing span attributes.
+
+  Restrict access to log storage to personnel with the appropriate clearance and need to know.
+references: >-
+  NIST SP 800-53 AU-3 (Content of Audit Records) and AU-9 (Protection of Audit Information); DoD
+  CUI Registry's spillage handling requirements
 check: 'Has every log emission point been audited for CUI content and confirmed to redact it before emission?'
 detection_logic: >
   Run periodic DLP scans against log samples in the SIEM to detect patterns that match CUI field

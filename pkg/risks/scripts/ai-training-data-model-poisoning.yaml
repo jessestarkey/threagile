@@ -17,22 +17,28 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Control and verify everything that feeds training and evaluation, namely the data, features, configuration, and scoring, and compare each training run against an approved baseline.'
-mitigation: >
+mitigation: >-
   Restrict write access to training and evaluation data, feature stores, and training configuration
-  to named identities, and record the provenance (source, version, and hash) of every dataset and
-  feature. Additionally, validate and filter incoming training data for anomalies and known
-  poisoning patterns, and quarantine data from outside sources until it is reviewed. Version the
-  training configuration and hyperparameters, and compare every run against the approved baseline
-  before its output is used. Furthermore, keep evaluation data and scoring code separate from
-  training, access-controlled, and versioned, and add held-out canary tests for backdoor triggers.
-  Finally, keep lineage from each model back to its exact inputs, so that a poisoned model can be
-  traced and rebuilt. References include the OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning),
-  OWASP GenAI Data Security 2026 DSGAI04 (Data, Model and Artifact Poisoning), DSGAI05 (Data
-  Integrity and Validation Failures), and DSGAI21 (Disinformation via Data Poisoning), MITRE ATLAS
-  AML.T0020 (Poison Training Data), AML.T0018.000 (Poison AI Model), and AML.T0043.004 (Insert
-  Backdoor Trigger), MAESTRO layers 1, 2, and 5, CWE-345, CWE-346, and CWE-20, and NIST SP 800-53
-  SI-7, SR-3, and CM-3, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  to named identities, and record each dataset's source, version, and hash.
+
+  Filter incoming training data for anomalies and known poisoning patterns, and quarantine outside
+  data until it is reviewed.
+
+  Version the training configuration and hyperparameters, and compare every run against the approved
+  baseline before its output is used.
+
+  Keep evaluation data and scoring code separate from training and access-controlled, and add
+  held-out canary tests for backdoor triggers.
+
+  Keep lineage from each model to its exact inputs, so that a poisoned model can be traced and
+  rebuilt.
+references: >-
+  OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning); OWASP GenAI Data Security 2026 DSGAI04
+  (Data, Model and Artifact Poisoning), DSGAI05 (Data Integrity and Validation Failures), and
+  DSGAI21 (Disinformation via Data Poisoning); MITRE ATLAS AML.T0020 (Poison Training Data),
+  AML.T0018.000 (Poison AI Model), and AML.T0043.004 (Insert Backdoor Trigger); MAESTRO layers 1,
+  2, and 5; CWE-345; CWE-346; CWE-20; NIST SP 800-53 SI-7, SR-3, and CM-3; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is write access to training and evaluation data, features, and configuration restricted and logged, with provenance recorded, outside data quarantined, every run compared against an approved baseline, and evaluation kept separate from training?'
 detection_logic: >
   Review who can write to the training data, feature stores, training configuration, and evaluation

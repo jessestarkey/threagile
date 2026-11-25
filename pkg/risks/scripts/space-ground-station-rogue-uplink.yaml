@@ -16,17 +16,22 @@ impact: >
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
 action: 'Authenticate every command uplink cryptographically, and monitor for command or telemetry sessions that originate from an unrecognized ground station.'
-mitigation: >
+mitigation: >-
   Authenticate every command uplinked to the spacecraft cryptographically, rather than relying on
   link obscurity, frequency coordination, or physical access to the ground station alone as the
-  control. Additionally, monitor for command or telemetry sessions that originate from an
-  unrecognized ground station identity, and alert on any uplink attempt that fails authentication,
-  rather than silently dropping it. Finally, protect the ground station's own command-origination
-  credentials in the same way as any other high-value signing key, since their compromise is
-  functionally equivalent to legitimately operating a rogue ground station. References include MITRE
-  SPARTA (Space Attack Research and Tactic Analysis) for Rogue Ground Station and Unauthorized
-  Uplink, NIST IR 8401 (Satellite Ground Segment Security), and NIST SP 800-53 IA-3 (Device
-  Identification and Authentication).
+  control.
+
+  Monitor for command or telemetry sessions that originate from an unrecognized ground station
+  identity, and alert on any uplink attempt that fails authentication, rather than silently dropping
+  it.
+
+  Protect the ground station's own command-origination credentials in the same way as any other
+  high-value signing key, since their compromise is functionally equivalent to legitimately
+  operating a rogue ground station.
+references: >-
+  MITRE SPARTA (Space Attack Research and Tactic Analysis) for Rogue Ground Station and
+  Unauthorized Uplink; NIST IR 8401 (Satellite Ground Segment Security); NIST SP 800-53 IA-3
+  (Device Identification and Authentication)
 check: 'Is every command uplink cryptographically authenticated, independent of link obscurity, and is monitoring in place for uplink attempts from an unrecognized ground station identity?'
 detection_logic: >
   Audit the command-uplink protocol for cryptographic authentication, as opposed to reliance on

@@ -23,17 +23,11 @@ func (*CodeBackdooringRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
 		Action: "Restrict source repository and build pipeline access to managed devices over private networks, enforce signed " +
 			"commits with mandatory independent review, and sign and verify every build artifact.",
-		Mitigation: "Do not expose source repository or build pipeline push and administrative interfaces directly to the " +
-			"internet; require access through a VPN or zero-trust gateway from managed, hardened developer endpoints only. " +
-			"Enforce branch protection on release branches: pull request review by at least one person other than the " +
-			"author, required status checks, signed commits (GPG, SSH, or Sigstore gitsign), and no direct or force " +
-			"pushes, including by administrators. Run builds on ephemeral, isolated runners destroyed after each job, and " +
-			"pin third-party CI actions, plugins, and dependencies by immutable digest or commit hash instead of mutable " +
-			"tags. Generate signed build provenance (SLSA Build Level 3 or higher, in-toto attestations) and sign every " +
-			"artifact (Sigstore cosign or Notation); configure deployment targets to verify signature and provenance " +
-			"before accepting an artifact. Restrict who can modify pipeline definitions, and protect pipeline secrets with " +
-			"environment-scoped approvals. References: CWE-506, CWE-494; CAPEC-444 (Development Alteration); MITRE ATT&CK " +
-			"T1195.002 (Compromise Software Supply Chain); NIST SP 800-218 (SSDF) PS.1, PS.2; NIST SP 800-53 SR-11, CM-14.",
+		Mitigation: "Keep repository and pipeline push and administrative interfaces off the internet, reachable only through a VPN or zero-trust gateway from managed developer endpoints.\n" +
+			"Protect release branches with review by someone other than the author, required status checks, signed commits, and no direct or force pushes, including by administrators.\n" +
+			"Build on ephemeral runners destroyed after each job, and pin third-party CI actions, plugins, and dependencies by digest or commit hash instead of mutable tags.\n" +
+			"Generate signed build provenance (SLSA Build Level 3 or higher) and sign every artifact (Sigstore cosign or Notation), and have deployment targets verify both before accepting an artifact.\n" +
+			"Restrict who can modify pipeline definitions, and protect pipeline secrets with environment-scoped approvals.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.Tampering,

@@ -24,16 +24,10 @@ func (*MissingVaultRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
 		Action: "Move every credential, key, and certificate out of configuration files, images, and environment variables " +
 			"into a dedicated secrets vault accessed through workload identity.",
-		Mitigation: "Deploy a dedicated secrets management service (Azure Key Vault, AWS Secrets Manager with KMS, HashiCorp " +
-			"Vault), HSM-backed where required (FIPS 140-2/140-3 Level 2 or higher for DoD), and migrate every database " +
-			"password, API key, client secret, TLS private key, and signing key out of configuration files, container " +
-			"images, Kubernetes manifests, and plain environment variables. Have workloads authenticate to the vault with " +
-			"workload identity (managed identity, IAM roles for service accounts, Kubernetes auth) rather than a bootstrap " +
-			"secret, and retrieve secrets at runtime or through a CSI secrets-store driver. Grant each workload read " +
-			"access to its own secrets only, enable soft-delete and purge protection, and send all vault access logs to " +
-			"the SIEM. Prefer dynamic, short-lived credentials (per-lease database credentials, short-lived certificates) " +
-			"and automate rotation for any static secret that remains. References: CWE-798, CWE-522, CWE-312; MITRE ATT&CK " +
-			"T1552.001 (Credentials In Files), T1552.004 (Private Keys); NIST SP 800-53 IA-5, SC-12, SC-28; NIST SP 800-57.",
+		Mitigation: "Deploy a dedicated secrets service (Azure Key Vault, AWS Secrets Manager, or HashiCorp Vault), HSM-backed where required (FIPS 140 Level 2 or higher for DoD), and migrate every password, API key, client secret, and private key into it.\n" +
+			"Have workloads authenticate to the vault with workload identity rather than a bootstrap secret, and retrieve secrets at runtime or through a CSI secrets-store driver.\n" +
+			"Grant each workload read access to its own secrets only, enable soft-delete and purge protection, and send vault access logs to the SIEM.\n" +
+			"Prefer dynamic, short-lived credentials, and automate rotation for any static secret that remains.",
 		Check:          "GetAttribute a Vault (Secret Storage) in place?",
 		Function:       types.Architecture,
 		STRIDE:         types.InformationDisclosure,

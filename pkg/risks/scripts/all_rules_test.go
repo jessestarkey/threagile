@@ -65,6 +65,8 @@ func TestEveryScriptRuleLoadsWithCompleteMetadata(t *testing.T) {
 			assert.NotEmpty(t, category.Impact, "impact")
 			assert.NotEmpty(t, category.Action, "action")
 			assert.NotEmpty(t, category.Mitigation, "mitigation")
+			assert.NotEmpty(t, category.References, "references")
+			assert.NotContains(t, category.Mitigation, "References", "references belong in their own field")
 			assert.NotEmpty(t, category.Check, "check")
 			assert.NotEmpty(t, category.DetectionLogic, "detection_logic")
 			assert.NotEmpty(t, category.RiskAssessment, "risk_assessment")
@@ -204,5 +206,17 @@ func TestEveryScriptRuleRunsAndFiresOnKitchenSinkModel(t *testing.T) {
 			}
 			assert.NotEmpty(t, generated, "rule fired on nothing in the kitchen-sink model: check its match conditions for a misspelled attribute or field")
 		})
+	}
+}
+
+// TestMitigationsListOneStepPerLineWithoutReferences checks the shape the reports rely on: a
+// mitigation holds one step per line, with no empty step, and leaves its references to the
+// references field (or, for a built-in rule, to central-security-repo's library 10).
+func TestMitigationsListOneStepPerLineWithoutReferences(t *testing.T) {
+	for id, category := range allRuleCategories(t) {
+		assert.NotContains(t, category.Mitigation, "References", id)
+		for _, step := range strings.Split(category.Mitigation, "\n") {
+			assert.NotEmpty(t, strings.TrimSpace(step), "%s has an empty step", id)
+		}
 	}
 }

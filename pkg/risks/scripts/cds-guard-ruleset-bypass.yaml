@@ -17,18 +17,19 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Keep the guard''s inspection rule set on a documented review and update cadence, and confirm that no administrative override path releases content without passing through it.'
-mitigation: >
-  Maintain the guard's classification-marking, malware-signature, and dirty-word and regex rule set
-  under version control, with a documented, recurring review cadence tied to the accreditation
-  body's own revalidation schedule. A rule set that is accredited once and never revisited silently
-  drifts out of step with the new data types and threats that the guard is relied on to catch.
-  Additionally, audit the guard's own administrative configuration for any override,
-  maintenance-mode, or emergency-release capability that bypasses the normal inspection path, and
-  require the same release-authority approval for its use as for a normal transfer. Finally, log
-  every rule-set change and every bypass invocation to a destination that the guard's administrators
-  themselves cannot modify. References include NIST SP 800-53 SI-7 (Software, Firmware, and
-  Information Integrity) and CM-3 (Configuration Change Control), and the DoD Raise-the-Bar Cross
-  Domain Solution requirements.
+mitigation: >-
+  Keep the guard's marking, malware-signature, and dirty-word rule set under version control, with a
+  recurring review tied to the accreditation body's revalidation schedule, since a rule set
+  accredited once drifts out of step with new data types and threats.
+
+  Audit the guard's configuration for any override, maintenance-mode, or emergency-release path that
+  bypasses inspection, and require normal release-authority approval for its use.
+
+  Log every rule-set change and bypass to a destination that the guard's administrators cannot
+  modify.
+references: >-
+  NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity) and CM-3 (Configuration
+  Change Control); DoD Raise-the-Bar Cross Domain Solution requirements
 check: 'Is the guard''s inspection rule set under version control with a documented, recurring review cadence, and is every administrative override or bypass path logged and gated on the same release-authority approval as a normal transfer?'
 detection_logic: >
   Audit the guard's rule-set version history for recency against its own documented review cadence.

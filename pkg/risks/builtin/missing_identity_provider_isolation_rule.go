@@ -22,16 +22,10 @@ func (*MissingIdentityProviderIsolationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Place the identity provider and its identity stores in a dedicated network segment that admits only their " +
 			"required authentication flows, and administer them as Tier-0 assets.",
-		Mitigation: "Move the identity provider and its directory or database into their own subnet or VNet/VPC segment with a " +
-			"default-deny network security group or firewall policy that permits only the authentication protocols and " +
-			"source ranges actually required (for example HTTPS from the ingress tier, and LDAPS from the identity " +
-			"provider to its own store only). Do not co-host the identity provider or its store on the same application " +
-			"server, database instance, node pool, or VM as any non-identity workload; separate execution environments as " +
-			"well as networks. Restrict administration to privileged access workstations through a bastion or just-in-time " +
-			"access path. Treat token-signing keys and the identity database as Tier-0: keep signing keys in an HSM-backed " +
-			"key vault, and alert on any change to federation trusts, signing certificates, or newly added application " +
-			"credentials. References: CWE-653; MITRE ATT&CK T1556 (Modify Authentication Process), T1606.002 (Forge Web " +
-			"Credentials: SAML Tokens), T1003 (OS Credential Dumping); NIST SP 800-53 SC-7, AC-6; NIST SP 800-207.",
+		Mitigation: "Move the identity provider and its store into their own segment with a default-deny policy that admits only the required authentication protocols and sources (such as HTTPS from the ingress tier, and LDAPS from the identity provider to its store).\n" +
+			"Do not co-host the identity provider or its store with any non-identity workload on the same server, database instance, node pool, or VM.\n" +
+			"Restrict administration to privileged access workstations through a bastion or just-in-time access path.\n" +
+			"Treat token-signing keys and the identity database as Tier-0. Keep signing keys in an HSM-backed vault, and alert on any change to federation trusts, signing certificates, or application credentials.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.ElevationOfPrivilege,

@@ -13,12 +13,13 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Enforce STIG baselines and automated patching.'
-mitigation: >
+mitigation: >-
   Provision VMs exclusively from DoD-approved, STIG-compliant marketplace images, and enroll them in
-  strict automated update schedules that meet the SLA patching requirements. References include
-  CWE-1104 (Use of Unmaintained Third Party Components), NIST SP 800-53 SI-2 (Flaw Remediation) and
-  CM-6 (Configuration Settings), MITRE ATT&CK T1068 (Exploitation for Privilege Escalation), and the
-  DISA OS STIGs.
+  strict automated update schedules that meet the SLA patching requirements.
+references: >-
+  CWE-1104 (Use of Unmaintained Third Party Components); NIST SP 800-53 SI-2 (Flaw Remediation)
+  and CM-6 (Configuration Settings); MITRE ATT&CK T1068 (Exploitation for Privilege Escalation);
+  DISA OS STIGs
 check: 'Is this VM provisioned from a STIG-compliant baseline image and enrolled in automated patching?'
 detection_logic: >
   Audit the platform's patch-management compliance logs, and run automated STIG compliance scans

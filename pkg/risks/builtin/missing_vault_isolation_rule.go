@@ -22,15 +22,10 @@ func (*MissingVaultIsolationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Isolate the secrets vault and its storage backend in a dedicated network segment reachable only through " +
 			"private endpoints by the workloads that need it.",
-		Mitigation: "Disable public network access on the vault and expose it only through private endpoints or VPC endpoints in a " +
-			"dedicated subnet with a default-deny network policy admitting only the specific workload subnets and " +
-			"management paths that need it. Do not co-host a self-managed vault (for example HashiCorp Vault) or its " +
-			"storage backend (Raft, Consul, a database) on the same servers, node pool, or database instance as " +
-			"application workloads. Restrict vault administration to privileged access workstations with just-in-time " +
-			"elevation, separate vault administrator roles from secret-consumer roles, and require MFA for all human " +
-			"access. Alert on vault policy changes, new access grants, bulk secret reads, and access from unexpected " +
-			"network sources. References: CWE-653; MITRE ATT&CK T1555 (Credentials from Password Stores), T1552 (Unsecured " +
-			"Credentials); NIST SP 800-53 SC-7, SC-12, AC-6.",
+		Mitigation: "Disable public network access on the vault and expose it only through private endpoints or VPC endpoints in a dedicated subnet with a default-deny network policy admitting only the specific workload subnets and management paths that need it.\n" +
+			"Do not co-host a self-managed vault (for example HashiCorp Vault) or its storage backend (Raft, Consul, a database) on the same servers, node pool, or database instance as application workloads.\n" +
+			"Restrict vault administration to privileged access workstations with just-in-time elevation, separate vault administrator roles from secret-consumer roles, and require MFA for all human access.\n" +
+			"Alert on vault policy changes, new access grants, bulk secret reads, and access from unexpected network sources.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.ElevationOfPrivilege,

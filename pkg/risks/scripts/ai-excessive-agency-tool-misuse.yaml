@@ -17,22 +17,28 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Reduce each agent''s write-capable tools to the minimum, scope their permissions narrowly, and require human confirmation for consequential actions.'
-mitigation: >
+mitigation: >-
   Give each agent only the tools its task needs, and make every tool read-only unless the task
-  genuinely requires writes. Additionally, scope each tool's own credentials to the specific
-  resources and operations it serves, rather than to a shared, broad-scope identity. Require
-  explicit human confirmation before any agent-initiated action that writes data, sends
-  communications, or changes another system. Furthermore, maintain an immutable allowlist of
-  callable tools, block dynamic tool registration at runtime, and rate-limit and budget tool
-  invocations per session. Finally, log every tool invocation with its originating prompt and the
-  identity it ran under, and alert on calls that cannot be traced to a user turn. References include
-  the OWASP LLM Top 10 2026 LLM03 (Excessive Agency), the OWASP Top 10 for Agentic Applications 2026
-  ASI02 (Tool Misuse and Exploitation), the OWASP Agentic Skills Top 10 2026 AST03 (Over-Privileged
-  Skills), OWASP GenAI Data Security 2026 DSGAI06 (Tool, Plugin and Agent Data Exchange), MITRE
-  ATLAS AML.T0053 (AI Agent Tool Invocation) and AML.T0126, MAESTRO layers 3, 6, and 7, CWE-269,
-  CWE-272, CWE-284, and CWE-862, and NIST SP 800-53 AC-3, AC-6, CM-7, and AU-2, with the mappings
-  taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  genuinely requires writes.
+
+  Scope each tool's own credentials to the specific resources and operations it serves, rather than
+  to a shared, broad-scope identity.
+
+  Require explicit human confirmation before any agent-initiated action that writes data, sends
+  communications, or changes another system.
+
+  Maintain an immutable allowlist of callable tools, block dynamic tool registration at runtime, and
+  rate-limit and budget tool invocations per session.
+
+  Log every tool invocation with its originating prompt and the identity it ran under, and alert on
+  calls that cannot be traced to a user turn.
+references: >-
+  OWASP LLM Top 10 2026 LLM03 (Excessive Agency); OWASP Top 10 for Agentic Applications 2026 ASI02
+  (Tool Misuse and Exploitation); OWASP Agentic Skills Top 10 2026 AST03 (Over-Privileged Skills);
+  OWASP GenAI Data Security 2026 DSGAI06 (Tool, Plugin and Agent Data Exchange); MITRE ATLAS
+  AML.T0053 (AI Agent Tool Invocation) and AML.T0126; MAESTRO layers 3, 6, and 7; CWE-269;
+  CWE-272; CWE-284; CWE-862; NIST SP 800-53 AC-3, AC-6, CM-7, and AU-2; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is every write-capable tool that this agent can call strictly necessary, scoped to minimum permissions, gated by human confirmation for consequential actions, and logged with its originating prompt?'
 detection_logic: >
   Enumerate every tool that the agent can invoke, classify each one as read-only or write-capable,

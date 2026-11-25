@@ -21,17 +21,12 @@ func (*CrossSiteRequestForgeryRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
 		Action: "Protect every state-changing request with the framework's synchronizer token or signed double-submit cookie, " +
 			"and set SameSite on all session cookies as defense in depth.",
-		Mitigation: "Enable the web framework's built-in CSRF protection (synchronizer token pattern, or the signed double-submit " +
-			"cookie pattern for stateless applications) and validate the token server-side on every state-changing request " +
-			"(POST, PUT, PATCH, DELETE). Never change state on GET or HEAD. Set SameSite=Lax or Strict, Secure, and " +
-			"HttpOnly on all session and authentication cookies as an additional layer, not the only control. For APIs " +
-			"called from browser JavaScript, authenticate with a bearer token in the Authorization header or require a " +
-			"custom request header rather than relying on ambient cookies, and restrict CORS to an explicit origin " +
-			"allowlist with no wildcard when credentials are allowed. Verify the Origin or Sec-Fetch-Site header on " +
-			"sensitive endpoints, and require re-authentication for high-impact actions such as changing credentials, " +
-			"roles, or transfer destinations. For third-party products, confirm the vendor's CSRF protection is enabled " +
-			"and keep the product patched. References: CWE-352; CAPEC-62 (Cross Site Request Forgery); OWASP Top 10:2025 " +
-			"A01 (Broken Access Control).",
+		Mitigation: "Enable the framework's built-in CSRF protection, and validate the token server-side on every POST, PUT, PATCH, and DELETE request.\n" +
+			"Never change state on GET or HEAD.\n" +
+			"Set SameSite=Lax or Strict, Secure, and HttpOnly on all session and authentication cookies as an additional layer, not the only control.\n" +
+			"For APIs called from browser JavaScript, authenticate with a bearer token or a custom request header rather than ambient cookies, and restrict CORS to an explicit origin allowlist when credentials are allowed.\n" +
+			"Verify the Origin or Sec-Fetch-Site header on sensitive endpoints, and require re-authentication for high-impact actions such as changing credentials or roles.\n" +
+			"For third-party products, confirm the vendor's CSRF protection is enabled, and keep the product patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Spoofing,

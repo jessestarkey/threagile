@@ -19,20 +19,22 @@ impact: >
 asvs: "V16 - Security Logging and Error Handling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
 action: 'Redact or exclude sensitive content from AI telemetry before it leaves the asset, and protect and retain the observability stack at the classification of what it still holds.'
-mitigation: >
-  Configure AI tracing and logging to record metadata (the model, latency, token counts, tool names,
-  and decision outcomes) rather than full prompt and response bodies by default, and redact or
-  tokenize sensitive fields before telemetry leaves the asset. Where full content must be kept for
-  evaluation or incident response, send it to a store accredited for that classification, restrict
-  it to named roles, and apply short, enforced retention. Additionally, review third-party
-  observability vendors' data handling before sending AI telemetry to them, and alert on access to,
-  and bulk export of, stored prompts. Tampering with the observability stack itself (blinding it to
-  hide activity), by contrast, is covered separately by the security-control tamper-resistance rule.
-  References include OWASP GenAI Data Security 2026 DSGAI14 (Excessive Telemetry and Monitoring
-  Leakage), MITRE ATLAS AML.T0024, AML.T0025, and AML.T0036, MAESTRO layers 2, 5, and 6, CWE-532,
-  CWE-312, and CWE-200, and NIST SP 800-53 AU-9, AU-11, AC-3, and SI-12, with the mappings taken
-  from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+mitigation: >-
+  Record metadata (the model, latency, token counts, tool names, and outcomes) rather than full
+  prompt and response bodies by default, and redact sensitive fields before telemetry leaves the
+  asset.
+
+  Where full content must be kept, send it to a store accredited for its classification, restrict it
+  to named roles, and enforce short retention.
+
+  Review third-party observability vendors' data handling before sending them AI telemetry.
+
+  Alert on access to, and bulk export of, stored prompts.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI14 (Excessive Telemetry and Monitoring Leakage); MITRE ATLAS
+  AML.T0024, AML.T0025, and AML.T0036; MAESTRO layers 2, 5, and 6; CWE-532; CWE-312; CWE-200; NIST
+  SP 800-53 AU-9, AU-11, AC-3, and SI-12; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is sensitive content redacted or excluded from AI telemetry before it leaves the asset, and is any retained full content held in a store accredited for its classification, with restricted access and enforced retention?'
 detection_logic: >
   Inspect a sample of the traces and logs in the monitoring or observability stack for prompt,

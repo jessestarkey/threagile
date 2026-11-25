@@ -13,13 +13,16 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
 action: 'Enforce readOnlyRootFilesystem.'
-mitigation: >
+mitigation: >-
   Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext.
-  Additionally, mount ephemeral emptyDir volumes for any directory that the workload genuinely needs
-  to write to at runtime (for example, /tmp). Finally, enforce this cluster-wide through an OPA
-  Gatekeeper or Kyverno admission policy that rejects deployments without it, rather than relying on
-  manifest review alone. References include the DISA Kubernetes STIG and NIST SP 800-53 CM-6
-  (Configuration Settings) and SC-39 (Process Isolation).
+
+  Mount ephemeral emptyDir volumes for any directory that the workload genuinely needs to write to
+  at runtime (for example, /tmp).
+
+  Enforce this cluster-wide through an OPA Gatekeeper or Kyverno admission policy that rejects
+  deployments without it, rather than relying on manifest review alone.
+references: >-
+  DISA Kubernetes STIG; NIST SP 800-53 CM-6 (Configuration Settings) and SC-39 (Process Isolation)
 check: 'Does the container run with readOnlyRootFilesystem set to true, with writable paths limited to ephemeral volumes, enforced by an admission policy?'
 detection_logic: >
   Query the cluster (kubectl get pods -o json), or the admission controller's policy audit log, for

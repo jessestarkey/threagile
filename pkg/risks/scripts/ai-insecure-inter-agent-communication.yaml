@@ -16,19 +16,25 @@ impact: >
 asvs: "V9 - Communication"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Mutually authenticate every agent-to-agent link with a per-agent identity, encrypt it, and sign or bind messages so that they cannot be altered or replayed.'
-mitigation: >
+mitigation: >-
   Give each agent a unique, verifiable identity (a PKI-backed workload identity or an equivalent),
   and require mutual authentication on every agent-to-agent link, never an unauthenticated or
-  shared-secret channel. Additionally, encrypt agent traffic end to end in transit, including inside
-  a cluster. Sign messages, or bind them to the session with nonces and expiry, so that delegated
-  tasks cannot be altered or replayed. Furthermore, route agents that sit in different trust
-  boundaries through an admission-controlled agent gateway or registry that verifies identity and
-  enforces which agent may delegate what to whom. Finally, log every cross-agent message with the
-  sender's and receiver's identities. References include the OWASP Top 10 for Agentic Applications
-  2026 ASI07 (Insecure Inter-Agent Communications), MAESTRO layer 7 (Agent Ecosystem), MITRE ATLAS
-  AML.T0012 (Valid Accounts), CWE-287, CWE-294, CWE-319, and CWE-346, and NIST SP 800-53 IA-9, SC-8,
-  and AC-3, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  shared-secret channel.
+
+  Encrypt agent traffic end to end in transit, including inside a cluster.
+
+  Sign messages, or bind them to the session with nonces and expiry, so that delegated tasks cannot
+  be altered or replayed.
+
+  Route agents that sit in different trust boundaries through an admission-controlled agent gateway
+  or registry that verifies identity and enforces which agent may delegate what to whom.
+
+  Log every cross-agent message with the sender's and receiver's identities.
+references: >-
+  OWASP Top 10 for Agentic Applications 2026 ASI07 (Insecure Inter-Agent Communications); MAESTRO
+  layer 7 (Agent Ecosystem); MITRE ATLAS AML.T0012 (Valid Accounts); CWE-287; CWE-294; CWE-319;
+  CWE-346; NIST SP 800-53 IA-9, SC-8, and AC-3; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is every agent-to-agent link mutually authenticated with per-agent identities, encrypted in transit, and protected against message alteration and replay, with cross-boundary delegation mediated by an admission-controlled gateway?'
 detection_logic: >
   Inventory every agent-to-agent channel, and verify its authentication, encryption, and message

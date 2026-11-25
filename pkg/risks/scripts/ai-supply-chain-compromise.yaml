@@ -18,21 +18,26 @@ impact: >
 asvs: "V15 - Secure Coding and Architecture"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Admit AI components only from approved sources, pin and verify each one by hash or signature, and scan them before they are loaded.'
-mitigation: >
+mitigation: >-
   Pull models, adapters, frameworks, and tool packages only from an internal, access-controlled
-  registry or mirror, never directly from a public hub at load time. Additionally, pin every
-  component to an exact version, and verify it by hash or signature on every load, rejecting
-  floating tags and unpinned dependencies. Prefer non-executable model formats (such as
-  safetensors), and scan artifacts for embedded code, unsafe deserialization, and known-malicious
-  content before admission. Furthermore, maintain an AI bill of materials (covering models,
-  datasets, frameworks, and tools) for each deployment, and watch for namespace takeovers and
-  suspicious new versions of the components you depend on. Finally, load third-party components with
-  the least privilege that the task needs. References include the OWASP LLM Top 10 2026 LLM04
-  (Supply Chain), the OWASP Top 10 for Agentic Applications 2026 ASI04 (Agentic Supply Chain), the
-  OWASP Agentic Skills Top 10 2026 AST02 (Supply Chain Compromise), MITRE ATLAS AML.T0010 (AI Supply
-  Chain Compromise) and AML.T0011.000 (Unsafe AI Artifacts), MAESTRO layers 3 and 4, CWE-1357,
-  CWE-494, and CWE-829, and NIST SP 800-53 SR-3, SR-4, SA-9, and SI-7, with the mappings taken from
-  the OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+  registry or mirror, never from a public hub at load time.
+
+  Pin every component to an exact version, and verify its hash or signature on every load.
+
+  Prefer non-executable model formats (such as safetensors), and scan artifacts for embedded code
+  and unsafe deserialization before admission.
+
+  Maintain an AI bill of materials for each deployment, and watch for namespace takeovers and
+  suspicious new versions of its components.
+
+  Load third-party components with the least privilege that the task needs.
+references: >-
+  OWASP LLM Top 10 2026 LLM04 (Supply Chain); OWASP Top 10 for Agentic Applications 2026 ASI04
+  (Agentic Supply Chain); OWASP Agentic Skills Top 10 2026 AST02 (Supply Chain Compromise); MITRE
+  ATLAS AML.T0010 (AI Supply Chain Compromise) and AML.T0011.000 (Unsafe AI Artifacts); MAESTRO
+  layers 3 and 4; CWE-1357; CWE-494; CWE-829; NIST SP 800-53 SR-3, SR-4, SA-9, and SI-7; Mappings
+  from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Are models, frameworks, and tool packages admitted only from an approved internal registry, pinned and verified by hash or signature on every load, scanned before admission, and tracked in an AI bill of materials?'
 detection_logic: >
   Inventory every third-party model, adapter, framework, and tool package that each deployment

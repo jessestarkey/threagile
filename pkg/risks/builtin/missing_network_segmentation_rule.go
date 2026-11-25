@@ -27,16 +27,11 @@ func (*MissingNetworkSegmentationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Place this high-value asset in its own network segment with default-deny rules that admit only its documented " +
 			"callers and ports.",
-		Mitigation: "Separate this asset from lower-trust components such as web servers, CMSs, client systems, build tooling, and " +
-			"monitoring hosts by placing it in a dedicated subnet, VNet/VPC, or Kubernetes namespace with default-deny " +
-			"ingress and egress. Use network security groups, cloud firewall rules, or Kubernetes NetworkPolicies (Calico, " +
-			"Cilium) to admit only the documented source assets on the documented ports, and deny lateral traffic inside " +
-			"shared segments. Prefer private endpoints for PaaS data services so they have no public or shared-subnet " +
-			"exposure. Where workloads must share a cluster, add identity-aware service-mesh authorization (mTLS with " +
-			"per-service policies). Enable flow logging (NSG flow logs, VPC Flow Logs) to baseline and alert on traffic " +
-			"into the segment, and keep the segmentation reflected in the boundary diagram and the ports, protocols, and " +
-			"services list. References: CWE-653; MITRE ATT&CK TA0008 (Lateral Movement), T1210 (Exploitation of Remote " +
-			"Services); NIST SP 800-53 SC-7, SC-7(5), AC-4; NIST SP 800-207.",
+		Mitigation: "Separate this asset from lower-trust components (web servers, CMSs, clients, build tooling, and monitoring hosts) in a dedicated subnet, VNet or VPC, or namespace with default-deny ingress and egress.\n" +
+			"Admit only the documented sources and ports through security groups, firewall rules, or Kubernetes NetworkPolicies, and deny lateral traffic inside shared segments.\n" +
+			"Prefer private endpoints for PaaS data services.\n" +
+			"Where workloads share a cluster, add service-mesh authorization with mTLS and per-service policies.\n" +
+			"Enable flow logging to baseline and alert on traffic into the segment, and keep the segmentation reflected in the boundary diagram and the ports, protocols, and services list.",
 		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:     types.Operations,
 		STRIDE:       types.ElevationOfPrivilege,

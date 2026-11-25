@@ -16,20 +16,22 @@ impact: >
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
 action: 'Forward this control''s own configuration-change and administrative-access events to a destination that it cannot itself modify or delete, and alert on any change to its own protective configuration.'
-mitigation: >
-  Forward this security control's own administrative and configuration-change audit log to a SIEM
-  destination or write-once store that the control's own administrators cannot modify or delete,
-  since MITRE ATT&CK's Defense Evasion tactic (Indicator Removal and Impair Defenses) assumes that
-  an adversary will attempt exactly that. Additionally, alert on any change to the control's own
-  protective configuration (such as rule sets, blocking mode switched to monitor-only, or log
-  forwarding disabled) as a high-priority event in its own right, independent of whatever the
-  control itself monitors for. Where the platform supports it, require a second approver for any
-  change that weakens the control's own protective posture. Finally, verify periodically, through a
-  synthetic test, that the control is still actively enforcing rather than having silently failed
-  open, rather than assuming that uptime implies correct operation. References include CWE-778
-  (Insufficient Logging), MITRE ATT&CK T1562 (Impair Defenses) and T1070 (Indicator Removal), and
-  NIST SP 800-53 AU-9 (Protection of Audit Information) and SI-7 (Software, Firmware, and
-  Information Integrity).
+mitigation: >-
+  Send the control's administrative and configuration-change audit log to a SIEM or write-once store
+  that the control's own administrators cannot modify, since adversaries routinely remove indicators
+  and impair defenses (ATT&CK T1070, T1562).
+
+  Alert on any change to the control's protective configuration (such as rule sets, a switch to
+  monitor-only, or disabled log forwarding) as a high-priority event in its own right.
+
+  Where the platform supports it, require a second approver for any change that weakens the control.
+
+  Verify periodically with a synthetic test that the control still enforces, rather than assuming
+  that uptime means it has not failed open.
+references: >-
+  CWE-778 (Insufficient Logging); MITRE ATT&CK T1562 (Impair Defenses) and T1070 (Indicator
+  Removal); NIST SP 800-53 AU-9 (Protection of Audit Information) and SI-7 (Software, Firmware,
+  and Information Integrity)
 check: 'Is this control''s own configuration-change and administrative-access audit trail forwarded to a destination that it cannot itself modify, with alerting on any change to its own protective posture?'
 detection_logic: >
   Monitor for configuration changes to this control (rule and policy edits, mode changes, and

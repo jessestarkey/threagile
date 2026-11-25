@@ -17,19 +17,26 @@ impact: >
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Isolate every session, cache, memory store, and retrieval index per tenant and per sensitivity level, and build each context from only what the requesting user is entitled to.'
-mitigation: >
+mitigation: >-
   Partition conversation history, caches, agent memory, and retrieval indexes by tenant and by
   sensitivity level, keyed to the authenticated user, rather than using a shared store filtered
-  after the fact. Additionally, assemble each request's context from only the documents and history
-  that the requesting user is authorized for, applying authorization at retrieval time rather than
-  relying on the model to withhold content. Keep context windows to the minimum the task needs.
-  Furthermore, run separate model instances or deployments for materially different sensitivity
-  levels where data must not mix. Finally, test for cross-session and cross-tenant leakage,
-  including under concurrency and cache reuse. References include OWASP GenAI Data Security 2026
-  DSGAI11 (Cross-Context Conversation Bleed) and DSGAI15 (Over-Broad Context Windows), MITRE ATLAS
-  AML.T0024 (Exfiltration via AI Inference API), MAESTRO layers 2 and 6, CWE-488, CWE-200, and
-  CWE-285, and NIST SP 800-53 AC-3, AC-4, and SC-4, with the mappings taken from the OWASP GenAI
-  Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk).
+  after the fact.
+
+  Assemble each request's context from only the documents and history that the requesting user is
+  authorized for, applying authorization at retrieval time rather than relying on the model to
+  withhold content.
+
+  Keep context windows to the minimum the task needs.
+
+  Run separate model instances or deployments for materially different sensitivity levels where data
+  must not mix.
+
+  Test for cross-session and cross-tenant leakage, including under concurrency and cache reuse.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI11 (Cross-Context Conversation Bleed) and DSGAI15
+  (Over-Broad Context Windows); MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API); MAESTRO
+  layers 2 and 6; CWE-488; CWE-200; CWE-285; NIST SP 800-53 AC-3, AC-4, and SC-4; Mappings from
+  the OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Are sessions, caches, memory, and retrieval partitioned per tenant and per sensitivity level, with each request''s context built from only what the requesting user is authorized to see?'
 detection_logic: >
   Review how sessions, caches, memory, and retrieval indexes are keyed and partitioned. Then, run

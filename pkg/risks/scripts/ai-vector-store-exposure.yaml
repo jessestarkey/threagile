@@ -17,19 +17,24 @@ impact: >
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat embeddings as the data they encode. Specifically, encrypt the store, partition it per tenant and per sensitivity level, and enforce authorization on every similarity query.'
-mitigation: >
+mitigation: >-
   Protect the vector store to the classification of the source content it embeds, never lower
-  because the data is "just vectors". Additionally, encrypt it at rest with keys held outside the
-  store. Partition the indexes per tenant and per sensitivity level, rather than filtering a shared
-  index by metadata, and enforce the requesting user's authorization on every similarity query.
-  Furthermore, restrict and log bulk export and raw-vector reads, and alert on enumeration-style
-  query patterns. Finally, where the inversion risk is high, avoid embedding the most sensitive
-  fields at all. References include the OWASP LLM Top 10 2026 LLM09 (Vector and Embedding
-  Weaknesses), OWASP GenAI Data Security 2026 DSGAI13 (Vector Store Platform Security), MITRE ATLAS
-  AML.T0025 (Exfiltration via Cyber Means) and AML.T0024 (Exfiltration via AI Inference API),
-  MAESTRO layers 2, 4, and 6, CWE-200, CWE-284, and CWE-327, and NIST SP 800-53 AC-3, SC-28, and
-  AU-2, with the mappings taken from the OWASP GenAI Security Crosswalk 2026-Q3
-  (https://github.com/GenAI-Security-Project/crosswalk).
+  because the data is "just vectors".
+
+  Encrypt it at rest with keys held outside the store.
+
+  Partition the indexes per tenant and per sensitivity level, rather than filtering a shared index
+  by metadata, and enforce the requesting user's authorization on every similarity query.
+
+  Restrict and log bulk export and raw-vector reads, and alert on enumeration-style query patterns.
+
+  Where the inversion risk is high, avoid embedding the most sensitive fields at all.
+references: >-
+  OWASP LLM Top 10 2026 LLM09 (Vector and Embedding Weaknesses); OWASP GenAI Data Security 2026
+  DSGAI13 (Vector Store Platform Security); MITRE ATLAS AML.T0025 (Exfiltration via Cyber Means)
+  and AML.T0024 (Exfiltration via AI Inference API); MAESTRO layers 2, 4, and 6; CWE-200; CWE-284;
+  CWE-327; NIST SP 800-53 AC-3, SC-28, and AU-2; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
 check: 'Is the vector store encrypted at rest, partitioned per tenant and per sensitivity level, protected to the classification of its source content, and enforcing per-user authorization on every query?'
 detection_logic: >
   Review the store's encryption, index partitioning, and query authorization. Then, attempt

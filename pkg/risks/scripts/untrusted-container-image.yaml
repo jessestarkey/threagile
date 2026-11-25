@@ -17,15 +17,20 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Migrate image sourcing to a trusted, DoD-approved registry, and enforce cryptographic verification at deploy time.'
-mitigation: >
+mitigation: >-
   Source all base and application images exclusively from a DoD-approved, continuously scanned
-  registry (for example, Iron Bank). Additionally, enforce SHA-256 digest pinning in every manifest,
-  and prohibit mutable tags such as :latest. Require Sigstore or Cosign signature verification
-  through an admission controller (Kyverno, or OPA Gatekeeper's image-verification policy) before
-  any pod is scheduled. Finally, run Trivy or Grype against every image in the CI/CD pipeline, and
-  fail the build on Critical or High CVEs above the organization's accepted threshold. References
-  include the DISA Kubernetes STIG, NIST SP 800-53 SA-12 (Supply Chain Protection) and SR-3 (Supply
-  Chain Controls and Processes), and SLSA (Supply-chain Levels for Software Artifacts).
+  registry (for example, Iron Bank).
+
+  Enforce SHA-256 digest pinning in every manifest, and prohibit mutable tags such as :latest.
+
+  Require Sigstore or Cosign signature verification through an admission controller (Kyverno, or OPA
+  Gatekeeper's image-verification policy) before any pod is scheduled.
+
+  Run Trivy or Grype against every image in the CI/CD pipeline, and fail the build on Critical or
+  High CVEs above the organization's accepted threshold.
+references: >-
+  DISA Kubernetes STIG; NIST SP 800-53 SA-12 (Supply Chain Protection) and SR-3 (Supply Chain
+  Controls and Processes); SLSA (Supply-chain Levels for Software Artifacts)
 check: 'Is the image sourced only from a DoD-approved, scanned registry, pinned by digest, and signature-verified by an admission controller before it is scheduled?'
 detection_logic: >
   Audit the admission controller's image-verification policy (a Kyverno ClusterPolicy or a

@@ -13,16 +13,20 @@ impact: >
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
 action: 'Enable operation-level (read, write, delete, and list) audit logging on the data store, with the requesting identity attached, and apply anomaly detection tuned to bulk-read and abnormal-export patterns.'
-mitigation: >
+mitigation: >-
   Enable data-plane audit logging on the store (for example, Azure SQL Auditing, Storage Analytics
   logging, or Key Vault diagnostic logs) that captures the operation, the requesting identity, and
-  the affected object or record, and forward it to the central SIEM. Additionally, layer native or
-  platform-provided anomaly detection (for example, Microsoft Defender for Storage or for SQL) tuned
-  to flag bulk-read volume, access from a principal or location outside the established baseline,
-  and spikes in the access rate. Detection tooling that covers only control-plane (management API)
-  operations, rather than data-plane operations, does not meet this control. References include NIST
-  SP 800-53 AU-2 (Event Logging), AU-6 (Audit Record Review, Analysis, and Reporting), and SI-4
-  (System Monitoring).
+  the affected object or record, and forward it to the central SIEM.
+
+  Layer native or platform-provided anomaly detection (for example, Microsoft Defender for Storage
+  or for SQL) tuned to flag bulk-read volume, access from a principal or location outside the
+  established baseline, and spikes in the access rate.
+
+  Detection tooling that covers only control-plane (management API) operations, rather than
+  data-plane operations, does not meet this control.
+references: >-
+  NIST SP 800-53 AU-2 (Event Logging), AU-6 (Audit Record Review, Analysis, and Reporting), and
+  SI-4 (System Monitoring)
 check: 'Is operation-level, data-plane audit logging enabled and forwarded to the SIEM, with anomaly detection tuned to bulk access patterns confirmed active for this asset?'
 detection_logic: >
   Alert when the read or export volume from a single identity exceeds a rolling baseline by a

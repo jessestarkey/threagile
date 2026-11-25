@@ -24,20 +24,12 @@ func (*MissingCloudHardeningRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Assess this cloud component against the provider's DISA STIG or CIS benchmark using continuous posture " +
 			"management, enforce guardrails as policy, and remediate every failed control.",
-		Mitigation: "Enable cloud security posture management across the subscription or account (Microsoft Defender for Cloud " +
-			"with the regulatory compliance dashboard, AWS Security Hub with the CIS AWS Foundations and NIST SP 800-53 " +
-			"standards, or GCP Security Command Center) and remediate every failed control for this component, " +
-			"prioritizing public exposure, identity, and logging findings. Apply guardrails as code (Azure Policy " +
-			"initiatives; AWS Service Control Policies and Config rules) that deny public network access to storage, " +
-			"databases, and key vaults, require private endpoints and customer-managed keys where mandated, and enforce " +
-			"diagnostic logging to the central workspace. Require AWS IMDSv2 with hop limit 1 and block 169.254.169.254 " +
-			"from containers, remove long-lived access keys in favor of managed identities or roles, and enforce MFA and " +
-			"least privilege on all control-plane principals. Enable control-plane audit logging (Azure Activity Log; AWS " +
-			"CloudTrail in all regions with log file validation) and data-plane logging, forwarded to the SIEM. For DoD " +
-			"workloads, deploy only into the authorized impact-level region (Azure Government, AWS GovCloud) and follow " +
-			"the DISA Cloud Computing SRG and SCCA. Run Prowler or ScoutSuite in CI to catch drift before deployment. " +
-			"References: CWE-16; MITRE ATT&CK T1530 (Data from Cloud Storage), T1078.004 (Cloud Accounts), T1552.005 " +
-			"(Cloud Instance Metadata API); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP 800-53 CM-6, CM-7.",
+		Mitigation: "Enable cloud security posture management (Microsoft Defender for Cloud or AWS Security Hub) with the CIS and NIST SP 800-53 standards, and remediate every failed control on this component, starting with public exposure, identity, and logging.\n" +
+			"Enforce guardrails as code (Azure Policy or AWS Service Control Policies) that deny public network access to storage, databases, and key vaults, and that require private endpoints, customer-managed keys where mandated, and diagnostic logging.\n" +
+			"Require IMDSv2 with a hop limit of 1, replace long-lived access keys with managed identities or roles, and enforce MFA and least privilege on every control-plane principal.\n" +
+			"Forward control-plane and data-plane audit logs (Azure Activity Log, or CloudTrail in all regions) to the SIEM.\n" +
+			"For DoD workloads, deploy only into the authorized impact-level region, and follow the DISA Cloud Computing SRG and SCCA.\n" +
+			"Run Prowler or ScoutSuite in CI to catch drift before deployment.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Operations,
 		STRIDE:         types.Tampering,

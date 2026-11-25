@@ -8,7 +8,9 @@ description: >
   An adversary can craft an input with small, often human-imperceptible perturbations designed to
   cross the model's decision boundary. The input then causes the model to misclassify or make an
   incorrect decision, while it still appears legitimate to a human reviewer or to any downstream
-  system that does not independently re-examine it.
+  system that does not independently re-examine it. This rule covers classic ML models
+  (classifiers, detectors, and vision and identity models), which no OWASP GenAI list covers.
+  Evasion of an LLM is prompt injection or a jailbreak, which other rules cover.
 impact: >
   If this risk remains unmitigated, an adversary can make the model produce an incorrect
   classification or decision on demand. Thus, any security or safety control that relies on the
@@ -17,20 +19,22 @@ impact: >
 asvs: "V11 - Business Logic"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Apply adversarial training and input-space defenses, and require independent confirmation before acting on any model decision with a security or safety consequence.'
-mitigation: >
-  Apply adversarial training with known perturbation techniques, so that small crafted perturbations
-  exploit the model's decision boundary less easily. Additionally, apply input preprocessing
-  (randomized smoothing, or input transformation and compression) that disrupts the precise
-  perturbation an evasion attack depends on, without materially degrading legitimate input. Where
-  the model's decision has a security or safety consequence (such as access control, content
-  moderation, fraud detection, or an OT-adjacent action), require independent confirmation from a
-  second signal, a different model, or a human reviewer, rather than trusting a single model's
-  output. Finally, monitor confidence-score distributions for the unusual patterns that adversarial
-  examples often produce near the decision boundary. This category targets classic ML models
-  (classifiers, detectors, and vision and identity models), which no OWASP GenAI list covers, since
-  evasion of an LLM is prompt injection and jailbreak, covered separately. References include MITRE
-  ATLAS AML.T0015 (Evade AI Model) and AML.T0043 (Craft Adversarial Data), NIST AI RMF MANAGE 2.3,
-  and NIST SP 800-53 SI-10 (Information Input Validation).
+mitigation: >-
+  Train the model on known perturbation techniques (adversarial training), so that small crafted
+  perturbations exploit its decision boundary less easily.
+
+  Preprocess input (randomized smoothing, transformation, or compression) to disrupt the precise
+  perturbation an evasion attack depends on, without materially degrading legitimate input.
+
+  Where a decision has a security or safety consequence (such as access control, fraud detection, or
+  an OT-adjacent action), require confirmation from a second signal, a different model, or a human
+  reviewer.
+
+  Monitor confidence-score distributions for the unusual patterns that adversarial examples produce
+  near the decision boundary.
+references: >-
+  MITRE ATLAS AML.T0015 (Evade AI Model) and AML.T0043 (Craft Adversarial Data); NIST AI RMF
+  MANAGE 2.3; NIST SP 800-53 SI-10 (Information Input Validation)
 check: 'Is adversarial training or an input-space defense applied to the model, and does every security- or safety-consequential decision require independent confirmation rather than trusting the model''s output alone?'
 detection_logic: >
   Audit the model's training records for adversarial-training coverage against known perturbation

@@ -14,17 +14,24 @@ impact: >
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
 action: 'Apply the same adversarial threat modeling to AI security tools as to the systems they protect.'
-mitigation: >
+mitigation: >-
   Maintain an independent, non-AI detection layer as a backstop that the AI security tool cannot
-  disable. Additionally, treat the training and operational data fed to a security AI as a
-  high-value, integrity-protected asset. Run adversarial robustness testing on security AI models
-  before deployment and after significant retraining. Finally, limit a security AI agent's
-  permissions to advisory actions, meaning alert generation rather than automated response, unless
-  human-in-the-loop approval is enforced for every response action. References include MAESTRO L6
-  (Security and Compliance, the vertical layer), covering Security Agent Data Poisoning, Evasion of
-  Security AI Agents, and Compromised Security AI Agents, the OWASP Top 10 for Agentic Applications
-  2026 ASI10 (Rogue Agents) and the OWASP LLM Top 10 2026 LLM01 (Prompt Injection) as they apply to
-  security AI, since no OWASP GenAI entry is specific to it, and NIST SP 800-53 SI-3 and SI-7.
+  disable.
+
+  Treat the training and operational data fed to a security AI as a high-value, integrity-protected
+  asset.
+
+  Run adversarial robustness testing on security AI models before deployment and after significant
+  retraining.
+
+  Limit a security AI agent's permissions to advisory actions, meaning alert generation rather than
+  automated response, unless human-in-the-loop approval is enforced for every response action.
+references: >-
+  MAESTRO L6 (Security and Compliance, the vertical layer), covering Security Agent Data
+  Poisoning, Evasion of Security AI Agents, and Compromised Security AI Agents; OWASP Top 10 for
+  Agentic Applications 2026 ASI10 (Rogue Agents); OWASP LLM Top 10 2026 LLM01 (Prompt Injection)
+  as they apply to security AI, since no OWASP GenAI entry is specific to it; NIST SP 800-53 SI-3
+  and SI-7
 check: 'Does an independent, non-AI detection layer exist that the security AI tool cannot disable, and is the agent''s permission scope limited to advisory actions unless human-in-the-loop approval is enforced?'
 detection_logic: >
   Run a parallel, rule-based detection layer that operates independently of the AI security tool,

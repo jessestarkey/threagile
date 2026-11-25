@@ -14,15 +14,19 @@ impact: >
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Configure the dependency resolver to treat the internal package namespace as authoritative, refusing to fall back to a public index for internally named packages.'
-mitigation: >
+mitigation: >-
   Configure the package manager's scoped registry or upstream source settings, so that internally
   named packages resolve only from the internal feed, with no fallback to a public index for that
-  namespace. Examples include npm scoped packages, a private PyPI index pinned with --index-url
-  rather than --extra-index-url, and NuGet package source mapping. Additionally, where a dependency
-  proxy or artifact repository manager is used, configure it to reserve the internal namespace and
-  to block public-index publication under names that match it. References include NIST SP 800-53
-  SR-4 (Provenance), NIST SP 800-218 (Secure Software Development Framework, PW.4), and the OWASP
-  Dependency Confusion guidance.
+  namespace.
+
+  Examples include npm scoped packages, a private PyPI index pinned with --index-url rather than
+  --extra-index-url, and NuGet package source mapping.
+
+  Where a dependency proxy or artifact repository manager is used, configure it to reserve the
+  internal namespace and to block public-index publication under names that match it.
+references: >-
+  NIST SP 800-53 SR-4 (Provenance); NIST SP 800-218 (Secure Software Development Framework, PW.4);
+  OWASP Dependency Confusion guidance
 check: 'Does the dependency resolver''s configuration restrict internally named packages to the internal feed, with no public-index fallback?'
 detection_logic: >
   Audit the package manager's scoped registry or upstream source configuration for every internally
