@@ -5,14 +5,13 @@ stride: repudiation
 finding_class: control-not-evidenced
 cwe: 778
 description: >
-  The asset does not generate audit records for the event types that NIST SP 800-53 AU-2 requires,
-  namely authentication attempts and failures, authorization denials, input-validation rejections,
-  privilege escalation, and administrative actions. Alternatively, it does not forward them to the
-  SIEM, where they can be correlated.
+  The asset does not generate audit records for the NIST SP 800-53 AU-2 event types (authentication
+  failures, authorization denials, validation rejections, privilege escalation, and administrative
+  actions), or does not forward them to the SIEM.
 impact: >
-  If this risk remains unmitigated, the SOC cannot detect sustained probing, credential stuffing, or
-  authorization-bypass attempts as they build up, or reconstruct an attack after the fact.
-  Furthermore, the gap independently blocks the ATO under the DoD RMF.
+  If this risk remains unmitigated, the SOC cannot detect probing, credential stuffing, or
+  authorization-bypass attempts as they build, or reconstruct an attack afterward. The gap also
+  blocks the ATO under the DoD RMF.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
 action: 'Log every AU-2 event type, including each authentication failure, authorization denial, and input-validation rejection, with the calling identity. Then, forward the events to a centralized, tamper-evident SIEM with correlation rules.'

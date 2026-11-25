@@ -5,15 +5,13 @@ stride: tampering
 finding_class: weakness-shown
 cwe: 74
 description: >
-  Model output leaves this AI asset for something that interprets it, namely a browser or front end
-  that renders it, a database query, a shell or code interpreter, a template engine, or another
-  service's API. Output that is steered by prompt injection, or that is simply wrong (including
-  generated code), is then consumed without the encoding or validation that untrusted input would
-  get. As a result, it acts on the downstream system exactly as attacker input would.
+  Model output leaves this AI asset for something that interprets it, such as a browser, a database
+  query, a shell, a template engine, or another API. Output steered by prompt injection, or simply
+  wrong, is consumed without the encoding or validation that untrusted input would get.
 impact: >
-  If this risk remains unmitigated, any upstream prompt manipulation turns directly into XSS, SQL or
-  command injection, SSRF, or unauthorized API calls on whatever consumes the output. Additionally,
-  insecure generated code ships into the systems that run it.
+  If this risk remains unmitigated, upstream prompt manipulation turns directly into XSS, SQL or
+  command injection, SSRF, or unauthorized API calls on the consumer, and insecure generated code
+  ships into the systems that run it.
 asvs: "V1 - Encoding and Sanitization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat model output as untrusted input at every place it is consumed, with the encoding, validation, or sandboxing that the specific sink needs.'

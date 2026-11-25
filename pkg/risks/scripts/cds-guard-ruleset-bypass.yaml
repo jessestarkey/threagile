@@ -5,15 +5,13 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 693
 description: >
-  A cross-domain solution guard's entire release decision rests on two things: (1) its
-  content-inspection rule set (classification-marking patterns, malware signatures, and dirty-word
-  and regex lists), and (2) the absence of any path around that inspection. Thus, a stale rule set
-  or an undocumented administrative override quietly defeats the guard's one job, without appearing
-  as an outage.
+  A cross-domain guard's release decision rests on (1) its inspection rule set (marking patterns,
+  malware signatures, and dirty-word lists), and (2) the absence of any path around it. A stale rule
+  set or an undocumented override quietly defeats the guard without appearing as an outage.
 impact: >
-  If this risk remains unmitigated, content that the guard's rule set was never updated to catch, or
-  content pushed through an undocumented bypass, crosses the classification boundary with the same
-  apparent assurance as properly inspected content, since nothing distinguishes the two downstream.
+  If this risk remains unmitigated, content the rules were never updated to catch, or content pushed
+  through a bypass, crosses the classification boundary with the same apparent assurance as properly
+  inspected content.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Keep the guard''s inspection rule set on a documented review and update cadence, and confirm that no administrative override path releases content without passing through it.'

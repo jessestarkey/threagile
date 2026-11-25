@@ -5,15 +5,14 @@ stride: spoofing
 finding_class: control-not-evidenced
 cwe: 299
 description: >
-  A certificate-status validation service (an OCSP responder or a CRL distribution point) can fail
-  open, treating an unreachable or slow revocation check as "not revoked" rather than rejecting the
-  authentication attempt. In that case, a revoked or compromised certificate continues to
-  authenticate successfully, especially in degraded or disconnected (DDIL) conditions, where the
-  responder is most likely to be unreachable.
+  A certificate-status service (an OCSP responder or a CRL distribution point) can fail open,
+  treating an unreachable check as not revoked. A revoked or compromised certificate then keeps
+  authenticating, especially in disconnected (DDIL) conditions, where the responder is most likely
+  to be unreachable.
 impact: >
-  If this risk remains unmitigated, an attacker who holds a revoked or compromised certificate
-  authenticates successfully whenever the revocation check cannot complete. That is exactly when an
-  attacker who has caused the outage, or who is operating during one, most needs it to.
+  If this risk remains unmitigated, an attacker with a revoked or compromised certificate
+  authenticates whenever the revocation check cannot complete, which is exactly when an attacker who
+  caused the outage needs it.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html"
 action: 'Configure revocation checking to fail closed, and confirm that every relying system uses a DoD-approved OCSP or CRL source, consistent with the CAC and PIV authentication requirements.'

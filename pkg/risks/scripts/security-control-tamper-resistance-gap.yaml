@@ -5,10 +5,9 @@ stride: repudiation
 finding_class: control-not-evidenced
 cwe: 778
 description: >
-  This security control (a WAF, IDS/IPS, HSM, vault, or SIEM or monitoring platform) has no
-  tamper-evident configuration, and no independently stored audit trail of its own. Thus, an
-  adversary who gains a foothold can disable, reconfigure, or evade it, or erase the evidence of
-  having done so, without that action being independently detectable outside the control itself.
+  This security control (a WAF, IDS/IPS, HSM, vault, or SIEM) has no tamper-evident configuration
+  and no independently stored audit trail of its own. Thus, an adversary with a foothold can
+  disable, reconfigure, or evade it, and erase the evidence, without detection outside the control.
 impact: >
   If this risk remains unmitigated, an adversary with a foothold can blind or disable the exact
   control that would otherwise detect or block their next step, and nothing outside that control

@@ -5,16 +5,12 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 1395
 description: >
-  This asset's own custom-developed code pulls in third-party libraries and packages. Unless their
-  versions are continuously checked against known-vulnerability databases, a known-vulnerable one
-  can ship. This differs from container base-image scanning, which covers the OS and runtime layer
-  rather than this asset's own application-level dependency graph. It also differs from End-of-Life
-  component tracking, which covers products that have stopped receiving patches entirely, rather
-  than an actively maintained library with an unpatched known CVE.
+  This asset's custom code pulls in third-party libraries, and unless their versions are checked
+  continuously against vulnerability databases, a known-vulnerable one can ship. Container
+  base-image scanning and End-of-Life tracking cover other layers, not this dependency graph.
 impact: >
-  If this risk remains unmitigated, a publicly disclosed vulnerability in a dependency that this
-  asset uses remains exploitable in production for as long as it goes undetected, even though a fix
-  may already be available upstream.
+  If this risk remains unmitigated, a disclosed vulnerability in a dependency stays exploitable in
+  production for as long as it goes undetected, even when a fix is already available upstream.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Integrate automated Software Composition Analysis (SCA) into the CI/CD pipeline, scanning this asset''s full application-level dependency graph against a current known-vulnerability database on every build.'

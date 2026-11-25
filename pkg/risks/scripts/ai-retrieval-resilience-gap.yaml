@@ -6,10 +6,9 @@ finding_class: control-not-evidenced
 cwe: 636
 description: >
   A vector store, feature store, or RAG pipeline that a mission-critical AI capability depends on
-  can fail quietly. For example, an index is corrupted or poisoned and must be rebuilt, a replica
-  serves stale embeddings, a rebuild takes far longer than anyone planned for, or retrieval silently
-  returns nothing and the system falls back to answering without its grounding data. Unlike an
-  outage, these failures often keep the AI answering, just wrongly or without grounding.
+  can fail quietly, through a corrupted index, stale replicas, a slow rebuild, or empty retrieval.
+  Unlike an outage, these failures often keep the AI answering, just wrongly or without its
+  grounding data.
 impact: >
   If this risk remains unmitigated, a critical AI capability is unavailable for the length of an
   untested index rebuild. Alternatively, it keeps producing ungrounded or stale answers that users

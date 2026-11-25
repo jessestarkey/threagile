@@ -5,11 +5,9 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 1357
 description: >
-  This asset loads third-party AI components that it did not build, namely model weights, adapters,
-  and tokenizers from a model hub or registry, agent frameworks and their dependency trees, or tool
-  servers and their packages. Any of them can be malicious, swapped, or silently updated. Examples
-  include model files that execute code on load, poisoned or backdoored weights, a typo-squatted or
-  hijacked package, and a reclaimed hub namespace. Furthermore, they run with this asset's full
+  This asset loads third-party AI components it did not build, such as model weights, adapters, and
+  tokenizers, agent frameworks, or tool server packages. Any of them can be malicious, swapped, or
+  silently updated (such as model files that run code on load), and they run with this asset's
   privileges.
 impact: >
   If this risk remains unmitigated, one compromised component gives an attacker code execution on

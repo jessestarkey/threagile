@@ -5,15 +5,12 @@ stride: spoofing
 finding_class: control-not-evidenced
 cwe: 306
 description: >
-  An air vehicle's command-and-control link is commonly line-of-sight RF, which far less
-  sophisticated equipment can attack than a satellite uplink would require. An unauthenticated
-  command link lets an adversary take direct control of the air vehicle. Additionally, an
-  unencrypted sensor or video downlink discloses everything the vehicle observes to anyone within
-  radio range, as documented real-world interceptions of unencrypted drone video feeds show.
+  An air vehicle's command link is commonly line-of-sight RF, which far simpler equipment can attack
+  than a satellite uplink. An unauthenticated command link lets an adversary take control of the
+  vehicle, and an unencrypted downlink discloses its sensor and video feed to anyone in radio range.
 impact: >
-  If this risk remains unmitigated, an adversary within radio range can either hijack command of the
-  air vehicle outright, or passively intercept its full sensor and video feed. Neither requires more
-  than commodity RF equipment against an unauthenticated or unencrypted link.
+  If this risk remains unmitigated, an adversary within radio range can hijack the vehicle or
+  intercept its full sensor and video feed, with nothing more than commodity RF equipment.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
 action: 'Authenticate the command-and-control link cryptographically, and encrypt the telemetry, sensor, and video downlink, rather than relying on frequency-hopping or protocol obscurity alone.'

@@ -6,13 +6,12 @@ finding_class: control-not-evidenced
 cwe: 306
 description: >
   A ground station that uplinks commands to a spacecraft can be impersonated if command
-  authentication relies on the obscurity of the link rather than on cryptographic verification. As a
-  result, an unauthorized or rogue ground station can issue commands that the spacecraft accepts as
-  legitimate.
+  authentication relies on the link's obscurity rather than cryptographic verification. A rogue
+  ground station can then issue commands the spacecraft accepts as legitimate.
 impact: >
-  If this risk remains unmitigated, an adversary who operates an unauthorized ground station can
-  command the spacecraft directly, bypassing every control that this organization's own ground
-  segment enforces, with no cryptographic check at the spacecraft to tell the difference.
+  If this risk remains unmitigated, an adversary with an unauthorized ground station can command the
+  spacecraft directly, bypassing every control of this organization's ground segment, with no
+  cryptographic check onboard.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
 action: 'Authenticate every command uplink cryptographically, and monitor for command or telemetry sessions that originate from an unrecognized ground station.'

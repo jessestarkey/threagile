@@ -6,14 +6,13 @@ finding_class: weakness-shown
 cwe: 400
 description: >
   An LLM endpoint or AI gateway answers requests from outside its trust boundary, and every request
-  costs real compute, tokens, and money. Without per-caller limits, anyone who can reach it can (1)
-  exhaust its capacity with volume or deliberately expensive prompts, (2) run up spend on stolen or
-  shared credentials (denial of wallet), or (3) flood it with chaff that buries real activity and
-  overwhelms human review.
+  costs compute and money. Without per-caller limits, anyone who reaches it can (1) exhaust its
+  capacity, (2) run up spend on stolen credentials, or (3) flood it with chaff that buries real
+  activity.
 impact: >
-  If this risk remains unmitigated, the AI service becomes unavailable or unaffordable for its
-  legitimate users, and spend can run to thousands of dollars a day before anyone notices.
-  Furthermore, monitoring and review queues are drowned in noise.
+  If this risk remains unmitigated, the AI service becomes unavailable or unaffordable for
+  legitimate users, spend can reach thousands of dollars a day before anyone notices, and review
+  queues drown in noise.
 asvs: "V2 - Validation and Business Logic"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html"
 action: 'Put per-caller rate limits, token and cost budgets, and input-size limits in front of every AI endpoint that is reachable from outside its boundary, with spend alerting.'

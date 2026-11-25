@@ -5,16 +5,13 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 345
 description: >
-  A service that embeds or verifies content-provenance or watermarking metadata on AI-generated or
-  AI-processed content is subject to two distinct failures. First, routine format conversion,
-  recompression, or cropping can strip the metadata without detection. Second, a forged or replayed
-  provenance credential can be inserted, so that tampered or synthetic content appears authentically
-  sourced.
+  A service that embeds or verifies provenance or watermark metadata on AI-generated content is
+  subject to two failures. First, format conversion or cropping can strip the metadata without
+  detection. Second, a forged or replayed credential can make tampered content appear authentic.
 impact: >
-  If this risk remains unmitigated, downstream consumers that trust a provenance or watermark signal
-  as proof of authenticity can be made to accept tampered or fully synthetic content as genuine.
-  Alternatively, they can be made to discard authentic content once its signal has been silently
-  stripped.
+  If this risk remains unmitigated, consumers that trust a provenance or watermark signal can be
+  made to accept tampered or synthetic content as genuine, or to discard authentic content whose
+  signal was silently stripped.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Sign provenance credentials cryptographically, so that stripping is detectable as a missing signature rather than a silent absence. Additionally, verify signatures against a trusted issuer list before any content is treated as authenticated.'

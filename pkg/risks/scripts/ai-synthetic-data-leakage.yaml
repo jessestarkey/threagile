@@ -5,17 +5,13 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 359
 description: >
-  A synthetic-data pipeline generates training or test data from real confidential-or-higher source
-  data, so that the real data does not have to travel. However, that works only if the output cannot
-  be traced back. A generator can memorize and reproduce fragments of its source, and anonymized or
-  synthetic records can often be re-identified by linking them with other data. Furthermore,
-  synthetic output is then treated as safe and shared well beyond the boundary that the source was
-  confined to.
+  A synthetic-data pipeline generates data from real confidential-or-higher source data. A generator
+  can reproduce fragments of its source, and synthetic records can often be re-identified by linking
+  them with other data, while the output is shared far beyond the source's boundary.
 impact: >
-  If this risk remains unmitigated, real confidential records, or enough of them to re-identify
-  people or reconstruct protected facts, leave their boundary inside a dataset that everyone
-  believes is safe. As a result, they reach every downstream consumer of the synthetic set
-  undetected.
+  If this risk remains unmitigated, real confidential records, or enough to re-identify people,
+  leave their boundary inside a dataset everyone believes is safe, and reach every consumer of the
+  synthetic set undetected.
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Before release, measure whether each synthetic or anonymized dataset leaks or re-identifies its source, and handle it at the source''s classification until it passes.'

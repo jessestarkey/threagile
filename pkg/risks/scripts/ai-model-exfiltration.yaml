@@ -5,15 +5,14 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 200
 description: >
-  Model weights and adapters, along with the training code and feature engineering that produced
-  them, are the system's most portable intellectual property. They sit in a model registry or
-  training pipeline, often with weaker access control and egress monitoring than the production
-  serving path, or they are fielded on physical hardware that an adversary could take custody of.
-  Thus, copying them hands over the model's full capability in one step.
+  Model weights and adapters, with the training code behind them, are the system's most portable
+  intellectual property. They often sit in a registry or training pipeline with weaker access
+  control than the serving path, or on hardware an adversary could seize, so one copy hands over the
+  full capability.
 impact: >
-  If this risk remains unmitigated, an adversary who copies the weights, or the training methodology
-  that produced them, can run, study, fine-tune, or attack the model offline, including searching it
-  for memorized sensitive data. Furthermore, no detection or revocation is possible afterward.
+  If this risk remains unmitigated, an adversary who copies the weights or training method can run,
+  study, fine-tune, or attack the model offline, including searching it for memorized sensitive
+  data, with no detection or revocation possible.
 asvs: "V14 - Data Protection"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Restrict and monitor access to model weights and training code as tightly as the most sensitive data they were trained on, and protect fielded models with hardware-backed isolation.'

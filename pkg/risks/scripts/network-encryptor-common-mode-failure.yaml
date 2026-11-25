@@ -5,15 +5,13 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 653
 description: >
-  A CSfC-approved network encryption architecture requires two independent encryption layers, built
-  from diverse components, so that a flaw in one layer alone cannot expose plaintext (red) traffic
-  to the untrusted (black) side. However, a collapsed single layer, or two layers that share a
-  vendor, codebase, or vulnerability, defeats that independence requirement without any outward sign
-  of failure.
+  A CSfC network encryption architecture needs two independent layers from diverse components, so a
+  flaw in one cannot expose red traffic to the black side. A collapsed single layer, or two layers
+  sharing a vendor, codebase, or flaw, defeats that independence with no outward sign.
 impact: >
-  If this risk remains unmitigated, a single flaw common to both encryption layers, or a deployment
-  that silently runs only one layer, lets classified or CUI plaintext cross the red/black boundary
-  with the same apparent assurance as a properly layered deployment.
+  If this risk remains unmitigated, one flaw common to both layers, or a deployment silently running
+  one layer, lets classified or CUI plaintext cross the red/black boundary with the same apparent
+  assurance.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
 action: 'Confirm that the two required encryption layers are built from diverse, independently sourced components, with no shared vendor, codebase, or known common vulnerability.'

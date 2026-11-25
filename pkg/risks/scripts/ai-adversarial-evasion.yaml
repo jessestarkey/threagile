@@ -5,17 +5,13 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 20
 description: >
-  An adversary can craft an input with small, often human-imperceptible perturbations designed to
-  cross the model's decision boundary. The input then causes the model to misclassify or make an
-  incorrect decision, while it still appears legitimate to a human reviewer or to any downstream
-  system that does not independently re-examine it. This rule covers classic ML models
-  (classifiers, detectors, and vision and identity models), which no OWASP GenAI list covers.
-  Evasion of an LLM is prompt injection or a jailbreak, which other rules cover.
+  An adversary can craft an input with small, often imperceptible perturbations that cross the
+  model's decision boundary, so the model misclassifies it while it still looks legitimate to a
+  reviewer. This rule covers classic ML models, since evasion of an LLM is prompt injection.
 impact: >
-  If this risk remains unmitigated, an adversary can make the model produce an incorrect
-  classification or decision on demand. Thus, any security or safety control that relies on the
-  model's output being trustworthy is defeated, without the crafted input ever looking anomalous to
-  a human.
+  If this risk remains unmitigated, an adversary can make the model produce a wrong classification
+  or decision on demand. Any security or safety control that trusts the model's output is then
+  defeated, with no anomalous-looking input.
 asvs: "V11 - Business Logic"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Apply adversarial training and input-space defenses, and require independent confirmation before acting on any model decision with a security or safety consequence.'

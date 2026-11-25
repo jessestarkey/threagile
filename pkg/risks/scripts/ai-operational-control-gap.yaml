@@ -5,18 +5,14 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 693
 description: >
-  What this AI asset does in production is set by artifacts that change outside normal code review,
-  namely system prompts and other hidden instructions, model versions and fine-tuned adapters, and
-  agent skill and tool definitions. Additionally, its behavior can drift or be subverted at runtime
-  through goal hijack, poisoning, or compromise. Without change control (versioned, reviewed,
-  canary-tested changes with a tested rollback), behavioral monitoring, and a kill switch, a silent
-  or malicious change ships unnoticed, and a rogue agent or model keeps acting until a full
-  redeployment.
+  This AI asset's behavior is set by artifacts that change outside code review (prompts, model
+  versions, adapters, and skill and tool definitions), and it can drift or be hijacked at runtime.
+  Without change control, behavioral monitoring, and a kill switch, a bad change or a rogue agent
+  keeps acting until a full redeployment.
 impact: >
-  If this risk remains unmitigated, an unreviewed prompt edit, a swapped or drifted model, an
-  updated skill, or a hijacked agent can widen what the AI does, or remove a safety constraint, with
-  no runtime signal. Furthermore, it can keep calling tools, changing data, or answering users for a
-  full redeployment cycle.
+  If this risk remains unmitigated, an unreviewed prompt edit, a swapped model, an updated skill, or
+  a hijacked agent can widen what the AI does or remove a safety constraint with no runtime signal,
+  and keep acting for a full redeployment cycle.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Version, review, and canary-test every prompt, model, and skill change with a tested rollback. Additionally, monitor the asset''s behavior against its intended scope, and provide a tested kill switch.'

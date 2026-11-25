@@ -5,10 +5,10 @@ stride: spoofing
 finding_class: weakness-shown
 cwe: 287
 description: >
-  An AI agent delegates to or messages another agent over a link that crosses a trust boundary,
-  carries no authentication, or uses an unencrypted protocol. Since agents act on each other's
-  messages as instructions, whoever can read, inject, or replay traffic on that link, or impersonate
-  either agent, can steer what the receiving agent does.
+  An AI agent messages another agent over a link that crosses a trust boundary, carries no
+  authentication, or is unencrypted. Since agents act on each other's messages as instructions,
+  anyone who can read, inject, or replay that traffic, or impersonate an agent, can steer the
+  receiver.
 impact: >
   If this risk remains unmitigated, an adversary can impersonate a trusted agent, inject or alter
   delegated tasks, or replay earlier instructions. The receiving agent then acts on them inside the

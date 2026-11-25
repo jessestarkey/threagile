@@ -5,15 +5,14 @@ stride: elevation-of-privilege
 finding_class: weakness-shown
 cwe: 269
 description: >
-  An AI agent orchestrator or tool server can take actions on other assets, since it has at least
-  one outgoing link that is not read-only. Thus, whatever steers the agent (a prompt injection,
-  poisoned retrieved content, a malicious or over-broad tool definition, or a compromised
-  orchestrator) can drive those write-capable tools to change, delete, or send data on the agent's
-  authority, well beyond what the triggering request intended.
+  An AI agent orchestrator or tool server has at least one outgoing link that is not read-only.
+  Thus, whatever steers the agent (a prompt injection, poisoned content, an over-broad tool, or a
+  compromised orchestrator) can use those tools to change, delete, or send data on the agent's
+  authority.
 impact: >
   If this risk remains unmitigated, an adversary who influences the agent inherits every write
-  action that its tools can perform, against every asset those tools reach, with the agent's own
-  credentials and without a human in the loop.
+  action its tools can perform, against every asset they reach, with the agent's credentials and no
+  human in the loop.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Reduce each agent''s write-capable tools to the minimum, scope their permissions narrowly, and require human confirmation for consequential actions.'

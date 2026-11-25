@@ -5,11 +5,10 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 200
 description: >
-  A vector store holds embeddings of source content, but embeddings are not anonymous. The original
-  text can be largely reconstructed from them (embedding inversion), and similarity queries can
-  surface or confirm records that the querier should never see. This store is unencrypted, shared
-  across tenants, or holds embeddings of confidential-or-higher data, so a leaked dump or over-broad
-  query access exposes the underlying content.
+  A vector store holds embeddings of source content, and embeddings are not anonymous, since
+  inversion largely reconstructs the text. This store is unencrypted, shared across tenants, or
+  holds confidential-or-higher embeddings, so a leaked dump or broad query access exposes the
+  content.
 impact: >
   If this risk remains unmitigated, an attacker with query access, or with a copy of the index, can
   recover sensitive source content, or another tenant's records, that was never directly retrievable

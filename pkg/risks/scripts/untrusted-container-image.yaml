@@ -5,15 +5,13 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 1357
 description: >
-  The container image's provenance is not explicitly verified as coming from a trusted, scanned
-  registry. Thus, a vulnerable or backdoored base image or layer can reach production. This rule
-  also covers what Threagile's built-in container-baseimage-backdooring rule raised, since that rule
-  fired on the same containers for the same risk.
+  The container image's provenance is not verified as coming from a trusted, scanned registry, so a
+  vulnerable or backdoored base image or layer can reach production. This rule replaces Threagile's
+  built-in container-baseimage-backdooring rule, which fired on the same containers.
 impact: >
-  If this risk remains unmitigated, the image may introduce known CVEs or supply-chain malware into
-  the ATO boundary. The consequence matches that of a compromised CI/CD dependency, since an
-  attacker-controlled artifact runs with the workload's own privileges. Thus, it is rated the same
-  here, rather than at a lesser tier because the artifact is a container image instead of a package.
+  If this risk remains unmitigated, the image can bring known CVEs or supply-chain malware into the
+  ATO boundary. An attacker-controlled image runs with the workload's privileges, so it is rated
+  like a compromised CI/CD dependency.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
 action: 'Migrate image sourcing to a trusted, DoD-approved registry, and enforce cryptographic verification at deploy time.'

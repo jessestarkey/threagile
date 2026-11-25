@@ -5,15 +5,13 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 200
 description: >
-  A model's inference API answers requests from outside its own trust boundary. Thus, systematic
-  querying of that API can reconstruct what the model learned from, without ever touching the
-  training data or weights directly. Specifically, it enables (1) membership inference, meaning
-  whether a given record was in the training set, (2) model inversion, meaning recovery of training
-  examples, and (3) model extraction, meaning training a functional copy from the model's answers.
+  A model's inference API answers requests from outside its trust boundary. Systematic querying can
+  then reveal what the model learned, through (1) membership inference, (2) model inversion that
+  recovers training examples, and (3) model extraction that trains a functional copy.
 impact: >
-  If this risk remains unmitigated, an outside party can confirm or recover sensitive records that
-  the model was trained on, which can itself be a data breach. Furthermore, that party can replicate
-  the model's capability from its outputs.
+  If this risk remains unmitigated, an outside party can confirm or recover sensitive training
+  records, which can itself be a data breach, and can replicate the model's capability from its
+  outputs.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Limit what the inference API reveals and how fast it can be queried, and train sensitive models with privacy protections that resist reconstruction.'

@@ -5,17 +5,13 @@ stride: spoofing
 finding_class: control-not-evidenced
 cwe: 290
 description: >
-  An air vehicle that navigates on unauthenticated civilian GPS or PNT signals can be spoofed or
-  jammed into a false position, which can redirect, force down, or crash it. This attack is well
-  documented and frequently demonstrated against both civilian and military drones. Separately, a
-  downed or recovered airframe that was not built to protect what it carries exposes its onboard
-  cryptographic keys and mission data to anyone who physically recovers it, a consequence that no
-  satellite shares.
+  An air vehicle that navigates on unauthenticated civilian GPS signals can be spoofed or jammed
+  into a false position that redirects, downs, or crashes it. Separately, a recovered airframe not
+  built to protect its contents exposes its onboard keys and mission data.
 impact: >
-  If this risk remains unmitigated, an adversary can redirect or down the vehicle using nothing more
-  than a GPS spoofing or jamming signal. Furthermore, a vehicle that is later recovered, whether
-  forced down by that attack or lost for any other reason, can hand an adversary the onboard keys
-  and mission data needed to compromise the broader system it was part of.
+  If this risk remains unmitigated, an adversary can redirect or down the vehicle with a GPS
+  spoofing or jamming signal. A recovered vehicle can also hand the adversary the keys and mission
+  data needed to compromise the broader system.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Cross-check GPS and PNT against an independent navigation source to detect spoofing. Additionally, ensure that anti-tamper or zeroization protects the onboard cryptographic material and mission data in the event of physical capture.'

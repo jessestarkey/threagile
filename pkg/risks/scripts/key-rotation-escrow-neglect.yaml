@@ -9,8 +9,8 @@ description: >
   recovery procedure exists for a customer-managed key.
 impact: >
   If this risk remains unmitigated, a key that is never rotated has an ever-growing, undetected
-  exposure window. Furthermore, an untested recovery procedure can mean a permanent loss of access
-  at the moment it is actually needed.
+  exposure window, and an untested recovery procedure can mean permanent loss of access when it is
+  needed.
 asvs: "V6 - Cryptography"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html"
 action: 'Enforce a scheduled key rotation policy for this asset''s keys, and test the escrow and recovery procedure for any customer-managed key at least annually.'

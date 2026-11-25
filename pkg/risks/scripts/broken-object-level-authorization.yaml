@@ -5,9 +5,9 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 639
 description: >
-  The backend API does not verify that an authenticated user is authorized to access a specific
-  object. As a result, the user can read, modify, or delete records that belong to other users or
-  tenants by changing an identifier in the request.
+  The backend API does not verify that an authenticated user may access a specific object. Thus, the
+  user can read, change, or delete other users' or tenants' records by changing an identifier in the
+  request.
 impact: >
   If this risk remains unmitigated, an authenticated user can access or modify records outside their
   own, including other users' or tenants' data, without needing any additional privilege escalation.

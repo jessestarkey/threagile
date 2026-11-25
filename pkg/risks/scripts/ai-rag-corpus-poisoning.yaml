@@ -5,15 +5,14 @@ stride: tampering
 finding_class: weakness-shown
 cwe: 349
 description: >
-  A RAG pipeline, or its ingest path, brings in content from outside its own trust boundary, such as
-  web pages, email, shared drives, tickets, and partner feeds. It then indexes that content as
-  knowledge, which the model treats as authoritative. Thus, anyone who can write to one of those
-  sources can plant false entries that redirect answers, or instructions that the model follows when
-  the entry is retrieved, and a handful of planted documents is enough.
+  A RAG pipeline indexes content from outside its trust boundary (web pages, email, shared drives,
+  tickets, or partner feeds) as knowledge that the model treats as authoritative. Thus, anyone who
+  can write to one of those sources can plant entries that redirect answers or carry instructions,
+  and a handful suffices.
 impact: >
-  If this risk remains unmitigated, retrieved answers can be silently redirected for every user who
-  asks a targeted question. Furthermore, a planted entry can make the model exfiltrate other
-  retrieved data, until the poisoned content is found and removed from the index.
+  If this risk remains unmitigated, answers can be silently redirected for every user who asks a
+  targeted question, and a planted entry can make the model exfiltrate other retrieved data until
+  the content is removed.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat content from outside the trust boundary as untrusted when indexing it. Specifically, verify its source, keep provenance for each chunk, and keep untrusted content out of indexes that serve high-trust answers.'

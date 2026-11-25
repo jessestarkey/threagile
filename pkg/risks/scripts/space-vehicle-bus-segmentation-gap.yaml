@@ -5,17 +5,14 @@ stride: spoofing
 finding_class: control-not-evidenced
 cwe: 284
 description: >
-  The spacecraft's own command-and-data-handling subsystem is the last line of defense if
-  ground-segment controls are ever bypassed or spoofed. Yet it is frequently assumed to be secure by
-  inheritance from the ground segment, rather than independently authenticating commands at the
-  vehicle itself. Furthermore, if the onboard bus has no segmentation between
-  command-and-data-handling and the rest of the vehicle, a validated command can reach other
-  subsystems or payloads with no isolation.
+  The spacecraft's command-and-data-handling subsystem is the last defense if ground controls are
+  bypassed, yet it is often assumed secure by inheritance rather than authenticating commands
+  itself. Without onboard bus segmentation, a validated command can also reach other subsystems or
+  payloads.
 impact: >
   If this risk remains unmitigated, a command that reaches the spacecraft through any path other
-  than the intended ground station, whether through a compromised ground segment or a flaw
-  elsewhere, is accepted. It can then reach attitude control, the payload, or other critical
-  subsystems, with nothing onboard to stop it.
+  than the intended ground station is accepted, and it can reach attitude control, the payload, or
+  other critical subsystems.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Authenticate commands at the spacecraft''s own receiver, independent of ground-segment controls, and segment the command-and-data-handling subsystem from the other onboard buses and payloads.'

@@ -5,14 +5,13 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 306
 description: >
-  Industrial control protocols (Modbus, BACnet, and DNP3) and legacy physical-access-control
-  protocols (Wiegand) were designed without native authentication. Thus, a controller that speaks
-  one of them accepts, by default, a command-mode or configuration-mode write from anyone who can
-  reach it on the network or the wire, with no credential check at all.
+  Industrial control protocols (Modbus, BACnet, and DNP3) and legacy access-control protocols
+  (Wiegand) have no native authentication. Thus, a controller that speaks one of them accepts a
+  command or configuration write from anyone who reaches it on the network or the wire.
 impact: >
-  If this risk remains unmitigated, an attacker who reaches the controller's network segment or
-  physical wiring can inject commands or rewrite its program logic exactly as if the attacker were
-  the legitimate control system or badge reader, with no authentication step to stop them.
+  If this risk remains unmitigated, an attacker who reaches the controller's segment or wiring can
+  inject commands or rewrite its logic exactly as the legitimate control system or badge reader
+  would.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Segment ICS and PACS controller traffic from the general IT network, and apply the strongest authentication that the protocol supports, such as OSDP Secure Channel for access control and protocol-aware filtering for industrial protocols.'

@@ -10,8 +10,8 @@ description: >
   to obtaining code execution on the entire managed fleet at once.
 impact: >
   If this risk remains unmitigated, an attacker who compromises the console can push a malicious
-  policy or "remediation" action to every managed endpoint simultaneously. As a result, the
-  organization's own defensive tooling becomes the fastest path to a total compromise of the fleet.
+  policy or action to every managed endpoint at once. The organization's own defensive tooling
+  becomes the fastest path to compromising the fleet.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
 action: 'Require MFA and administrative tiering for console access, and verify the integrity of policy and signature content before it is pushed to the fleet.'

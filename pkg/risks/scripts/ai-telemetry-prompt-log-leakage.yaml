@@ -5,17 +5,14 @@ stride: information-disclosure
 finding_class: control-not-evidenced
 cwe: 532
 description: >
-  AI tracing and monitoring capture far more than ordinary application logs, namely full prompts,
-  retrieved documents, tool inputs and outputs, and model responses, often by default. When an AI
-  asset sends that telemetry, carrying confidential-or-higher data, to a monitoring or AI
-  observability stack, or when the observability stack itself holds such data, the telemetry becomes
-  a second copy of the sensitive data. Furthermore, that copy has weaker access control, longer
-  retention, and a wider audience than the system it came from.
+  AI tracing captures full prompts, retrieved documents, tool calls, and responses, often by
+  default. When this telemetry carries confidential-or-higher data to a monitoring or observability
+  stack, it becomes a second copy of that data with weaker access control, longer retention, and a
+  wider audience.
 impact: >
-  If this risk remains unmitigated, confidential prompts, documents, and responses accumulate in a
-  monitoring system that operators, vendors, and integrations can read without a need to know, and a
-  compromise of that system exposes all of it at once. For CUI or classified data, the telemetry
-  copy is itself a spill.
+  If this risk remains unmitigated, sensitive prompts and responses accumulate where operators,
+  vendors, and integrations can read them without a need to know, and one compromise exposes them
+  all. For CUI or classified data, the copy is itself a spill.
 asvs: "V16 - Security Logging and Error Handling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
 action: 'Redact or exclude sensitive content from AI telemetry before it leaves the asset, and protect and retain the observability stack at the classification of what it still holds.'

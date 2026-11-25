@@ -5,11 +5,10 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 200
 description: >
-  An LLM endpoint, RAG pipeline, or agent has confidential-or-higher data within reach, whether in
-  its prompts, retrieved documents, tools, or training, and it answers requests that come from
-  outside its own trust boundary. However, a model does not reliably keep what it can see to itself.
-  Thus, crafted questions, prompt injection, or plain over-sharing can put that data into a response
-  to a requester who was never authorized for it.
+  An LLM endpoint, RAG pipeline, or agent has confidential-or-higher data within reach (in prompts,
+  documents, tools, or training) and answers requests from outside its trust boundary. A model does
+  not reliably keep what it sees to itself, so crafted questions or over-sharing can disclose that
+  data.
 impact: >
   If this risk remains unmitigated, confidential data that the model can reach leaves the trust
   boundary inside ordinary-looking responses. As a result, it bypasses the access controls that

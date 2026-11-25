@@ -5,16 +5,13 @@ stride: elevation-of-privilege
 finding_class: weakness-shown
 cwe: 441
 description: >
-  An AI agent, tool server, or AI gateway calls another asset under its own service identity, rather
-  than under the identity of the user it is acting for. In other words, it has an authenticated
-  outgoing link whose authorization is not end-user identity propagation. The target then authorizes
-  the agent rather than the user, so the agent becomes a confused deputy. As a result, anything that
-  steers the agent gets every permission that the agent's identity holds, for every user, and the
-  agent's credentials concentrate access to everything it connects to.
+  An AI agent, tool server, or AI gateway calls another asset under its own service identity rather
+  than the identity of the user it acts for. The target then authorizes the agent, so anything that
+  steers the agent gets all of the agent's permissions, for every user.
 impact: >
   If this risk remains unmitigated, a prompt injection, a poisoned tool, or a compromised agent can
-  reach any data or action that the agent's own identity allows, including other users' data.
-  Furthermore, a stolen agent credential grants the same reach to an attacker directly.
+  reach any data or action the agent's identity allows, including other users' data. A stolen agent
+  credential gives an attacker the same reach directly.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Propagate the end user''s identity through the agent to every downstream call where the target supports it, and scope each agent credential to the minimum that the agent''s task needs.'

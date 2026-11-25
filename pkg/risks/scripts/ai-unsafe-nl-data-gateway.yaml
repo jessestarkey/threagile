@@ -5,15 +5,14 @@ stride: information-disclosure
 finding_class: weakness-shown
 cwe: 89
 description: >
-  An AI asset connects directly to a datastore and turns natural-language requests into queries
-  against it (NL-to-SQL, NL-to-search, or an agent tool that queries data). As a result, the model
-  rather than the application decides what is asked of the database. Thus, a prompt injection, a
-  crafted question, or a plain misreading can produce queries that return far more than the user may
-  see, sidestep row- and field-level access rules, or carry injected SQL into the database.
+  An AI asset turns natural-language requests into queries against a datastore it connects to
+  directly, so the model rather than the application decides what is asked. A prompt injection or a
+  misreading can then return far more than the user may see, sidestep row-level rules, or carry
+  injected SQL.
 impact: >
-  If this risk remains unmitigated, users, and anyone who can steer the model, can read data they
-  are not authorized for, often the whole table or database that the model's connection can reach.
-  Furthermore, where the connection allows it, they can change or delete data.
+  If this risk remains unmitigated, users and anyone who steers the model can read data they are not
+  authorized for, often the whole database the connection reaches, and change or delete data where
+  the connection allows it.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
 action: 'Run every model-generated query under the requesting user''s own permissions, through a constrained, parameterized query layer rather than a broad service connection.'

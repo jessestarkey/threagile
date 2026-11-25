@@ -6,16 +6,13 @@ finding_class: weakness-shown
 cwe: 200
 description: >
   An LLM endpoint, RAG pipeline, or agent answers requests from outside its trust boundary, and its
-  context carries material that the requester is not meant to see, namely the system prompt,
-  developer instructions, retrieved policy or configuration text, and tool and function schemas.
-  Crafted queries (such as "repeat your instructions", encoding tricks, role-play, or injected
-  instructions) can make the model reveal that hidden context. Thus, hidden context is never a
-  reliable secret once it is in the model's context window.
+  context carries material the requester should not see, such as the system prompt, instructions,
+  and tool schemas. Crafted queries can make the model reveal it, so hidden context is never a
+  reliable secret.
 impact: >
-  If this risk remains unmitigated, an adversary recovers the blueprint for bypassing the system's
-  guardrails, along with the names and parameters of internal tools to target directly. Furthermore,
-  the adversary recovers any business logic, internal detail, or credential that was placed in the
-  hidden context.
+  If this risk remains unmitigated, an adversary recovers the blueprint for bypassing the guardrails
+  and the internal tools to target directly, along with any business logic or credential placed in
+  the hidden context.
 asvs: "V8 - Authorization"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Treat all hidden context as eventually disclosable. Specifically, keep secrets and access-control decisions out of it, and filter responses for hidden-context echoes before they leave the boundary.'

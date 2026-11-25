@@ -5,15 +5,13 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 345
 description: >
-  Whatever shapes a model during training decides how it behaves afterwards, namely the training and
-  fine-tuning data, curated features, training configuration and hyperparameters, and the evaluation
-  data and scoring that gate promotion. Thus, anyone who can write to those, whether an outside data
-  source, a compromised account, or an insider, can plant a backdoor, bias the model, or quietly
-  degrade it. Furthermore, a poisoned evaluation lets the result through.
+  Training data, curated features, training configuration, and the evaluation that gates promotion
+  decide how a model behaves. Thus, anyone who can write to them (an outside source, a compromised
+  account, or an insider) can plant a backdoor or bias, and a poisoned evaluation lets it through.
 impact: >
   If this risk remains unmitigated, a model can ship with a backdoor or bias that passes its own
-  evaluation, and that persists until the model is retrained from clean inputs. As a result, it
-  steers every decision the model makes in production.
+  evaluation, persists until it is retrained from clean inputs, and steers every production
+  decision.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
 action: 'Control and verify everything that feeds training and evaluation, namely the data, features, configuration, and scoring, and compare each training run against an approved baseline.'

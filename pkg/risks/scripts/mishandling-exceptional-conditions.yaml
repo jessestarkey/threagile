@@ -5,15 +5,13 @@ stride: elevation-of-privilege
 finding_class: control-not-evidenced
 cwe: 755
 description: >
-  The application does not consistently handle exceptional conditions (unhandled exceptions,
-  malformed input, and resource exhaustion) as a fail-closed case. Thus, an exception on an
-  authorization- or validation-critical path can fall through to an allowed state instead of a
-  denied one. Alternatively, an unhandled error response can leak internal implementation detail.
+  The application does not treat exceptional conditions (unhandled exceptions, malformed input, and
+  resource exhaustion) as fail-closed. Thus, an exception on an authorization or validation path can
+  fall through to an allowed state, or an error response can leak implementation detail.
 impact: >
-  If this risk remains unmitigated, an attacker can trigger an edge-case or malformed-input
-  exception to bypass an authorization or validation control that only runs on the successful path.
-  Furthermore, the attacker can harvest stack traces, internal paths, or library versions from an
-  unhandled error response to aid further attacks.
+  If this risk remains unmitigated, an attacker can trigger an exception to bypass a control that
+  runs only on the success path, and harvest stack traces, paths, or library versions from error
+  responses.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
 action: 'Ensure that every authorization- or validation-critical code path fails closed on an unhandled exception, and that client-facing error responses never include internal implementation detail.'

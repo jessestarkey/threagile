@@ -5,13 +5,12 @@ stride: tampering
 finding_class: control-not-evidenced
 cwe: 915
 description: >
-  The backend API binds client request bodies directly to internal models without an explicit
-  per-field allow-list. As a result, a client can set privileged fields that the UI never exposes,
-  or can receive fields in a response that were never meant to be exposed.
+  The backend API binds request bodies directly to internal models without a per-field allow-list.
+  Thus, a client can set privileged fields that the UI never exposes, or receive fields that were
+  never meant to be returned.
 impact: >
   If this risk remains unmitigated, a client can escalate privilege by setting a field that the
-  application's own framework silently accepted, even though the UI never exposes it. Alternatively,
-  the client can harvest sensitive fields that an endpoint returns without ever intending to.
+  framework silently accepts, or harvest sensitive fields that an endpoint returns unintentionally.
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
 action: 'Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request and response bodies directly to internal models.'
