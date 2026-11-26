@@ -28,9 +28,11 @@ type Model struct { // TODO: Eventually remove this and directly use ParsedModel
 	Contributors                                  []Author                  `yaml:"contributors,omitempty" json:"contributors,omitempty"`
 	Date                                          string                    `yaml:"date,omitempty" json:"date,omitempty"`
 	AppDescription                                Overview                  `yaml:"application_description,omitempty" json:"application_description,omitempty"`
-	BusinessOverview                              Overview                  `yaml:"business_overview,omitempty" json:"business_overview,omitempty"`
+	ThreatLandscape                               Overview                  `yaml:"threat_landscape,omitempty" json:"threat_landscape,omitempty"`
+	BusinessOverview                              Overview                  `yaml:"business_overview,omitempty" json:"business_overview,omitempty"` // older name for threat_landscape, still accepted
 	TechnicalOverview                             Overview                  `yaml:"technical_overview,omitempty" json:"technical_overview,omitempty"`
-	BusinessCriticality                           string                    `yaml:"business_criticality,omitempty" json:"business_criticality,omitempty"`
+	MissionCriticality                            string                    `yaml:"mission_criticality,omitempty" json:"mission_criticality,omitempty"`
+	BusinessCriticality                           string                    `yaml:"business_criticality,omitempty" json:"business_criticality,omitempty"` // older name for mission_criticality, still accepted
 	ManagementSummaryComment                      string                    `yaml:"management_summary_comment,omitempty" json:"management_summary_comment,omitempty"`
 	SecurityRequirements                          map[string]string         `yaml:"security_requirements,omitempty" json:"security_requirements,omitempty"`
 	Questions                                     map[string]string         `yaml:"questions,omitempty" json:"questions,omitempty"`
@@ -153,6 +155,12 @@ func (model *Model) Merge(dir string, includeFilename string) error {
 				return fmt.Errorf("failed to merge application description: %w", mergeError)
 			}
 
+		case strings.ToLower("threat_landscape"):
+			mergeError = model.ThreatLandscape.Merge(includedModel.ThreatLandscape)
+			if mergeError != nil {
+				return fmt.Errorf("failed to merge threat landscape: %w", mergeError)
+			}
+
 		case strings.ToLower("business_overview"):
 			mergeError = model.BusinessOverview.Merge(includedModel.BusinessOverview)
 			if mergeError != nil {
@@ -163,6 +171,12 @@ func (model *Model) Merge(dir string, includeFilename string) error {
 			mergeError = model.TechnicalOverview.Merge(includedModel.TechnicalOverview)
 			if mergeError != nil {
 				return fmt.Errorf("failed to merge technical overview: %w", mergeError)
+			}
+
+		case strings.ToLower("mission_criticality"):
+			model.MissionCriticality, mergeError = new(Strings).MergeSingleton(model.MissionCriticality, includedModel.MissionCriticality)
+			if mergeError != nil {
+				return fmt.Errorf("failed to merge mission criticality: %w", mergeError)
 			}
 
 		case strings.ToLower("business_criticality"):

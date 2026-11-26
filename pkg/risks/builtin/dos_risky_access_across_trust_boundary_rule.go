@@ -21,29 +21,20 @@ func (*DosRiskyAccessAcrossTrustBoundaryRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html",
 		Action: "Rate-limit and quota every cross-boundary entry point to this availability-critical asset, move maintenance " +
 			"access behind VPN or IP filtering, and deploy the asset redundantly.",
-		Mitigation: "Enforce per-client and global rate limits, concurrency caps, request-size limits, timeouts, and pagination " +
-			"limits at the API gateway or ingress in front of this asset, returning HTTP 429 instead of queuing unbounded " +
-			"work. Bound expensive operations (search, report generation, file processing, regular expressions, GraphQL " +
-			"depth and cost) with explicit resource budgets, and move long-running work to asynchronous queues with " +
-			"backpressure. Restrict administrative and maintenance data flows to a VPN, private endpoint, or " +
-			"IP-allowlisted management network. Deploy the asset redundantly across availability zones behind a " +
-			"health-checked load balancer with bounded autoscaling, and use circuit breakers and bulkheads in callers so " +
-			"one saturated dependency does not cascade. Put internet-facing entry points behind the provider's DDoS " +
-			"protection (Azure DDoS Protection, AWS Shield Advanced) and WAF rate-based rules. Load-test against the " +
-			"documented availability objective to confirm the limits hold. References: CWE-400, CWE-770; CAPEC-125 " +
-			"(Flooding); MITRE ATT&CK T1498 (Network Denial of Service), T1499 (Endpoint Denial of Service); OWASP API " +
-			"Security Top 10:2023 API4 (Unrestricted Resource Consumption); NIST SP 800-53 SC-5.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.DenialOfService,
+		Mitigation: "Enforce per-client and global rate limits, concurrency caps, request-size limits, timeouts, and pagination limits at the gateway in front of this asset, returning HTTP 429 instead of queuing unbounded work.\n" +
+			"Bound expensive operations (search, report generation, file processing, regular expressions, and GraphQL depth) with resource budgets, and move long-running work to queues with backpressure.\n" +
+			"Restrict administrative and maintenance flows to a VPN, private endpoint, or IP-allowlisted management network.\n" +
+			"Deploy the asset across availability zones behind a health-checked load balancer, and use circuit breakers in callers so one saturated dependency does not cascade.\n" +
+			"Put internet-facing entry points behind the provider's DDoS protection and WAF rate-based rules.\n" +
+			"Load-test against the documented availability objective to confirm the limits hold.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.DenialOfService,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (excluding " + types.LoadBalancer + ") with " +
 			"availability rating of " + types.Critical.String() + " or higher which have incoming data-flows across a " +
 			"network trust-boundary (excluding " + types.DevOps.String() + " usage).",
-		RiskAssessment: "Matching technical assets with availability rating " +
-			"of " + types.Critical.String() + " or higher are " +
-			"at " + types.LowSeverity.String() + " risk. When the availability rating is " +
-			types.MissionCritical.String() + " and neither a VPN nor IP filter for the incoming data-flow nor redundancy " +
-			"for the asset is applied, the risk-rating is considered " + types.MediumSeverity.String() + ".", // TODO reduce also, when data-flow authenticated and encrypted?
+		RiskAssessment:             "Likelihood starts at Possible. Impact starts at Low and steps on the asset's availability; the rule fires only at critical availability or above, so it lands at Medium, one level lower when the link is VPN-protected or IP-filtered or the asset is redundant. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When the accessed target operations are not time- or resource-consuming.",
 		ModelFailurePossibleReason: false,
 		CWE:                        400,
@@ -98,25 +89,20 @@ func (r *DosRiskyAccessAcrossTrustBoundaryRule) potentiallyAddRisk(
 		return risks
 	}
 
-	highRisk := technicalAsset.Availability == types.MissionCritical && !incomingAccess.VPN && !incomingAccess.IpFiltered && !technicalAsset.Redundant
-	risks = append(risks, r.createRisk(technicalAsset, incomingAccess, linkId, hopBetween, input.TechnicalAssets[incomingAccess.SourceId], highRisk))
+	mitigated := incomingAccess.VPN || incomingAccess.IpFiltered || technicalAsset.Redundant
+	risks = append(risks, r.createRisk(technicalAsset, incomingAccess, linkId, hopBetween, input.TechnicalAssets[incomingAccess.SourceId], mitigated))
 	return risks
 }
 
 func (r *DosRiskyAccessAcrossTrustBoundaryRule) createRisk(techAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, linkId string, hopBetween string,
-	clientOutsideTrustBoundary *types.TechnicalAsset, moreRisky bool) *types.Risk {
-	// Already single-dimension (Availability, matching this category's STRIDE value) and
-	// asset-scoped, but not reused via the shared computeImpact() helper: moreRisky folds in
-	// rule-specific mitigating factors (VPN, IP filtering, redundancy) the generic helper has no
-	// way to know about, not just the asset's own Availability rank.
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+	clientOutsideTrustBoundary *types.TechnicalAsset, mitigated bool) *types.Risk {
+	// Low baseline plus the availability step, and one level lower when the link is VPN-protected
+	// or IP-filtered or the target is redundant, the mitigations the model can show.
+	impact := types.ClampImpact(int(computeImpact(types.LowImpact, r.Category().STRIDE, techAsset)) + stepIf(mitigated, -1))
 	if len(hopBetween) > 0 {
 		hopBetween = " forwarded via <b>" + hopBetween + "</b>"
 	}
-	likelihood := computeLikelihood(types.Unlikely, techAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

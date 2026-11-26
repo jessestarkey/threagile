@@ -168,7 +168,7 @@ func TestUnguardedDirectDatastoreAccessRuleRuleGenerateRisks(t *testing.T) {
 			integrity:       types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.LowImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"high raa no longer bumps impact": {
 			// RAA was moved from an Impact bump to a Likelihood delta (see the comment in
@@ -189,7 +189,7 @@ func TestUnguardedDirectDatastoreAccessRuleRuleGenerateRisks(t *testing.T) {
 			integrity:       types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.LowImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"strict confidentiality medium impact": {
 			outOfScope: false,
@@ -380,17 +380,17 @@ func TestUnguardedDirectDatastoreAccessRuleRaaAffectsLikelihoodNotImpact(t *test
 	}
 	rule := NewUnguardedDirectDatastoreAccessRule()
 
-	lowRaaRisks, err := rule.GenerateRisks(newModel(10)) // below raaLikelihoodLowThreshold (15)
+	lowRaaRisks, err := rule.GenerateRisks(newModel(10)) // below types.RAALikelihoodLowThreshold (15)
 	assert.Nil(t, err)
 	assert.Len(t, lowRaaRisks, 1)
-	assert.Equal(t, types.PossibleLikelihood, lowRaaRisks[0].ExploitationLikelihood)
-	assert.Equal(t, types.LowImpact, lowRaaRisks[0].ExploitationImpact)
+	assert.Equal(t, types.Unlikely, lowRaaRisks[0].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, lowRaaRisks[0].ExploitationImpact)
 
-	highRaaRisks, err := rule.GenerateRisks(newModel(50)) // at or above raaLikelihoodThreshold (40)
+	highRaaRisks, err := rule.GenerateRisks(newModel(50)) // at or above types.RAALikelihoodThreshold (40)
 	assert.Nil(t, err)
 	assert.Len(t, highRaaRisks, 1)
-	assert.Equal(t, types.VeryLikely, highRaaRisks[0].ExploitationLikelihood)
-	assert.Equal(t, types.LowImpact, highRaaRisks[0].ExploitationImpact) // unchanged by RAA, unlike before this redesign
+	assert.Equal(t, types.Likely, highRaaRisks[0].ExploitationLikelihood)
+	assert.Equal(t, types.MediumImpact, highRaaRisks[0].ExploitationImpact) // unchanged by RAA, unlike before this redesign
 }
 
 func TestIsSharingSameParentTrustBoundaryBothOutOfTrustBoundaryExpectTrue(t *testing.T) {

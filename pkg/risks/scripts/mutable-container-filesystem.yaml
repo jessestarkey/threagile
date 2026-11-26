@@ -2,35 +2,39 @@ id: mutable-container-filesystem
 title: Mutable Container Filesystem
 function: operations
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 732
 description: >
-  The container's root filesystem is writable, allowing an attacker who gains code execution to
+  The container's root filesystem is writable, which allows an attacker who gains code execution to
   modify binaries or persist inside the container.
 impact: >
-  If this risk remains unmitigated, a compromised container provides an attacker a durable
-  foothold for lateral movement rather than resetting on restart.
+  If this risk remains unmitigated, a compromised container gives an attacker a durable foothold for
+  lateral movement, rather than resetting on restart.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html"
-action: "Enforce readOnlyRootFilesystem."
-mitigation: >
-  Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext. Mount
-  ephemeral emptyDir volumes for any directory the workload genuinely needs to write to at runtime
-  (e.g. /tmp). Enforce this cluster-wide via an OPA Gatekeeper or Kyverno admission policy that
-  rejects deployments without it set, rather than relying on manifest review alone. References:
-  DISA Kubernetes STIG; NIST SP 800-53 CM-6 (Configuration Settings); NIST SP 800-53 SC-39
-  (Process Isolation).
-check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+action: 'Enforce readOnlyRootFilesystem.'
+mitigation: >-
+  Set securityContext.readOnlyRootFilesystem to true in the container's PodSecurityContext.
+
+  Mount ephemeral emptyDir volumes for any directory that the workload genuinely needs to write to
+  at runtime (for example, /tmp).
+
+  Enforce this cluster-wide through an OPA Gatekeeper or Kyverno admission policy that rejects
+  deployments without it, rather than relying on manifest review alone.
+references: >-
+  DISA Kubernetes STIG; NIST SP 800-53 CM-6 (Configuration Settings) and SC-39 (Process Isolation)
+check: 'Does the container run with readOnlyRootFilesystem set to true, with writable paths limited to ephemeral volumes, enforced by an admission policy?'
 detection_logic: >
-  Query the cluster (kubectl get pods -o json) or the admission controller's policy audit log for
-  containers whose securityContext omits readOnlyRootFilesystem: true. Run Kubescape or a similar
-  CIS Kubernetes Benchmark scanner against running workloads.
+  Query the cluster (kubectl get pods -o json), or the admission controller's policy audit log, for
+  containers whose securityContext omits readOnlyRootFilesystem: true. Additionally, run Kubescape,
+  or a similar CIS Kubernetes Benchmark scanner, against the running workloads.
 risk_assessment: >
-  Medium risk to node integrity in isolation, but compounding with any code-execution finding on
-  the same container that would otherwise reset on restart instead of persisting.
+  Medium as a risk to node integrity in isolation. However, it compounds with any code-execution
+  finding on the same container, which would otherwise reset on restart instead of persisting.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once the pod's securityContext already sets readOnlyRootFilesystem to true.
+  This rule fires on every in-scope container asset by design, so no tag suppresses it. Instead,
+  dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once the
+  pod's securityContext is confirmed to set readOnlyRootFilesystem to true.
 
 risk:
   id:
@@ -61,67 +65,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "likely" (not a tier edge), so both the upward (RAA >= 40) and downward
-    # (RAA < 15) deltas are reachable -- see untrusted-container-image.yaml for the general
-    # pattern and the omitempty caveat this mirrors.
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-        - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "medium" (a middle tier), so all three
-    # outcomes (low/medium/high) are reachable depending on the asset's own Integrity rank.
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: low baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.integrity}"
-              second: important
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+        - return: "adjust_impact(low, {tech_asset.integrity})"

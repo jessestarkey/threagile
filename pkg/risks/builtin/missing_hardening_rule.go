@@ -26,20 +26,15 @@ func (r *MissingHardeningRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Apply and verify the DISA STIG or CIS benchmark for every layer of this high-value asset (OS, middleware, " +
 			"application), implemented as code and checked continuously.",
-		Mitigation: "Identify the applicable hardening baseline for each layer of this high-attractiveness asset: DISA STIGs or " +
-			"SRGs for DoD systems (operating system, web server, application server, database, container platform), CIS " +
-			"Benchmarks elsewhere, and vendor security configuration guides (for example Oracle DBSAT, Microsoft security " +
-			"baselines). Implement them as code (Ansible, PowerShell DSC, hardened golden images, Kubernetes admission " +
-			"policies) so the configuration is reproducible and drift is detectable. Remove unused services, packages, " +
-			"default accounts, sample applications, and debug or management endpoints; change every default credential; " +
-			"and limit listening ports to those in the documented ports, protocols, and services list. Scan with SCAP " +
-			"Compliance Checker, OpenSCAP, or CIS-CAT and document each deviation with a justification or POA&M item. " +
-			"Re-scan after every change and at least monthly, and patch within the timelines set by vulnerability " +
-			"management policy. References: CWE-16, CWE-1188; MITRE ATT&CK T1190, T1068 (Exploitation for Privilege " +
-			"Escalation); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP 800-53 CM-6, CM-7, SI-2.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.Tampering,
+		Mitigation: "Identify the hardening baseline for each layer of this asset, namely DISA STIGs or SRGs for DoD systems, CIS Benchmarks elsewhere, and vendor security configuration guides.\n" +
+			"Implement the baselines as code (Ansible, PowerShell DSC, golden images, or admission policies), so the configuration is reproducible and drift is detectable.\n" +
+			"Remove unused services, packages, default accounts, sample applications, and debug endpoints, change every default credential, and limit listening ports to the documented ports, protocols, and services list.\n" +
+			"Scan with SCAP Compliance Checker, OpenSCAP, or CIS-CAT, and document each deviation with a justification or POA&M item.\n" +
+			"Re-scan after every change and at least monthly, and patch within the vulnerability management timelines.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope technical assets with RAA values of " + strconv.Itoa(r.raaLimit) + " % or higher. " +
 			"Generally for high-value targets like data stores, application servers, identity providers and ERP systems this limit is reduced to " + strconv.Itoa(r.raaLimitReduced) + " %",
 		RiskAssessment:             "The risk rating depends on the sensitivity of the data processed in the technical asset.",
@@ -75,21 +70,13 @@ func (r *MissingHardeningRule) skipAsset(technicalAsset *types.TechnicalAsset) b
 
 func (r *MissingHardeningRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Missing Hardening</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): this category's own
-	// Impact text is generically about attacking a high-value target, not a single dimension.
-	impact := types.LowImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.MediumImpact
-	}
-	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit/
-	// raaLimitReduced gate) -- that detection-logic role is kept as-is. computeLikelihood() is
-	// still applied on top of the flat baseline for consistency with every other rule's scoring:
-	// since both raaLimit (55) and raaLimitReduced (40) already sit at or above
-	// raaLikelihoodThreshold (40), every asset that reaches this point already earns the RAA
-	// Likelihood delta too, so Likely becomes VeryLikely here consistently -- the reachability
-	// delta can still vary per asset even though the RAA delta cannot.
-	likelihood := computeLikelihood(types.Likely, technicalAsset)
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the data
+	// the asset processes.
+	impact := processedImpact(input, types.LowImpact, r.Category().STRIDE, technicalAsset)
+	// The raaLimit gate decides whether this risk fires, and computeLikelihood() then scores it
+	// like every other rule. Both limits (55 and 40) are at or above types.RAALikelihoodThreshold,
+	// so every asset here takes the RAA step, while the internet step still varies per asset.
+	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

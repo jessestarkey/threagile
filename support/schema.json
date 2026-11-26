@@ -106,15 +106,28 @@
         "null"
       ]
     },
+    "mission_criticality": {
+      "description": "Mission criticality of the target: how much the mission depends on it",
+      "type": "string",
+      "enum": [
+        "administrative",
+        "mission-support",
+        "mission-essential",
+        "mission-critical"
+      ]
+    },
     "business_criticality": {
-      "description": "Business criticality of the target",
+      "description": "Deprecated: older name for mission_criticality. The five older values map onto the four-value scale (archive and operational to administrative, important to mission-support, critical to mission-essential, mission-critical to mission-critical).",
       "type": "string",
       "enum": [
         "archive",
         "operational",
         "important",
         "critical",
-        "mission-critical"
+        "mission-critical",
+        "administrative",
+        "mission-support",
+        "mission-essential"
       ]
     },
     "application_description": {
@@ -138,12 +151,33 @@
         }
       }
     },
-    "business_overview": {
-      "description": "Individual business overview for the report",
+    "threat_landscape": {
+      "description": "Threat landscape for the report: primary threat vectors, high-value targets and core defenses",
       "type": "object",
       "properties": {
         "description": {
-          "description": "Individual business overview for the report",
+          "description": "Threat landscape for the report: primary threat vectors, high-value targets and core defenses",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "images": {
+          "description": "Custom images for the report",
+          "type": [
+            "array",
+            "null"
+          ],
+          "uniqueItems": true
+        }
+      }
+    },
+    "business_overview": {
+      "description": "Deprecated: older name for threat_landscape, still accepted",
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Deprecated: older name for threat_landscape, still accepted",
           "type": [
             "string",
             "null"
@@ -532,6 +566,10 @@
           },
           "internet": {
             "description": "Set to true if a technical asset is accessible from the public internet. This increases its exposure and affects the severity and likelihood of certain risks, such as unauthorized access or denial of service.",
+            "type": "boolean"
+          },
+          "internet_reachable": {
+            "description": "Set to true if internet traffic reaches this asset through an edge component in front of it (such as the application behind an internet-facing gateway), while the asset itself is not the edge. Like internet, it raises the likelihood of risks on the asset.",
             "type": "boolean"
           },
           "machine": {
@@ -1322,10 +1360,13 @@
     "threagile_version",
     "title",
     "author",
-    "business_criticality",
     "tags_available",
     "data_assets",
     "technical_assets",
     "shared_runtimes"
+  ],
+  "anyOf": [
+    { "required": ["mission_criticality"] },
+    { "required": ["business_criticality"] }
   ]
 }

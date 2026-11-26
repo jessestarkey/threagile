@@ -1,0 +1,159 @@
+id: ai-cascading-agent-failures
+title: "Cascading Agent Failures"
+function: architecture
+stride: denial-of-service
+finding_class: weakness-shown
+cwe: 400
+description: >
+  An AI agent orchestrator or multi-agent gateway hands work to another agent. In a chain, one
+  agent's runaway loop, retry storm, unbounded delegation, or stall becomes load on every agent
+  downstream, so a single fault takes the workflow down. Manipulated output between agents is
+  covered by other rules.
+impact: >
+  If this risk remains unmitigated, one failing or overloaded agent can exhaust the resources,
+  budgets, and rate limits of every agent downstream, taking out the whole workflow rather than one
+  step.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Contain faults at every agent-to-agent hand-off with validation, bounded retries and recursion, timeouts, and circuit breakers.'
+mitigation: >-
+  Treat every message from another agent as untrusted input, and validate its structure and bounds
+  before acting on it.
+
+  Cap the delegation depth, fan-out, retries, and total tool calls per workflow, and give every
+  hand-off a timeout.
+
+  Add circuit breakers that stop sending work to an agent that is failing or behaving anomalously,
+  with a defined degraded mode rather than indefinite retries.
+
+  Isolate each agent's resource budget, so that one runaway agent cannot starve the others.
+
+  Trace each workflow end to end, so that a fault can be located and the chain halted.
+references: >-
+  OWASP Top 10 for Agentic Applications 2026 ASI08 (Cascading Agent Failures); MITRE ATLAS
+  AML.T0029 (Denial of AI Service) and AML.T0034 (Cost Harvesting); MAESTRO layers 4, 5, and 7;
+  CWE-400; CWE-674; CWE-703; CWE-755; NIST SP 800-53 SC-5, SC-7, SI-4, and IR-4; Mappings from the
+  OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is every agent-to-agent hand-off validated and bounded (in depth, fan-out, retries, and timeouts), with circuit breakers and per-agent resource budgets that stop a fault from propagating down the chain?'
+detection_logic: >
+  Map every agent-to-agent hand-off, and review its validation, limits, and timeout settings. Then,
+  in a test environment, inject a malformed or looping response at one agent, and observe whether
+  the downstream agents contain it. Finally, monitor the workflow traces for runaway delegation
+  depth or fan-out.
+risk_assessment: >
+  High when the chain reaches agents with critical-or-higher availability and has no circuit
+  breakers or delegation limits. Otherwise, the finding is Medium.
+false_positives: >
+  This rule fires on an in-scope ai-agent-orchestrator or ai-multi-agent-gateway that has an
+  outgoing link to another ai-agent-orchestrator or ai-multi-agent-gateway. A single agent that only
+  calls models and tools does not fire. Dispose of a confirmed-compliant asset through
+  risk_tracking, logging it as mitigated once every hand-off in the chain is confirmed to be
+  validated, bounded, and behind a circuit breaker.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_agent: false
+          - delegates: "has_agent_link({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            or:
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-multi-agent-gateway}"
+          then:
+            - assign:
+                is_agent: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{is_agent}"
+            - true: "{delegates}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Cascading Agent Failures</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    is_agent_target:
+      parameters:
+        - target_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-agent-orchestrator}"
+                - true: "{.attributes.ai-multi-agent-gateway}"
+            then:
+              - return: true
+        - return: false
+
+    has_agent_link:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - to_agent: "is_agent_target({link.target_id})"
+              - if:
+                  true: "{to_agent}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(possible, {tech_asset})"
+
+    # Impact baseline: medium.
+    # Impact: baseline plus the availability step for the highest rank across the agent and
+    # the agents it calls.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: "cia_rank({tech_asset.availability})"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - to_agent: "is_agent_target({link.target_id})"
+              - if:
+                  true: "{to_agent}"
+                  then:
+                    - assign:
+                        - target_availability: "{$model.technical_assets.{link.target_id}.availability}"
+                    - assign:
+                        - target_rank: "cia_rank({target_availability})"
+                    - if:
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

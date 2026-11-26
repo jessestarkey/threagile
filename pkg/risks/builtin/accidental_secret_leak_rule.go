@@ -25,20 +25,15 @@ func (*AccidentalSecretLeakRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Block secrets from entering source repositories and artifact registries with pre-commit and server-side push " +
 			"scanning, scan the existing history, and revoke and rotate any secret ever found.",
-		Mitigation: "Enforce secret scanning at three points: a pre-commit hook on developer workstations (gitleaks, git-secrets, " +
-			"or detect-secrets); a server-side push-protection rule on the source repository that rejects commits " +
-			"containing known credential formats or high-entropy strings; and a CI stage that scans every build artifact " +
-			"and container image layer (trufflehog, gitleaks, or the registry's native scanner) before it is published. " +
-			"Keep .gitignore and .dockerignore entries for local credential files (.env, *.pem, *.pfx, kubeconfig, " +
-			"terraform.tfstate) and use multi-stage container builds so build-time credentials never persist into a " +
-			"published layer. Run a one-time full-history scan of every in-scope repository and registry. Treat any secret " +
-			"found as compromised: revoke and rotate it at its issuer first, then purge it from history (git filter-repo " +
-			"or BFG), because deleting the file in a new commit leaves it in history and in every existing clone. Replace " +
-			"static credentials in code and configuration with references resolved at runtime from a vault or a workload " +
-			"identity. References: CWE-798, CWE-540; MITRE ATT&CK T1552.001 (Credentials In Files); NIST SP 800-53 IA-5(7).",
+		Mitigation: "Scan for secrets at three points, namely (1) a pre-commit hook on developer workstations (gitleaks or detect-secrets), (2) server-side push protection that rejects known credential formats and high-entropy strings, and (3) a CI stage that scans every artifact and image layer before it is published.\n" +
+			"Exclude local credential files (.env, *.pem, kubeconfig, and terraform.tfstate) in .gitignore and .dockerignore, and use multi-stage builds so build-time credentials never persist in a published layer.\n" +
+			"Run a one-time full-history scan of every in-scope repository and registry.\n" +
+			"Treat any secret found as compromised. Revoke and rotate it at its issuer first, then purge it from history (git filter-repo or BFG), since deleting the file in a new commit leaves it in every existing clone.\n" +
+			"Replace static credentials with references resolved at runtime from a vault or a workload identity.",
 		Check:                      "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:                   types.Operations,
 		STRIDE:                     types.InformationDisclosure,
+		FindingClass:               types.FindingClassControlNotEvidenced,
 		DetectionLogic:             "In-scope sourcecode repositories and artifact registries.",
 		RiskAssessment:             "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives:             "Usually no false positives.",
@@ -83,25 +78,9 @@ func (r *AccidentalSecretLeakRule) createRisk(parsedModel *types.Model, technica
 	if len(details) > 0 {
 		title += ": <u>" + details + "</u>"
 	}
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Confidentiality (this category's own STRIDE value): what a leaked secret actually
-	// threatens is bounded by what an attacker could do with it -- read, modify, or deny the
-	// data it unlocks -- not just disclose it, so a credential guarding Critical/Mission-Critical
-	// integrity or availability data deserves the same bump as one guarding Confidential data.
-	impact := types.LowImpact
-	highestProcessedConfidentiality := parsedModel.HighestProcessedConfidentiality(technicalAsset)
-	highestProcessedIntegrity := parsedModel.HighestProcessedIntegrity(technicalAsset)
-	highestProcessedAvailability := parsedModel.HighestProcessedAvailability(technicalAsset)
-	if highestProcessedConfidentiality >= types.Confidential ||
-		highestProcessedIntegrity >= types.Critical ||
-		highestProcessedAvailability >= types.Critical {
-		impact = types.MediumImpact
-	}
-	if highestProcessedConfidentiality == types.StrictlyConfidential ||
-		highestProcessedIntegrity == types.MissionCritical ||
-		highestProcessedAvailability == types.MissionCritical {
-		impact = types.HighImpact
-	}
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens
+	// (confidentiality), for the data the repository or registry processes.
+	impact := processedImpact(parsedModel, types.LowImpact, r.Category().STRIDE, technicalAsset)
 	// create risk
 	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
@@ -163,64 +142,9 @@ func (r *AccidentalSecretLeakRule) ExplainRisk(parsedModel *types.Model, risk st
 }
 
 func (r *AccidentalSecretLeakRule) explainRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) []string {
-	explanation := make([]string, 0)
-	impact := types.LowImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-
-		explanation = append(explanation,
-			fmt.Sprintf("    - impact is %v because", impact),
-		)
-
-		if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
-			explanation = append(explanation,
-				fmt.Sprintf("      => highest confidentiality: %v (==%v)", parsedModel.HighestProcessedConfidentiality(technicalAsset), types.StrictlyConfidential),
-			)
-		}
-
-		if parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("      => highest integrity: %v (==%v)", parsedModel.HighestProcessedIntegrity(technicalAsset), types.MissionCritical),
-			)
-		}
-
-		if parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("      => highest availability: %v (==%v)", parsedModel.HighestProcessedAvailability(technicalAsset), types.MissionCritical),
-			)
-		}
-	} else if parsedModel.HighestProcessedConfidentiality(technicalAsset) >= types.Confidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) >= types.Critical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) >= types.Critical {
-		impact = types.MediumImpact
-		explanation = append(explanation,
-			fmt.Sprintf("    - impact is %v because", impact),
-		)
-
-		if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential {
-			explanation = append(explanation,
-				fmt.Sprintf("     =>  highest confidentiality: %v (>=%v)", parsedModel.HighestProcessedConfidentiality(technicalAsset), types.Confidential),
-			)
-		}
-
-		if parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("     =>  highest integrity: %v (==%v)", parsedModel.HighestProcessedIntegrity(technicalAsset), types.Critical),
-			)
-		}
-
-		if parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-			explanation = append(explanation,
-				fmt.Sprintf("     =>  highest availability: %v (==%v)", parsedModel.HighestProcessedAvailability(technicalAsset), types.Critical),
-			)
-		}
-	} else {
-		explanation = append(explanation,
-			fmt.Sprintf("     - impact is %v (default)", impact),
-		)
+	rank := processedRank(parsedModel, r.Category().STRIDE, technicalAsset)
+	return []string{
+		fmt.Sprintf("    - impact is %v: %v baseline plus the confidentiality step (%+d) for the most confidential data processed (%v)",
+			types.AdjustImpactForRank(types.LowImpact, rank), types.LowImpact, types.CIARankDelta(rank), types.Confidentiality(rank)),
 	}
-
-	return explanation
 }

@@ -1,0 +1,256 @@
+id: ai-rag-corpus-poisoning
+title: "RAG Corpus Poisoning"
+function: architecture
+stride: tampering
+finding_class: weakness-shown
+cwe: 349
+description: >
+  A RAG pipeline indexes content from outside its trust boundary (web pages, email, shared drives,
+  tickets, or partner feeds) as knowledge that the model treats as authoritative. Thus, anyone who
+  can write to one of those sources can plant entries that redirect answers or carry instructions,
+  and a handful suffices.
+impact: >
+  If this risk remains unmitigated, answers can be silently redirected for every user who asks a
+  targeted question, and a planted entry can make the model exfiltrate other retrieved data until
+  the content is removed.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Treat content from outside the trust boundary as untrusted when indexing it. Specifically, verify its source, keep provenance for each chunk, and keep untrusted content out of indexes that serve high-trust answers.'
+mitigation: >-
+  Ingest only from approved sources, and record the provenance (source, author, time, and hash) of
+  every indexed chunk, so that poisoned content can be found and purged.
+
+  Separate indexes by trust level, and never let content from open sources (public pages, inbound
+  email, or broadly writable shares) feed an index that answers high-trust questions.
+
+  Validate and sanitize content at ingest, including hidden text and embedded instructions.
+
+  Show sources with answers, so that users can see where a claim came from.
+
+  Re-validate the corpus periodically, and alert on sudden bulk additions from one source.
+references: >-
+  OWASP LLM Top 10 2026 LLM09 (Vector and Embedding Weaknesses); OWASP Top 10 for Agentic
+  Applications 2026 ASI06 (Memory and Context Poisoning); OWASP GenAI Data Security 2026 DSGAI04
+  (Data, Model and Artifact Poisoning); MITRE ATLAS AML.T0070 (RAG Poisoning), AML.T0071 (False
+  RAG Entry Injection), and AML.T0059 (Erode Dataset Integrity); MAESTRO layers 2 and 4; CWE-349;
+  CWE-345; NIST SP 800-53 SI-7, SI-10, and SR-3; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is content from outside the trust boundary ingested only from approved sources, with per-chunk provenance, ingest-time validation, and separation from indexes that serve high-trust answers?'
+detection_logic: >
+  List every source that the ingest path reads from, and who can write to each one. Then, in a test
+  environment, plant a canary document in a writable source, and see whether it is indexed and
+  retrieved. Finally, review the per-chunk provenance, and how quickly a poisoned chunk can be
+  purged.
+risk_assessment: >
+  High when content from open or broadly writable sources feeds an index that is used for decisions,
+  or that retrieves sensitive data. Otherwise, the finding is Medium.
+false_positives: >
+  This rule fires on an in-scope ai-rag-ingest-pipeline or ai-rag-pipeline that takes content in
+  from outside, in one of two ways. First, an outside caller writes into it through an incoming link
+  that is not readonly. An outside caller is an external entity, an internet-facing or out-of-scope
+  asset, or a frontend (a web application, reverse proxy, WAF, load balancer, or client) in a
+  different network boundary, and as in Threagile's own rules, execution-environment boundaries are
+  looked through to the enclosing network boundary. Second, it pulls from an external asset through
+  an outgoing readonly link. Read-only queries from users are not corpus writes, so they do not
+  count. Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  approved-source ingest, per-chunk provenance, validation, and trust-level separation are
+  confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - ingests_outside: "brings_in_from_outside({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-rag-ingest-pipeline}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+            - true: "{ingests_outside}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>RAG Corpus Poisoning</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when content comes in from outside: an outside caller (see is_outside_caller) writes
+    # into this asset (an incoming link that is not readonly), or this asset pulls (an outgoing
+    # readonly link) from an external asset. Read-only queries from users are not corpus writes.
+    brings_in_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - own_boundary: "network_boundary({tech_asset.id})"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - outside: "is_outside_caller({link.source_id}, {own_boundary})"
+              - if:
+                  and:
+                    - false: "{link.readonly}"
+                    - true: "{outside}"
+                  then:
+                    - return: true
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - external_source: "is_external({link.target_id})"
+              - if:
+                  and:
+                    - true: "{link.readonly}"
+                    - true: "{external_source}"
+                  then:
+                    - return: true
+        - return: false
+
+    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
+    # Network boundary of an asset, following the network-only semantics of Threagile's own
+    # built-in rules: its directly containing trust boundary, or, when that is an
+    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
+    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
+    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
+    network_boundary:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - return: "{boundary}"
+
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    is_frontend_asset:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when a caller brings outside requests or content in: it is external, or it is a
+    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
+    # boundary from the given one.
+    is_outside_caller:
+      parameters:
+        - caller_id
+        - own_boundary
+      do:
+        - assign:
+            - external: "is_external({caller_id})"
+        - if:
+            true: "{external}"
+            then:
+              - return: true
+        - assign:
+            - frontend: "is_frontend_asset({caller_id})"
+            - caller_boundary: "network_boundary({caller_id})"
+        - if:
+            and:
+              - true: "{frontend}"
+              - not-equal:
+                  first: "{caller_boundary}"
+                  second: "{own_boundary}"
+            then:
+              - return: true
+        - return: false
+
+    # Likelihood: likely baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(likely, {tech_asset})"
+
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

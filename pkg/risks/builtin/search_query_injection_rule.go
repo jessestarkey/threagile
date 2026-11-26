@@ -24,19 +24,15 @@ func (*SearchQueryInjectionRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html",
 		Action: "Build search queries with the client library's structured query API and escaped user terms, never by " +
 			"concatenating caller input into query strings, and never forward caller parameters to the engine unfiltered.",
-		Mitigation: "Construct queries with the search client's typed query builders (Elasticsearch or OpenSearch Query DSL " +
-			"objects, SolrJ parameter APIs) and pass user input only as term or match values, not as raw query_string or " +
-			"Lucene syntax; where users must write query syntax, use simple_query_string with restricted flags. Escape " +
-			"Lucene and Solr special characters in user terms. Never pass caller-controlled request parameters through to " +
-			"the engine: Solr local parameters, qt, shards, stream.url, and the Velocity response writer, and " +
-			"Elasticsearch scripted queries, have each enabled remote code execution or SSRF in real deployments (for " +
-			"example CVE-2017-12629, CVE-2019-17558). Enforce document-level security in the query itself or the engine's " +
-			"security plugin so a modified query cannot return records outside the caller's authorization. Keep the engine " +
-			"off the public network, require authentication on its API, disable dynamic scripting where unused, and keep " +
-			"it patched. References: CWE-943, CWE-74; MITRE ATT&CK T1190; OWASP Top 10:2025 A05 (Injection).",
+		Mitigation: "Construct queries with the client's typed query builders (Elasticsearch or OpenSearch Query DSL, or SolrJ), and pass user input only as term or match values, never as raw query_string or Lucene syntax. Where users must write query syntax, use simple_query_string with restricted flags.\n" +
+			"Escape Lucene and Solr special characters in user terms.\n" +
+			"Never pass caller-controlled parameters through to the engine, since Solr local parameters, qt, shards, stream.url, and Elasticsearch scripted queries have each enabled remote code execution or SSRF (such as CVE-2017-12629).\n" +
+			"Enforce document-level security in the query or the engine's security plugin, so a modified query cannot return records outside the caller's authorization.\n" +
+			"Keep the engine off the public network, require authentication on its API, disable dynamic scripting where unused, and keep it patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope clients accessing search engine servers via typical search access protocols.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the search engine server itself and of the data assets processed.",
 		FalsePositives: "Server engine queries by search values not consisting of parts controllable by the caller can be considered " +
@@ -66,10 +62,7 @@ func (r *SearchQueryInjectionRule) GenerateRisks(input *types.Model) ([]*types.R
 				incomingFlow.Protocol != types.BINARY && incomingFlow.Protocol != types.BinaryEncrypted {
 				continue
 			}
-			likelihood := types.VeryLikely
-			if incomingFlow.Usage == types.DevOps {
-				likelihood = types.Likely
-			}
+			likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, devOpsStep(incomingFlow))
 			risks = append(risks, r.createRisk(input, technicalAsset, incomingFlow, likelihood))
 		}
 	}
@@ -80,18 +73,9 @@ func (r *SearchQueryInjectionRule) createRisk(input *types.Model, technicalAsset
 	caller := input.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>Search Query Injection</b> risk at <b>" + caller.Title + "</b> against search engine server <b>" + technicalAsset.Title + "</b>" +
 		" via <b>" + incomingFlow.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
-	// Impact text, search query injection lets an attacker "read more data ... and eventually
-	// further escalate towards a deeper system penetration" -- a disclosure consequence first,
-	// a tampering one as it escalates.
-	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	} else if input.HighestProcessedConfidentiality(technicalAsset) <= types.Internal && input.HighestProcessedIntegrity(technicalAsset) == types.Operational {
-		impact = types.LowImpact
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): injection both reads and alters data.
+	impact := readAndAlterImpact(input, types.MediumImpact, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

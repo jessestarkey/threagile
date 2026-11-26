@@ -23,6 +23,20 @@ func TestGreaterExpression_ParseBool_WithAs(t *testing.T) {
 	assert.NotNil(t, expr.as)
 }
 
+func TestGreaterExpression_EvalBool_WithoutAs_ComparesPlainly(t *testing.T) {
+	// Used to panic on the nil `as` expression; the other comparisons already treat it as optional.
+	scope := new(common.Scope)
+	_ = scope.Init(nil, nil)
+
+	expr := new(GreaterExpression)
+	_, _, err := expr.ParseBool(map[string]any{"first": 3, "second": 2})
+	assert.NoError(t, err)
+
+	result, _, err := expr.EvalBool(scope)
+	assert.NoError(t, err)
+	assert.True(t, result.BoolValue())
+}
+
 func TestGreaterExpression_EvalBool_FirstGreater_ReturnsTrue(t *testing.T) {
 	scope := new(common.Scope)
 	_ = scope.Init(nil, nil)

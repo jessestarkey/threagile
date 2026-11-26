@@ -130,6 +130,31 @@ func TestLoopStatement_RunStopsWhenBodySetsHasReturned(t *testing.T) {
 	assert.Equal(t, "a", retVal.PlainValue())
 }
 
+func TestLoopStatement_RunOverMissingValueIsNoop(t *testing.T) {
+	scope := new(common.Scope)
+	initErr := scope.Init(nil, nil)
+	assert.NoError(t, initErr)
+
+	scope.Set("item", common.SomeValue(map[string]any{"id": "asset"}, nil))
+
+	stmt := new(LoopStatement)
+	_, _, err := stmt.Parse(map[string]any{
+		"in":   "{item.communication_links}",
+		"item": "elem",
+		"do": map[string]any{
+			"assign": map[string]any{"last": "{elem}"},
+		},
+	})
+	assert.NoError(t, err)
+
+	errLiteral, runErr := stmt.Run(scope)
+	assert.NoError(t, runErr)
+	assert.Empty(t, errLiteral)
+
+	_, ok := scope.Get("last")
+	assert.False(t, ok)
+}
+
 func TestLoopStatement_RunWhenHasReturnedIsNoop(t *testing.T) {
 	scope := new(common.Scope)
 	initErr := scope.Init(nil, nil)

@@ -1,0 +1,153 @@
+id: ai-supply-chain-compromise
+title: "AI Supply Chain Compromise"
+function: architecture
+stride: tampering
+finding_class: control-not-evidenced
+cwe: 1357
+description: >
+  This asset loads third-party AI components it did not build, such as model weights, adapters, and
+  tokenizers, agent frameworks, or tool server packages. Any of them can be malicious, swapped, or
+  silently updated (such as model files that run code on load), and they run with this asset's
+  privileges.
+impact: >
+  If this risk remains unmitigated, one compromised component gives an attacker code execution on
+  every host that loads it, or a model whose behavior the attacker controls, across every system
+  built on the same component.
+asvs: "V15 - Secure Coding and Architecture"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
+action: 'Admit AI components only from approved sources, pin and verify each one by hash or signature, and scan them before they are loaded.'
+mitigation: >-
+  Pull models, adapters, frameworks, and tool packages only from an internal, access-controlled
+  registry or mirror, never from a public hub at load time.
+
+  Pin every component to an exact version, and verify its hash or signature on every load.
+
+  Prefer non-executable model formats (such as safetensors), and scan artifacts for embedded code
+  and unsafe deserialization before admission.
+
+  Maintain an AI bill of materials for each deployment, and watch for namespace takeovers and
+  suspicious new versions of its components.
+
+  Load third-party components with the least privilege that the task needs.
+references: >-
+  OWASP LLM Top 10 2026 LLM04 (Supply Chain); OWASP Top 10 for Agentic Applications 2026 ASI04
+  (Agentic Supply Chain); OWASP Agentic Skills Top 10 2026 AST02 (Supply Chain Compromise); MITRE
+  ATLAS AML.T0010 (AI Supply Chain Compromise) and AML.T0011.000 (Unsafe AI Artifacts); MAESTRO
+  layers 3 and 4; CWE-1357; CWE-494; CWE-829; NIST SP 800-53 SR-3, SR-4, SA-9, and SI-7; Mappings
+  from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Are models, frameworks, and tool packages admitted only from an approved internal registry, pinned and verified by hash or signature on every load, scanned before admission, and tracked in an AI bill of materials?'
+detection_logic: >
+  Inventory every third-party model, adapter, framework, and tool package that each deployment
+  loads, and where it is fetched from at runtime. Then, check for floating tags, unpinned
+  dependencies, and executable model formats. Finally, review the admission scanning results and the
+  AI bill of materials.
+risk_assessment: >
+  Critical when components are pulled from a public hub or package index at load time without
+  pinning or verification. However, the finding is High when they are pulled through an internal
+  registry without scanning.
+false_positives: >
+  This rule fires on every in-scope ai-model-registry, ai-model-serving, ai-agent-orchestrator, and
+  ai-tool-server asset, because each one loads third-party AI components. However, likelihood steps
+  up one level when the asset pulls, through an outgoing readonly link, from an external asset,
+  namely an external entity, or an internet-facing or out-of-scope asset, such as a public model hub
+  or package index. Callers of the asset do not count. Dispose of a confirmed-compliant asset
+  through risk_tracking, logging it as mitigated once approved-source admission, pinning with
+  verification, scanning, and an AI bill of materials are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-model-registry}"
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+                  - true: "{.attributes.ai-tool-server}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>AI Supply Chain Compromise</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when this asset pulls (an outgoing readonly link) from an external asset, such as a
+    # public model hub or package index. Callers of the asset are not supply-chain content.
+    brings_in_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - external_source: "is_external({link.target_id})"
+              - if:
+                  and:
+                    - true: "{link.readonly}"
+                    - true: "{external_source}"
+                  then:
+                    - return: true
+        - return: false
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps, one level higher when it pulls from outside the boundary.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - step: 0
+            - outside: "brings_in_from_outside({tech_asset})"
+        - if:
+            true: "{outside}"
+            then:
+              - assign:
+                  step: 1
+        - return: "adjust_likelihood(possible, {tech_asset}, {step})"
+
+    # Impact: high baseline plus the CIA step on I (STRIDE tampering).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(high, {tech_asset.integrity})"

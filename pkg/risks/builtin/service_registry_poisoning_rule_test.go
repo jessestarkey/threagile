@@ -97,7 +97,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.LowImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"strictly confidential medium impact": {
 			confidentiality:                              types.StrictlyConfidential,
@@ -112,7 +112,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical integrity medium impact": {
 			confidentiality:                              types.Confidential,
@@ -127,7 +127,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical availability medium impact": {
 			confidentiality:                              types.Confidential,
@@ -142,7 +142,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"strictly confidential caller medium impact": {
 			confidentiality:                              types.Confidential,
@@ -157,7 +157,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical caller integration medium impact": {
 			confidentiality:                              types.Confidential,
@@ -172,7 +172,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical caller availability medium impact": {
 			confidentiality:                              types.Confidential,
@@ -187,7 +187,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"strictly confidential communication link data sent medium impact": {
 			confidentiality:                              types.Confidential,
@@ -202,7 +202,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical communication link data sent availability medium impact": {
 			confidentiality:                              types.Confidential,
@@ -217,7 +217,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical communication link data sent integrity medium impact": {
 			confidentiality:                              types.Confidential,
@@ -232,7 +232,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"strictly confidential communication link data received medium impact": {
 			confidentiality:                              types.Confidential,
@@ -247,7 +247,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.StrictlyConfidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical communication link data received integrity medium impact": {
 			confidentiality:                              types.Confidential,
@@ -262,7 +262,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.MissionCritical,
 			communicationLinkDataReceivedAvailability:    types.Critical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 		"mission critical communication link data received availability medium impact": {
 			confidentiality:                              types.Confidential,
@@ -277,7 +277,7 @@ func TestServiceRegistryPoisoningRuleGenerateRisksRiskCreated(t *testing.T) {
 			communicationLinkDataReceivedConfidentiality: types.Confidential,
 			communicationLinkDataReceivedIntegrity:       types.Critical,
 			communicationLinkDataReceivedAvailability:    types.MissionCritical,
-			expectedImpact:                               types.MediumImpact,
+			expectedImpact:                               types.HighImpact,
 		},
 	}
 

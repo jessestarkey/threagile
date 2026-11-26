@@ -2,46 +2,48 @@ id: vulnerable-outdated-dependency
 title: "Vulnerable and Outdated Third-Party Dependency"
 function: architecture
 stride: tampering
-cwe: 1104
+finding_class: control-not-evidenced
+cwe: 1395
 description: >
-  This asset's own custom-developed code pulls in third-party libraries/packages whose versions
-  are not continuously checked against known-vulnerability databases, distinct from container
-  base-image scanning (which covers the OS/runtime layer, not this asset's own application-level
-  dependency graph) and from End-of-Life component tracking (which covers products that have
-  stopped receiving patches entirely, not an actively-maintained library with an unpatched known
-  CVE).
+  This asset's custom code pulls in third-party libraries, and unless their versions are checked
+  continuously against vulnerability databases, a known-vulnerable one can ship. Container
+  base-image scanning and End-of-Life tracking cover other layers, not this dependency graph.
 impact: >
-  If this risk remains unmitigated, a publicly disclosed vulnerability in a dependency this asset
-  uses remains exploitable in production for as long as it goes undetected, even though a fix may
-  already be available upstream.
+  If this risk remains unmitigated, a disclosed vulnerability in a dependency stays exploitable in
+  production for as long as it goes undetected, even when a fix is already available upstream.
 asvs: "V14 - Configuration"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html"
-action: "Integrate automated Software Composition Analysis (SCA) into the CI/CD pipeline, scanning this asset's full application-level dependency graph against a current known-vulnerability database on every build."
-mitigation: >
-  Integrate an SCA tool (e.g., Dependabot, Snyk, OWASP Dependency-Check, OSV-Scanner) into the
-  CI/CD pipeline, scanning the complete dependency graph -- including transitive dependencies,
-  not just direct ones -- on every build and on a recurring schedule for newly disclosed CVEs
-  against already-deployed versions. Fail the build on Critical/High severity findings above the
-  org's accepted threshold. Maintain a documented remediation SLA tied to severity. Subscribe to
-  security advisories for the ecosystem's package registry (npm, PyPI, Maven Central, NuGet) used
-  by this asset. References: CWE-1104 (Use of Unmaintained Third Party Components); OWASP Top
-  10:2025 A03 (Software Supply Chain Failures); NIST SP 800-53 RA-5 (Vulnerability Monitoring
-  and Scanning); MITRE ATT&CK T1190 (Exploit Public-Facing Application).
-check: "Is an SCA tool integrated into the CI/CD pipeline, scanning this asset's full transitive dependency graph against a current known-vulnerability database on every build and on a recurring schedule?"
+action: 'Integrate automated Software Composition Analysis (SCA) into the CI/CD pipeline, scanning this asset''s full application-level dependency graph against a current known-vulnerability database on every build.'
+mitigation: >-
+  Integrate an SCA tool (for example, Dependabot, Snyk, OWASP Dependency-Check, or OSV-Scanner) into
+  the CI/CD pipeline. Specifically, scan the complete dependency graph, including transitive
+  dependencies and not only direct ones, on every build, and on a recurring schedule for newly
+  disclosed CVEs against the versions already deployed.
+
+  Fail the build on Critical or High findings above the organization's accepted threshold, and
+  maintain a documented remediation SLA tied to severity.
+
+  Subscribe to the security advisories for the package registry ecosystem (npm, PyPI, Maven Central,
+  or NuGet) that this asset uses.
+references: >-
+  CWE-1104 (Use of Unmaintained Third Party Components); OWASP Top 10:2025 A03 (Software Supply
+  Chain Failures); NIST SP 800-53 RA-5 (Vulnerability Monitoring and Scanning); MITRE ATT&CK T1190
+  (Exploit Public-Facing Application)
+check: 'Is an SCA tool integrated into the CI/CD pipeline, scanning this asset''s full transitive dependency graph against a current known-vulnerability database on every build and on a recurring schedule?'
 detection_logic: >
-  Confirm an SCA tool runs in the CI/CD pipeline for this asset's build and that its scan report
-  covers the full transitive dependency tree, not direct dependencies alone. Cross-reference the
-  dependency manifest/lockfile against a recent SCA scan timestamp to flag drift between what is
-  actually deployed and what was last scanned.
+  Confirm that an SCA tool runs in the CI/CD pipeline for this asset's build, and that its scan
+  report covers the full transitive dependency tree, not only the direct dependencies. Then,
+  cross-reference the dependency manifest or lockfile against a recent SCA scan timestamp, to flag
+  drift between what is actually deployed and what was last scanned.
 risk_assessment: >
   High for any custom-developed asset with no SCA tooling integrated into its build pipeline.
-  Escalates to Critical if a dependency with a known, actively-exploited CVE is confirmed present
-  in a production deployment.
+  However, the finding rises to Critical if a dependency with a known, actively exploited CVE is
+  confirmed present in a production deployment.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope asset with
-  custom-developed parts, by design). Dispose of a confirmed-compliant asset through
-  risk_tracking instead: log it as mitigated once an SCA tool is confirmed integrated into this
-  asset's CI/CD pipeline with a documented remediation SLA.
+  This rule fires on every in-scope asset with custom-developed parts by design, so no tag
+  suppresses it. Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it
+  as mitigated once an SCA tool is confirmed to be integrated into this asset's CI/CD pipeline, with
+  a documented remediation SLA.
 
 risk:
   id:
@@ -59,6 +61,15 @@ risk:
           and:
             - false: "{tech_asset.out_of_scope}"
             - true: "{tech_asset.custom_developed_parts}"
+            # in-house assets only: external-entity is the zero value of type and drops out, so
+            # test for process or datastore
+            - or:
+                - equal:
+                    first: "{tech_asset.type}"
+                    second: process
+                - equal:
+                    first: "{tech_asset.type}"
+                    second: datastore
           then:
             return: true
 
@@ -74,50 +85,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
-    # reachable.
+    # Likelihood: likely baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: likely
-            else:
-              - return: very-likely
+        - return: "adjust_likelihood(likely, {tech_asset})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "very-high" (the ceiling), so only the
-    # downward (Integrity low) delta is reachable.
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - integrity_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  integrity_low: false
-        - if:
-            true: "{integrity_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

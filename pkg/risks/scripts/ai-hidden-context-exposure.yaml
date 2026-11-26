@@ -1,0 +1,245 @@
+id: ai-hidden-context-exposure
+title: "Hidden Context Exposure"
+function: architecture
+stride: information-disclosure
+finding_class: weakness-shown
+cwe: 200
+description: >
+  An LLM endpoint, RAG pipeline, or agent answers requests from outside its trust boundary, and its
+  context carries material the requester should not see, such as the system prompt, instructions,
+  and tool schemas. Crafted queries can make the model reveal it, so hidden context is never a
+  reliable secret.
+impact: >
+  If this risk remains unmitigated, an adversary recovers the blueprint for bypassing the guardrails
+  and the internal tools to target directly, along with any business logic or credential placed in
+  the hidden context.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Treat all hidden context as eventually disclosable. Specifically, keep secrets and access-control decisions out of it, and filter responses for hidden-context echoes before they leave the boundary.'
+mitigation: >-
+  Never place secrets, credentials, or access-control logic in system prompts, developer
+  instructions, retrieved configuration, or tool descriptions.
+
+  Instead, assume that anything in the model's context can be disclosed, and enforce authorization
+  outside the model.
+
+  Expose only the tool schemas that a given user's session needs, and use provider features that
+  separate system instructions from user turns at the API level, rather than string concatenation.
+
+  Filter responses for verbatim or near-verbatim hidden-context content before they cross the
+  boundary.
+
+  Red-team the endpoint with prompt-extraction techniques on a schedule, and treat a successful
+  extraction as a design finding.
+references: >-
+  OWASP LLM Top 10 2026 LLM08 (Hidden Context Exposure, formerly LLM07:2025 System Prompt
+  Leakage); MITRE ATLAS AML.T0056 (Extract LLM System Prompt) and AML.T0051.000; MAESTRO layers 1
+  and 6; CWE-200; CWE-312; CWE-215; NIST SP 800-53 AC-3 and SC-28; Mappings from the OWASP GenAI
+  Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is all hidden context (the system prompt, developer instructions, retrieved configuration, and tool schemas) free of secrets and access-control logic, with authorization enforced outside the model and responses filtered for hidden-context echoes?'
+detection_logic: >
+  Inventory what the model's hidden context contains for each session type. Then, from outside the
+  boundary, run a versioned suite of prompt-extraction techniques against the endpoint, and alert on
+  responses that overlap significantly with the hidden context.
+risk_assessment: >
+  Critical if the hidden context embeds a credential or an access-control decision, and High when it
+  contains business logic, internal tool definitions, or guardrail rules. Otherwise, the finding is
+  Medium.
+false_positives: >
+  This rule fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that is
+  internet-facing, or that has an incoming link from an outside caller. An outside caller is an
+  external entity, an internet-facing or out-of-scope asset, or a frontend (a web application,
+  reverse proxy, WAF, load balancer, or client) in a different network boundary. As in Threagile's
+  own rules, execution-environment boundaries are looked through to the enclosing network boundary.
+  Thus, an asset that only internal services reach does not fire. Dispose of a confirmed-compliant
+  asset through risk_tracking, logging it as mitigated once the hidden context is confirmed free of
+  secrets and access-control logic, and an output filter for hidden-context echoes is active.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - exposed: "receives_from_outside({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+            - true: "{exposed}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Hidden Context Exposure</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when the asset is internet-facing, or an incoming link comes from an outside caller
+    # (see is_outside_caller).
+    receives_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            true: "{tech_asset.internet}"
+            then:
+              - return: true
+        - assign:
+            - own_boundary: "network_boundary({tech_asset.id})"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - outside: "is_outside_caller({link.source_id}, {own_boundary})"
+              - if:
+                  true: "{outside}"
+                  then:
+                    - return: true
+        - return: false
+
+    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
+    # Network boundary of an asset, following the network-only semantics of Threagile's own
+    # built-in rules: its directly containing trust boundary, or, when that is an
+    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
+    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
+    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
+    network_boundary:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - return: "{boundary}"
+
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    is_frontend_asset:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when a caller brings outside requests or content in: it is external, or it is a
+    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
+    # boundary from the given one.
+    is_outside_caller:
+      parameters:
+        - caller_id
+        - own_boundary
+      do:
+        - assign:
+            - external: "is_external({caller_id})"
+        - if:
+            true: "{external}"
+            then:
+              - return: true
+        - assign:
+            - frontend: "is_frontend_asset({caller_id})"
+            - caller_boundary: "network_boundary({caller_id})"
+        - if:
+            and:
+              - true: "{frontend}"
+              - not-equal:
+                  first: "{caller_boundary}"
+                  second: "{own_boundary}"
+            then:
+              - return: true
+        - return: false
+
+    # Likelihood: very-likely baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(very-likely, {tech_asset})"
+
+    # Impact: low baseline plus the CIA step on C (STRIDE information-disclosure).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(low, {tech_asset.confidentiality})"

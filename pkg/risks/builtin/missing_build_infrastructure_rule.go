@@ -24,18 +24,13 @@ func (*MissingBuildInfrastructureRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Add the developer endpoints, source repository, build pipeline, and artifact registry that produce this " +
 			"system's custom code to the threat model, with their data flows to the deployment targets.",
-		Mitigation: "Model the full software delivery path for every custom-developed component: developer workstations " +
-			"(devops-client), the source code repository, the CI/CD pipeline and its runners, the artifact or container " +
-			"registry, and the communication links from each to the deployment targets, with their real trust boundaries " +
-			"and CIA ratings. Once these assets exist in the model, the supply-chain rules (code backdooring, unchecked " +
-			"deployment, accidental secret leak, push instead of pull deployment, container base image backdooring) can " +
-			"evaluate them; without them, the most direct path to compromising production is invisible to the analysis. If " +
-			"the build platform is owned by a shared enterprise team, model it as out-of-scope assets so its data flows " +
-			"into this system still appear, and cite that platform's own authorization package. References: NIST SP " +
-			"800-218 (SSDF) PO.3, PO.5; NIST SP 800-53 SA-15, SR-3; MITRE ATT&CK T1195.002.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.Tampering,
+		Mitigation: "Model the delivery path for every custom component, namely developer workstations, the source repository, the CI/CD pipeline and its runners, the artifact registry, and their links to the deployment targets, with real trust boundaries and CIA ratings.\n" +
+			"With these assets in the model, the supply-chain rules (such as code backdooring and unchecked deployment) can evaluate them. Without them, the most direct path to compromising production is invisible to the analysis.\n" +
+			"If a shared enterprise team owns the build platform, model it as out of scope so its data flows still appear, and cite that platform's authorization package.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Models with in-scope custom-developed parts missing in-scope development (code creation) and build infrastructure " +
 			"components (devops-client, sourcecode-repo, build-pipeline, etc.).",
 		RiskAssessment: "The risk rating depends on the highest sensitivity of the in-scope assets running custom-developed parts.",
@@ -51,37 +46,21 @@ func (*MissingBuildInfrastructureRule) SupportedTags() []string {
 }
 
 func (r *MissingBuildInfrastructureRule) GenerateRisks(input *types.Model) ([]*types.Risk, error) {
-	risks := make([]*types.Risk, 0)
 	hasCustomDevelopedParts, hasBuildPipeline, hasSourcecodeRepo, hasDevOpsClient := false, false, false, false
-	impact := types.LowImpact
-	var mostRelevantAsset *types.TechnicalAsset
-	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
-		technicalAsset := input.TechnicalAssets[id]
-
+	for _, technicalAsset := range input.TechnicalAssets {
 		getTechFlags(technicalAsset, &hasBuildPipeline, &hasSourcecodeRepo, &hasDevOpsClient)
-
-		if r.skipAsset(technicalAsset) {
-			continue
-		}
-
-		hasCustomDevelopedParts = true
-		if impact == types.LowImpact {
-			mostRelevantAsset = technicalAsset
-			evaluateImpactFromHighestCIAValues(input, technicalAsset, &impact)
-		}
-
-		evaluateImpactFromTechnicalAssetCIAValues(technicalAsset, &impact)
-
-		// just for referencing the most interesting asset
-		if technicalAsset.HighestSensitivityScore() > mostRelevantAsset.HighestSensitivityScore() {
-			mostRelevantAsset = technicalAsset
+		if !r.skipAsset(technicalAsset) {
+			hasCustomDevelopedParts = true
 		}
 	}
 	hasBuildInfrastructure := hasBuildPipeline && hasSourcecodeRepo && hasDevOpsClient
-	if hasCustomDevelopedParts && !hasBuildInfrastructure {
-		risks = append(risks, r.createRisk(mostRelevantAsset, impact))
+	if !hasCustomDevelopedParts || hasBuildInfrastructure {
+		return []*types.Risk{}, nil
 	}
-	return risks, nil
+	// A gap in the whole model, so the finding belongs to the system and stays flat at Low, exempt
+	// from the CIA step (docs/risk-methodology.md).
+	return []*types.Risk{wholeModelRisk(r.Category().ID, "<b>Missing Build Infrastructure</b> in the threat model",
+		types.LowImpact)}, nil
 }
 
 func (r *MissingBuildInfrastructureRule) skipAsset(technicalAsset *types.TechnicalAsset) bool {
@@ -89,22 +68,6 @@ func (r *MissingBuildInfrastructureRule) skipAsset(technicalAsset *types.Technic
 		return true
 	}
 	return false
-}
-
-func evaluateImpactFromHighestCIAValues(input *types.Model, technicalAsset *types.TechnicalAsset, impact *types.RiskExploitationImpact) {
-	if input.HighestProcessedConfidentiality(technicalAsset) >= types.Confidential ||
-		input.HighestProcessedIntegrity(technicalAsset) >= types.Critical ||
-		input.HighestProcessedAvailability(technicalAsset) >= types.Critical {
-		*impact = types.MediumImpact
-	}
-}
-
-func evaluateImpactFromTechnicalAssetCIAValues(technicalAsset *types.TechnicalAsset, impact *types.RiskExploitationImpact) {
-	if technicalAsset.Confidentiality >= types.Confidential ||
-		technicalAsset.Integrity >= types.Critical ||
-		technicalAsset.Availability >= types.Critical {
-		*impact = types.MediumImpact
-	}
 }
 
 func getTechFlags(technicalAsset *types.TechnicalAsset, hasBuildPipeline, hasSourcecodeRepo, hasDevOpsClient *bool) {
@@ -117,21 +80,4 @@ func getTechFlags(technicalAsset *types.TechnicalAsset, hasBuildPipeline, hasSou
 	if technicalAsset.Technologies.GetAttribute(types.DevOpsClient) {
 		*hasDevOpsClient = true
 	}
-}
-
-func (r *MissingBuildInfrastructureRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
-	title := "<b>Missing Build Infrastructure</b> in the threat model (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
-	risk := &types.Risk{
-		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(likelihood, impact),
-		ExploitationLikelihood:       likelihood,
-		ExploitationImpact:           impact,
-		Title:                        title,
-		MostRelevantTechnicalAssetId: technicalAsset.Id,
-		DataBreachProbability:        types.Improbable,
-		DataBreachTechnicalAssetIDs:  []string{},
-	}
-	risk.SyntheticId = risk.CategoryId + "@" + technicalAsset.Id
-	return risk
 }

@@ -2,37 +2,50 @@ id: multi-tenant-data-isolation
 title: Multi-Tenant Data Isolation Failure
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 668
 description: >
-  The asset serves multiple organizational tenants from a shared deployment without sufficient
-  isolation in database queries, caching, or background job processing.
+  The asset's own code serves multiple organizational tenants from a shared deployment, without
+  sufficient isolation in its database queries, caching, or background job processing.
 impact: >
-  If this risk remains unmitigated, an authorization failure that would expose one user's data
-  in a single-tenant system instead exposes an entire tenant's data to another tenant's users.
+  If this risk remains unmitigated, an authorization failure that would expose one user's data in a
+  single-tenant system instead exposes an entire tenant's data to another tenant's users.
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html"
-action: "Enforce tenant context in every database query and cache key, and test cross-tenant isolation on every data-access endpoint."
-mitigation: >
-  Enforce tenant ID as a mandatory filter in every database query at the ORM or repository layer.
-  Implement row-level security at the database layer as a defense-in-depth backstop. Include
-  tenant context in all cache keys. Validate tenant context in background job processors when
-  jobs are dequeued, not only when enqueued. Use opaque, non-sequential tenant identifiers.
-  References: NIST SP 800-53 AC-3 (Access Enforcement); NIST SP 800-53 AC-4 (Information Flow
-  Enforcement); DoD Cloud Multi-Tenant Security Requirements.
-check: "Is tenant ID enforced as a mandatory filter in every database query, cache key, and background job at dequeue time?"
+action: 'Enforce the tenant context in every database query and cache key, and test cross-tenant isolation on every data-access endpoint.'
+mitigation: >-
+  Enforce the tenant ID as a mandatory filter in every database query, at the ORM or repository
+  layer.
+
+  Implement row-level security at the database layer as a defense-in-depth backstop, and include the
+  tenant context in every cache key.
+
+  Validate the tenant context in background job processors when jobs are dequeued, not only when
+  they are enqueued.
+
+  Use opaque, non-sequential tenant identifiers.
+references: >-
+  NIST SP 800-53 AC-3 (Access Enforcement) and AC-4 (Information Flow Enforcement); DoD Cloud
+  Multi-Tenant Security Requirements
+check: 'Is the tenant ID enforced as a mandatory filter in every database query, every cache key, and every background job at dequeue time?'
 detection_logic: >
-  Execute cross-tenant access tests in the automated test suite: obtain authenticated tokens for
-  two distinct tenants and verify that tenant A's token cannot access any resources owned by
-  tenant B. Verify tenant ID inclusion in generated database query logs. Test cache isolation.
+  Run cross-tenant access tests in the automated test suite. Specifically, obtain authenticated
+  tokens for two distinct tenants, and verify that tenant A's token cannot access any resource that
+  tenant B owns. Additionally, verify that the tenant ID appears in the generated database query
+  logs. Finally, test the cache isolation.
 risk_assessment: >
-  Critical for multi-tenant systems handling CUI. Severity of individual isolation failures is
-  at least one level higher than equivalent single-tenant findings.
+  Critical for multi-tenant systems that handle CUI. Furthermore, the severity of an individual
+  isolation failure is at least one level higher than that of an equivalent single-tenant finding.
 false_positives: >
-  Each tenant's data is stored in a completely isolated database schema or database instance
-  with no shared tables -- physical isolation rather than logical isolation with tenant ID
-  filtering. Dispose of a confirmed-compliant asset through risk_tracking instead of a tag: log
-  it as mitigated once physical or verified logical tenant isolation is confirmed across
-  database queries, caching, and background job processing.
+  This rule fires only on an asset that is both multi_tenant and custom_developed_parts, since
+  tenant isolation in queries, caching, and jobs is code that the application team writes. A
+  managed service that the provider shares among its customers is not multi_tenant in this sense.
+  Additionally, the finding does not apply when each tenant's data is stored in a completely
+  isolated database schema or database instance, with no shared tables, which is physical
+  isolation rather than logical isolation through tenant ID filtering. In that case, dispose of
+  the asset's finding through risk_tracking rather than a tag, logging it as mitigated once
+  physical, or verified logical, tenant isolation is confirmed across database queries, caching,
+  and background job processing.
 
 risk:
   id:
@@ -46,6 +59,7 @@ risk:
           and:
             - false: "{tech_asset.out_of_scope}"
             - true: "{tech_asset.multi_tenant}"
+            - true: "{tech_asset.custom_developed_parts}"
           then:
             return: true
 
@@ -61,53 +75,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-        - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
-    # ceiling), so only the downward case (low confidentiality rank) is reachable. Impact is
-    # purely a function of this asset's own Confidentiality rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: high baseline plus the CIA step on C (STRIDE information-disclosure).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - confidentiality_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: restricted
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - assign:
-                  confidentiality_low: false
-        - if:
-            true: "{confidentiality_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(high, {tech_asset.confidentiality})"

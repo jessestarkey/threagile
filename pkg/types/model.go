@@ -24,9 +24,9 @@ type Model struct {
 	Contributors                                  []*Author                     `yaml:"contributors,omitempty" json:"contributors,omitempty"`
 	Date                                          Date                          `json:"date,omitempty" yaml:"date,omitempty"`
 	AppDescription                                *Overview                     `yaml:"application_description,omitempty" json:"application_description,omitempty"`
-	BusinessOverview                              *Overview                     `json:"business_overview,omitempty" yaml:"business_overview,omitempty"`
+	ThreatLandscape                               *Overview                     `json:"threat_landscape,omitempty" yaml:"threat_landscape,omitempty"`
 	TechnicalOverview                             *Overview                     `json:"technical_overview,omitempty" yaml:"technical_overview,omitempty"`
-	BusinessCriticality                           Criticality                   `json:"business_criticality,omitempty" yaml:"business_criticality,omitempty"`
+	MissionCriticality                            MissionCriticality            `json:"mission_criticality,omitempty" yaml:"mission_criticality,omitempty"`
 	ManagementSummaryComment                      string                        `json:"management_summary_comment,omitempty" yaml:"management_summary_comment,omitempty"`
 	SecurityRequirements                          map[string]string             `json:"security_requirements,omitempty" yaml:"security_requirements,omitempty"`
 	Questions                                     map[string]string             `json:"questions,omitempty" yaml:"questions,omitempty"`
@@ -228,15 +228,10 @@ func (model *Model) CheckNestedTrustBoundariesExisting() error {
 	return nil
 }
 
-// Thresholds recalibrated for Weight()'s Fibonacci spacing (1,2,3,5 on
-// each axis, max product 25, not the linear scheme's max 16). Chosen to
-// preserve the same shape the original linear thresholds had rather than
-// an arbitrary rescale: Low and Critical each stay a single-cell minority
-// (product 1, and product 25 respectively -- VeryLikely x VeryHighImpact,
-// the one cell at both axes' true maximum), with Medium/Elevated/High
-// banding the 8 distinct product values in between in the same relative
-// order. Verified against the real 16-cell grid before landing: 1->Low,
-// {2,3}->Medium, {4,5,6}->Elevated, {9,10,15}->High, 25->Critical.
+// Thresholds for Weight()'s Fibonacci spacing (1, 2, 3, 5 on each axis, so a product of up to 25):
+// 1 Low, 2-3 Medium, 4-6 Elevated, 9-15 High, and 25 Critical. Low and Critical each hold a single
+// cell, and Critical only where both axes are at their maximum (see docs/risk-methodology.md,
+// "Severity").
 func CalculateSeverity(likelihood RiskExploitationLikelihood, impact RiskExploitationImpact) RiskSeverity {
 	result := likelihood.Weight() * impact.Weight()
 	if result <= 1 {

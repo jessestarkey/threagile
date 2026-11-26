@@ -1,0 +1,92 @@
+id: ai-security-tooling-compromise
+title: "AI-Powered Security Tooling Compromise"
+function: architecture
+stride: elevation-of-privilege
+finding_class: control-not-evidenced
+cwe: 269
+description: >
+  AI-powered defensive tools that make trust decisions and trigger automated responses are
+  themselves adversarial targets. Furthermore, their compromise has outsized consequences.
+impact: >
+  If this risk remains unmitigated, a compromised security AI can suppress alerts for the attacker's
+  own activity, generate false incidents to overwhelm analysts, or pivot to other systems from a
+  trusted context.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
+action: 'Apply the same adversarial threat modeling to AI security tools as to the systems they protect.'
+mitigation: >-
+  Maintain an independent, non-AI detection layer as a backstop that the AI security tool cannot
+  disable.
+
+  Treat the training and operational data fed to a security AI as a high-value, integrity-protected
+  asset.
+
+  Run adversarial robustness testing on security AI models before deployment and after significant
+  retraining.
+
+  Limit a security AI agent's permissions to advisory actions, meaning alert generation rather than
+  automated response, unless human-in-the-loop approval is enforced for every response action.
+references: >-
+  MAESTRO L6 (Security and Compliance, the vertical layer), covering Security Agent Data
+  Poisoning, Evasion of Security AI Agents, and Compromised Security AI Agents; OWASP Top 10 for
+  Agentic Applications 2026 ASI10 (Rogue Agents); OWASP LLM Top 10 2026 LLM01 (Prompt Injection)
+  as they apply to security AI, since no OWASP GenAI entry is specific to it; NIST SP 800-53 SI-3
+  and SI-7
+check: 'Does an independent, non-AI detection layer exist that the security AI tool cannot disable, and is the agent''s permission scope limited to advisory actions unless human-in-the-loop approval is enforced?'
+detection_logic: >
+  Run a parallel, rule-based detection layer that operates independently of the AI security tool,
+  and alert when their outputs diverge significantly. Additionally, monitor the security AI's own
+  inference logs for anomalous input patterns. Finally, periodically run known-malicious test
+  scenarios (canary tests) against the security AI to verify its detection.
+risk_assessment: >
+  Critical for any organization where an AI security tool has automated response authority (to
+  block, quarantine, or disable). However, the finding is High for AI-assisted analysis tools with
+  an advisory-only scope.
+false_positives: >
+  This rule fires on every in-scope AI security agent asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once an independent, non-AI detection backstop, and an advisory-only (or human-in-the-loop-gated)
+  response scope, are confirmed in place.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-security-agent}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>AI-Powered Security Tooling Compromise</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Likelihood: unlikely baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(unlikely, {tech_asset})"
+
+    # Impact: high baseline plus the CIA step on max(C,I,A) (STRIDE elevation-of-privilege).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(high, {tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"

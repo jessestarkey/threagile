@@ -21,6 +21,7 @@ type RiskCategory struct {
 	RiskAssessment             string                    `yaml:"risk_assessment,omitempty" json:"risk_assessment,omitempty"`
 	FalsePositives             string                    `yaml:"false_positives,omitempty" json:"false_positives,omitempty"`
 	ModelFailurePossibleReason bool                      `yaml:"model_failure_possible_reason,omitempty" json:"model_failure_possible_reason,omitempty"`
+	FindingClass               string                    `yaml:"finding_class,omitempty" json:"finding_class,omitempty"`
 	CWE                        int                       `yaml:"cwe,omitempty" json:"cwe,omitempty"`
 	RisksIdentified            map[string]RiskIdentified `yaml:"risks_identified,omitempty" json:"risks_identified,omitempty"`
 }
@@ -92,6 +93,11 @@ func (what *RiskCategory) Merge(other RiskCategory) error {
 	what.FalsePositives, mergeError = new(Strings).MergeSingleton(what.FalsePositives, other.FalsePositives)
 	if mergeError != nil {
 		return fmt.Errorf("failed to merge false_positives: %w", mergeError)
+	}
+
+	what.FindingClass, mergeError = new(Strings).MergeSingleton(what.FindingClass, other.FindingClass)
+	if mergeError != nil {
+		return fmt.Errorf("failed to merge finding_class: %w", mergeError)
 	}
 
 	if !what.ModelFailurePossibleReason {

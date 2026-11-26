@@ -21,20 +21,16 @@ func (*CrossSiteRequestForgeryRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
 		Action: "Protect every state-changing request with the framework's synchronizer token or signed double-submit cookie, " +
 			"and set SameSite on all session cookies as defense in depth.",
-		Mitigation: "Enable the web framework's built-in CSRF protection (synchronizer token pattern, or the signed double-submit " +
-			"cookie pattern for stateless applications) and validate the token server-side on every state-changing request " +
-			"(POST, PUT, PATCH, DELETE). Never change state on GET or HEAD. Set SameSite=Lax or Strict, Secure, and " +
-			"HttpOnly on all session and authentication cookies as an additional layer, not the only control. For APIs " +
-			"called from browser JavaScript, authenticate with a bearer token in the Authorization header or require a " +
-			"custom request header rather than relying on ambient cookies, and restrict CORS to an explicit origin " +
-			"allowlist with no wildcard when credentials are allowed. Verify the Origin or Sec-Fetch-Site header on " +
-			"sensitive endpoints, and require re-authentication for high-impact actions such as changing credentials, " +
-			"roles, or transfer destinations. For third-party products, confirm the vendor's CSRF protection is enabled " +
-			"and keep the product patched. References: CWE-352; CAPEC-62 (Cross Site Request Forgery); OWASP Top 10:2025 " +
-			"A01 (Broken Access Control).",
+		Mitigation: "Enable the framework's built-in CSRF protection, and validate the token server-side on every POST, PUT, PATCH, and DELETE request.\n" +
+			"Never change state on GET or HEAD.\n" +
+			"Set SameSite=Lax or Strict, Secure, and HttpOnly on all session and authentication cookies as an additional layer, not the only control.\n" +
+			"For APIs called from browser JavaScript, authenticate with a bearer token or a custom request header rather than ambient cookies, and restrict CORS to an explicit origin allowlist when credentials are allowed.\n" +
+			"Verify the Origin or Sec-Fetch-Site header on sensitive endpoints, and require re-authentication for high-impact actions such as changing credentials or roles.\n" +
+			"For third-party products, confirm the vendor's CSRF protection is enabled, and keep the product patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Spoofing,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope web applications accessed via typical web access protocols.",
 		RiskAssessment: "The risk rating depends on the integrity rating of the data sent across the communication link.",
 		FalsePositives: "Web applications passing the authentication state via custom headers instead of cookies can " +
@@ -75,15 +71,10 @@ func (csrf CrossSiteRequestForgeryRule) skipAsset(technicalAsset *types.Technica
 func (r *CrossSiteRequestForgeryRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset, incomingFlow *types.CommunicationLink) *types.Risk {
 	sourceAsset := parsedModel.TechnicalAssets[incomingFlow.SourceId]
 	title := "<b>Cross-Site Request Forgery (CSRF)</b> risk at <b>" + technicalAsset.Title + "</b> via <b>" + incomingFlow.Title + "</b> from <b>" + sourceAsset.Title + "</b>"
-	// Already single-dimension (Integrity, matching this category's STRIDE value) by design, but
-	// scoped to the comm link's own Integrity rating rather than the target asset's, since CSRF's
-	// real consequence is the integrity of the data sent across this specific link -- not reused
-	// via the shared computeImpact() helper, which operates on the asset's own CIA fields.
-	impact := types.LowImpact
-	if parsedModel.HighestCommunicationLinkIntegrity(incomingFlow) == types.MissionCritical {
-		impact = types.MediumImpact
-	}
-	likelihood := computeLikelihood(r.likelihoodFromUsage(incomingFlow), technicalAsset)
+	// Integrity, on the link's data rather than the target asset, since CSRF endangers the data
+	// sent across this link. computeImpact() reads asset ratings, so it does not fit here.
+	impact := types.AdjustImpactForRank(types.LowImpact, linkRank(parsedModel, r.Category().STRIDE, incomingFlow))
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, devOpsStep(incomingFlow))
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),
@@ -97,11 +88,4 @@ func (r *CrossSiteRequestForgeryRule) createRisk(parsedModel *types.Model, techn
 	}
 	risk.SyntheticId = risk.CategoryId + "@" + technicalAsset.Id + "@" + incomingFlow.Id
 	return risk
-}
-
-func (*CrossSiteRequestForgeryRule) likelihoodFromUsage(cl *types.CommunicationLink) types.RiskExploitationLikelihood {
-	if cl.Usage == types.DevOps {
-		return types.Unlikely
-	}
-	return types.Likely
 }

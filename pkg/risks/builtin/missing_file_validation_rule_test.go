@@ -80,7 +80,7 @@ func TestMissingFileValidationRuleGenerateRisksFileDataFormatsAcceptedRisksCreat
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -106,7 +106,7 @@ func TestMissingFileValidationRuleGenerateRisksProcessStrictlyConfidentialDataRi
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -158,7 +158,7 @@ func TestMissingFileValidationRuleGenerateRisksProcessMissionCriticalAvailabilit
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }
 
@@ -258,6 +258,6 @@ func TestMissingFileValidationRuleGenerateRisksOnlyMissionCriticalAvailabilityHi
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing File Validation</b> risk at <b>Test Technical Asset</b>", risks[0].Title)
 }

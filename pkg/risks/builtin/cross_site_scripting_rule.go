@@ -21,22 +21,16 @@ func (*CrossSiteScriptingRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
 		Action: "Apply context-aware output encoding through an auto-escaping template engine, eliminate unsafe DOM sinks, and " +
 			"deploy a strict nonce- or hash-based Content Security Policy.",
-		Mitigation: "Render all dynamic content through a template engine or framework with contextual auto-escaping enabled " +
-			"(React, Angular, Jinja2 autoescape, Razor), and prohibit escape-bypass constructs such as " +
-			"dangerouslySetInnerHTML, bypassSecurityTrustHtml, the Jinja safe filter, or Html.Raw unless the value has " +
-			"first passed through a vetted HTML sanitizer such as DOMPurify. Encode for the output context: HTML body, " +
-			"HTML attribute, JavaScript string, CSS, and URL each need different encoding, and URLs written into href or " +
-			"src must be validated against an http/https scheme allowlist to block javascript: URIs. In client-side code, " +
-			"do not write untrusted data to innerHTML, outerHTML, document.write, eval, string-argument setTimeout, or " +
-			"location; use textContent and safe DOM APIs, and enforce Trusted Types where supported. Deploy a strict " +
-			"Content Security Policy with per-response nonces or hashes and strict-dynamic, no unsafe-inline or " +
-			"unsafe-eval, plus object-src none and base-uri none, rolled out first in report-only mode. Mark session " +
-			"cookies HttpOnly so injected script cannot read them, and serve user-uploaded content from a separate " +
-			"sandboxed origin. For third-party products, confirm the vendor's encoding and CSP posture and keep the " +
-			"product patched. References: CWE-79; CAPEC-63 (Cross-Site Scripting); OWASP Top 10:2025 A05 (Injection).",
+		Mitigation: "Render dynamic content through a framework with contextual auto-escaping (React, Angular, Razor, or Jinja2 autoescape), and prohibit bypasses such as dangerouslySetInnerHTML or Html.Raw unless the value first passes a vetted sanitizer such as DOMPurify.\n" +
+			"Encode for each output context (HTML body, attribute, JavaScript, CSS, and URL), and allow only the http and https schemes in href and src values.\n" +
+			"In client-side code, use textContent and safe DOM APIs instead of innerHTML, document.write, or eval, and enforce Trusted Types where supported.\n" +
+			"Deploy a strict Content Security Policy with per-response nonces or hashes, no unsafe-inline or unsafe-eval, and object-src and base-uri set to none, starting in report-only mode.\n" +
+			"Mark session cookies HttpOnly, and serve user-uploaded content from a separate sandboxed origin.\n" +
+			"For third-party products, confirm the vendor's encoding and CSP posture, and keep the product patched.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope web applications.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the data processed in the web application.",
 		FalsePositives: "When the technical asset " +
@@ -69,15 +63,10 @@ func (asl CrossSiteScriptingRule) skipAsset(technicalAsset *types.TechnicalAsset
 
 func (r *CrossSiteScriptingRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Cross-Site Scripting (XSS)</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): per this category's own
-	// Impact text, a successful XSS lets an attacker "steal or modify" victim data -- both a
-	// confidentiality and an integrity consequence, not just the latter.
-	impact := types.MediumImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential || parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	}
-	likelihood := computeLikelihood(types.VeryLikely, technicalAsset)
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): injection both reads and alters data.
+	impact := readAndAlterImpact(parsedModel, types.MediumImpact, technicalAsset)
+	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

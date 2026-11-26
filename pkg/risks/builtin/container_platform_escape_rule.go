@@ -25,23 +25,17 @@ func (*ContainerPlatformEscapeRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
 		Action: "Harden the container platform against escape: enforce the restricted pod security profile, block privileged " +
 			"and host-namespace workloads, and apply the DISA Kubernetes STIG or CIS Kubernetes Benchmark.",
-		Mitigation: "Enforce the Kubernetes Pod Security Standards restricted profile (Pod Security Admission or an equivalent " +
-			"policy engine) on every workload namespace: no privileged containers, no hostPID, hostIPC, or hostNetwork, no " +
-			"hostPath mounts, runAsNonRoot, allowPrivilegeEscalation false, all Linux capabilities dropped, a read-only " +
-			"root filesystem, and a RuntimeDefault or stricter seccomp profile plus AppArmor or SELinux confinement. Never " +
-			"mount the container runtime socket (docker.sock, containerd.sock) into a workload. Disable automatic " +
-			"service-account token mounting where unused and bind service accounts to least-privilege RBAC roles with no " +
-			"cluster-admin or wildcard verbs. Block pod access to the kubelet API and the cloud instance metadata endpoint " +
-			"(NetworkPolicy; IMDSv2 with hop limit 1). Patch node kernels and the container runtime promptly, since many " +
-			"escapes are kernel or runc bugs (for example CVE-2019-5736, CVE-2022-0185, CVE-2024-21626). Use sandboxed " +
-			"runtimes (gVisor, Kata Containers) for workloads handling untrusted input, and separate workloads of " +
-			"differing sensitivity onto dedicated node pools with taints and tolerations. Validate continuously with " +
-			"kube-bench against the STIG or CIS benchmark, and run runtime threat detection (Falco, Defender for " +
-			"Containers, GuardDuty EKS Runtime Monitoring). References: CWE-250, CWE-269; MITRE ATT&CK T1611 (Escape to " +
-			"Host), T1610 (Deploy Container); NIST SP 800-190.",
+		Mitigation: "Enforce the Pod Security Standards restricted profile on every workload namespace: no privileged containers, host namespaces, or hostPath mounts, non-root users with no privilege escalation, all capabilities dropped, a read-only root filesystem, and a RuntimeDefault seccomp profile.\n" +
+			"Never mount the container runtime socket into a workload.\n" +
+			"Disable service-account token mounting where unused, and bind service accounts to least-privilege RBAC roles with no cluster-admin or wildcard verbs.\n" +
+			"Block pod access to the kubelet API and the instance metadata endpoint.\n" +
+			"Patch node kernels and the container runtime promptly, since many escapes are kernel or runc bugs (such as CVE-2024-21626).\n" +
+			"Run workloads that handle untrusted input in a sandboxed runtime (gVisor or Kata Containers), and separate workloads of differing sensitivity onto dedicated node pools.\n" +
+			"Validate continuously with kube-bench against the STIG or CIS benchmark, and run runtime threat detection such as Falco.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS or CSVS chapter applied?",
 		Function:       types.Operations,
 		STRIDE:         types.ElevationOfPrivilege,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope container platforms.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Container platforms not running parts of the target architecture can be considered " +
@@ -77,12 +71,7 @@ func (asl ContainerPlatformEscapeRule) skipAsset(techAsset *types.TechnicalAsset
 
 func (r *ContainerPlatformEscapeRule) createRisk(parsedModel *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Container Platform Escape</b> risk at <b>" + technicalAsset.Title + "</b>"
-	impact := types.HighImpact
-	if parsedModel.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		parsedModel.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		parsedModel.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.VeryHighImpact
-	}
+	impact := processedImpact(parsedModel, types.HighImpact, r.Category().STRIDE, technicalAsset)
 	// data breach at all container assets
 	dataBreachTechnicalAssetIDs := make([]string, 0)
 	for id, techAsset := range parsedModel.TechnicalAssets {

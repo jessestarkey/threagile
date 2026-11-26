@@ -138,7 +138,7 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			integrity:            types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.LowImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"high raa no longer bumps impact": {
 			// RAA was moved from an Impact bump to a Likelihood delta (see the comment in
@@ -155,7 +155,7 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 			integrity:            types.Critical,
 
 			riskCreated:    true,
-			expectedImpact: types.LowImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"strictly confidential medium impact risk created": {
 			outOfScope:           false,
@@ -252,6 +252,31 @@ func TestUnguardedAccessFromInternetRuleGenerateRisks(t *testing.T) {
 	}
 }
 
+func TestUnguardedAccessFromInternetRuleNeedsAnInternetSideCaller(t *testing.T) {
+	for name, tc := range map[string]struct {
+		sourceType       types.TechnicalAssetType
+		sourceOutOfScope bool
+		want             bool
+	}{
+		"external entity":                  {types.ExternalEntity, false, true},
+		"out-of-scope process":             {types.Process, true, true},
+		"in-scope internet-facing gateway": {types.Process, false, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			link := &types.CommunicationLink{Title: "Log Forwarding", SourceId: "source", TargetId: "target", Protocol: types.HTTPS}
+			risks, err := NewUnguardedAccessFromInternetRule().GenerateRisks(&types.Model{
+				TechnicalAssets: map[string]*types.TechnicalAsset{
+					"source": {Id: "source", Title: "Source", Internet: true, Type: tc.sourceType, OutOfScope: tc.sourceOutOfScope},
+					"target": {Id: "target", Title: "Target", Confidentiality: types.Confidential, Integrity: types.Critical},
+				},
+				IncomingTechnicalCommunicationLinksMappedByTargetId: map[string][]*types.CommunicationLink{"target": {link}},
+			})
+			assert.Nil(t, err)
+			assert.Equal(t, tc.want, len(risks) == 1)
+		})
+	}
+}
+
 func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) {
 	rule := NewUnguardedAccessFromInternetRule()
 	model := &types.Model{
@@ -264,7 +289,7 @@ func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) 
 			"target": {
 				Id:              "target",
 				Title:           "Target Technical Asset",
-				RAA:             10, // below raaLikelihoodLowThreshold (15)
+				RAA:             10, // below types.RAALikelihoodLowThreshold (15)
 				Confidentiality: types.Confidential,
 				Integrity:       types.Critical,
 				CommunicationLinks: []*types.CommunicationLink{
@@ -296,5 +321,5 @@ func TestUnguardedAccessFromInternetRuleLowRaaPullsLikelihoodDown(t *testing.T) 
 	// Baseline is VeryLikely; a genuinely low-RAA target now pulls Likelihood down a notch via
 	// computeLikelihood(), which this rule didn't react to at all before this RAA/Likelihood
 	// redesign (see the comment in createRisk()).
-	assert.Equal(t, types.Likely, risks[0].ExploitationLikelihood)
+	assert.Equal(t, types.PossibleLikelihood, risks[0].ExploitationLikelihood)
 }

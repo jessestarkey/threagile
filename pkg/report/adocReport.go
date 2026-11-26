@@ -870,20 +870,20 @@ func addCustomImages(f *os.File, customImages []map[string]string, baseFolder st
 
 func (adoc adocReport) targetDescription(f *os.File, baseFolder string) {
 	writeLine(f, "= Application Overview")
-	writeLine(f, "== Business Criticality\n")
-	writeLine(f, "The overall business criticality of \""+adoc.model.Title+"\" was rated as:\n")
+	writeLine(f, "== Mission Criticality\n")
+	writeLine(f, "The overall mission criticality of \""+adoc.model.Title+"\" was rated as:\n")
 
 	critString := "( "
-	criticality := adoc.model.BusinessCriticality
+	criticality := adoc.model.MissionCriticality
 	first := true
-	for _, critValue := range types.CriticalityValues() {
+	for _, critValue := range types.MissionCriticalityValues() {
 		if !first {
 			critString += " |"
 		}
 		if critValue == criticality {
-			critString += " [.underline]#*" + strings.ToUpper(critValue.String()) + "*#"
+			critString += " [.underline]#*" + strings.ToUpper(critValue.Title()) + "*#"
 		} else {
-			critString += " [GreyText]#" + critValue.String() + "#"
+			critString += " [GreyText]#" + critValue.Title() + "#"
 		}
 		first = false
 	}
@@ -891,9 +891,9 @@ func (adoc adocReport) targetDescription(f *os.File, baseFolder string) {
 	writeLine(f, critString)
 
 	writeLine(f, "\n\n")
-	writeLine(f, "== Business Overview")
-	writeLine(f, fixBasicHtml(adoc.model.BusinessOverview.Description))
-	addCustomImages(f, adoc.model.BusinessOverview.Images, baseFolder)
+	writeLine(f, "== Threat Landscape")
+	writeLine(f, fixBasicHtml(adoc.model.ThreatLandscape.Description))
+	addCustomImages(f, adoc.model.ThreatLandscape.Images, baseFolder)
 
 	writeLine(f, "\n\n")
 	writeLine(f, "== Technical Overview")

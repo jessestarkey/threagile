@@ -26,13 +26,13 @@ func (*MixedTargetsOnSharedRuntimeRule) Category() *types.RiskCategory {
 		Mitigation: "Use separate runtime environments for running different target components or apply similar separation styles to " +
 			"prevent load- or breach-related problems originating from one more attacker-facing asset impacts also the " +
 			"other more critical rated backend/datastore assets.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Shared runtime running technical assets of different trust-boundaries is at risk. " +
 			"Also mixing backend/datastore with frontend components on the same shared runtime is considered a risk.",
-		RiskAssessment: "The risk rating (low or medium) depends on the confidentiality, integrity, and availability rating of " +
-			"the technical asset running on the shared runtime.",
+		RiskAssessment: "Likelihood is Unlikely (a shared runtime has no single asset to adjust for). Impact starts at Low and steps on the highest rating among the assets running on the shared runtime. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "When all assets running on the shared runtime are hardened and protected to the same extend as if all were " +
 			"containing/processing highly sensitive data.",
 		ModelFailurePossibleReason: false,
@@ -80,13 +80,9 @@ func (r *MixedTargetsOnSharedRuntimeRule) GenerateRisks(input *types.Model) ([]*
 }
 
 func (r *MixedTargetsOnSharedRuntimeRule) createRisk(input *types.Model, sharedRuntime *types.SharedRuntime) *types.Risk {
-	// Likelihood stays the flat baseline rather than going through computeLikelihood(): a shared
-	// runtime is an aggregate of many assets, so there's no single asset's RAA/reachability to
-	// anchor a delta on (same reasoning as missing_cloud_hardening_rule.go's shared-runtime path).
-	impact := types.LowImpact
-	if isMoreRisky(input, sharedRuntime) {
-		impact = types.MediumImpact
-	}
+	// A shared runtime aggregates many assets, so there is no single asset for the likelihood
+	// steps, and the baseline stays flat (as in missing_cloud_hardening_rule.go).
+	impact := types.AdjustImpactForRank(types.LowImpact, sharedRuntimeRank(input, r.Category().STRIDE, sharedRuntime))
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(types.Unlikely, impact),
@@ -102,13 +98,13 @@ func (r *MixedTargetsOnSharedRuntimeRule) createRisk(input *types.Model, sharedR
 	return risk
 }
 
-func isMoreRisky(input *types.Model, sharedRuntime *types.SharedRuntime) bool {
+// sharedRuntimeRank is the highest STRIDE-mapped rank among the assets on a shared runtime: there
+// is no single asset to rate, so the most valuable tenant sets the impact.
+func sharedRuntimeRank(input *types.Model, stride types.STRIDE, sharedRuntime *types.SharedRuntime) int {
+	rank := 0
 	for _, techAssetId := range sharedRuntime.TechnicalAssetsRunning {
 		techAsset := input.TechnicalAssets[techAssetId]
-		if techAsset.Confidentiality == types.StrictlyConfidential || techAsset.Integrity == types.MissionCritical ||
-			techAsset.Availability == types.MissionCritical {
-			return true
-		}
+		rank = max(rank, rankForStride(stride, techAsset.Confidentiality, techAsset.Integrity, techAsset.Availability))
 	}
-	return false
+	return rank
 }

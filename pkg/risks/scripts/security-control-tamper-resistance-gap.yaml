@@ -1,47 +1,51 @@
 id: security-control-tamper-resistance-gap
 title: "Security Control Tamper Resistance Gap"
 function: operations
-stride: information-disclosure
+stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
-  This security control (WAF, IDS/IPS, HSM, vault, or SIEM/monitoring platform) has no
-  tamper-evident configuration or independently-stored audit trail of its own, letting an
-  adversary who gains a foothold disable, reconfigure, or evade it -- or erase evidence that they
-  did -- without that action being independently detectable outside the control itself.
+  This security control (a WAF, IDS/IPS, HSM, vault, or SIEM) has no tamper-evident configuration
+  and no independently stored audit trail of its own. Thus, an adversary with a foothold can
+  disable, reconfigure, or evade it, and erase the evidence, without detection outside the control.
 impact: >
   If this risk remains unmitigated, an adversary with a foothold can blind or disable the exact
   control that would otherwise detect or block their next step, and nothing outside that control
-  notices it happened.
+  notices that it happened.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
-action: "Forward this control's own configuration-change and administrative-access events to a destination it cannot itself modify or delete, and alert on any change to its own protective configuration."
-mitigation: >
-  Forward this security control's own administrative/configuration-change audit log to a SIEM
-  destination or write-once store that this control's own administrators cannot modify or
-  delete -- the same principle MITRE ATT&CK's Defense Evasion tactic (Indicator Removal,
-  Impair Defenses) assumes an adversary will attempt. Alert on any change to the control's own
-  protective configuration (rule sets, blocking mode toggled to monitor-only, log forwarding
-  disabled) as a high-priority event in its own right, independent of whatever the control is
-  itself monitoring for. Where the platform supports it, require a second approver for any change
-  that weakens the control's own protective posture. Periodically verify the control is still
-  actively enforcing (not silently failed open) via a synthetic test rather than assuming
-  uptime implies correct operation. References: CWE-778 (Insufficient Logging); MITRE ATT&CK
-  T1562 (Impair Defenses), T1070 (Indicator Removal); NIST SP 800-53 AU-9 (Protection of Audit
-  Information); NIST SP 800-53 SI-7 (Software, Firmware, and Information Integrity).
-check: "Is this control's own configuration-change and administrative-access audit trail forwarded to a destination it cannot itself modify, with alerting on any change to its own protective posture?"
+action: 'Forward this control''s own configuration-change and administrative-access events to a destination that it cannot itself modify or delete, and alert on any change to its own protective configuration.'
+mitigation: >-
+  Send the control's administrative and configuration-change audit log to a SIEM or write-once store
+  that the control's own administrators cannot modify, since adversaries routinely remove indicators
+  and impair defenses (ATT&CK T1070, T1562).
+
+  Alert on any change to the control's protective configuration (such as rule sets, a switch to
+  monitor-only, or disabled log forwarding) as a high-priority event in its own right.
+
+  Where the platform supports it, require a second approver for any change that weakens the control.
+
+  Verify periodically with a synthetic test that the control still enforces, rather than assuming
+  that uptime means it has not failed open.
+references: >-
+  CWE-778 (Insufficient Logging); MITRE ATT&CK T1562 (Impair Defenses) and T1070 (Indicator
+  Removal); NIST SP 800-53 AU-9 (Protection of Audit Information) and SI-7 (Software, Firmware,
+  and Information Integrity)
+check: 'Is this control''s own configuration-change and administrative-access audit trail forwarded to a destination that it cannot itself modify, with alerting on any change to its own protective posture?'
 detection_logic: >
-  Monitor for configuration changes to this control (rule/policy edits, mode changes, log
-  forwarding toggles) and alert on any such change not traceable to an approved change record.
-  Run periodic synthetic tests confirming the control is still actively enforcing rather than
-  silently disabled or running in monitor-only mode.
+  Monitor for configuration changes to this control (rule and policy edits, mode changes, and
+  log-forwarding toggles), and alert on any such change that cannot be traced to an approved change
+  record. Additionally, run periodic synthetic tests that confirm the control is still actively
+  enforcing, rather than silently disabled or running in monitor-only mode.
 risk_assessment: >
-  High for any security control whose own administrative/configuration-change events are not
-  independently logged outside the control itself.
+  High for any security control whose own administrative and configuration-change events are not
+  logged independently, outside the control itself.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope security-control
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once this control's own configuration-change audit trail is confirmed forwarded to
-  a destination its own administrators cannot modify, with alerting on protective-posture changes.
+  This rule fires on every in-scope security control asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once the control's own configuration-change audit trail is confirmed to be forwarded to a
+  destination that its own administrators cannot modify, with alerting on changes to its protective
+  posture.
 
 risk:
   id:
@@ -72,49 +76,17 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "unlikely" (the floor), so only the upward (RAA >= 40) delta is reachable.
+    # Likelihood: unlikely baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: possible
-            else:
-              - return: unlikely
+        - return: "adjust_likelihood(unlikely, {tech_asset})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
-    # ceiling), so only the downward (Confidentiality low) delta is reachable.
-    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
-    # Business Criticality bump that used to apply here was removed (see git history / the
-    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
-    # already-peripheral assets rather than protecting genuinely under-rated ones).
+    # Impact: low baseline plus the CIA step on I (STRIDE repudiation: a detection gap lets an
+    # attacker act without a trace, so the integrity of the asset is what goes unprotected).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - confidentiality_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: restricted
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - assign:
-                  confidentiality_low: false
-        - if:
-            true: "{confidentiality_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(low, {tech_asset.integrity})"

@@ -128,7 +128,7 @@ func TestUnencryptedAssetRuleGenerateRisks(t *testing.T) {
 			encryption:          types.NoneEncryption,
 
 			riskCreated:    true,
-			expectedImpact: types.HighImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"very sensitive mission critical no encryption": {
 			outOfScope:          false,
@@ -140,7 +140,7 @@ func TestUnencryptedAssetRuleGenerateRisks(t *testing.T) {
 			encryption:          types.NoneEncryption,
 
 			riskCreated:    true,
-			expectedImpact: types.HighImpact,
+			expectedImpact: types.MediumImpact,
 		},
 		"very sensitive transparent encryption": {
 			outOfScope:                  false,

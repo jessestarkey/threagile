@@ -1,0 +1,92 @@
+id: ai-adversarial-evasion
+title: "Adversarial Evasion Against Model Decision Boundary"
+function: architecture
+stride: tampering
+finding_class: control-not-evidenced
+cwe: 20
+description: >
+  An adversary can craft an input with small, often imperceptible perturbations that cross the
+  model's decision boundary, so the model misclassifies it while it still looks legitimate to a
+  reviewer. This rule covers classic ML models, since evasion of an LLM is prompt injection.
+impact: >
+  If this risk remains unmitigated, an adversary can make the model produce a wrong classification
+  or decision on demand. Any security or safety control that trusts the model's output is then
+  defeated, with no anomalous-looking input.
+asvs: "V11 - Business Logic"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html"
+action: 'Apply adversarial training and input-space defenses, and require independent confirmation before acting on any model decision with a security or safety consequence.'
+mitigation: >-
+  Train the model on known perturbation techniques (adversarial training), so that small crafted
+  perturbations exploit its decision boundary less easily.
+
+  Preprocess input (randomized smoothing, transformation, or compression) to disrupt the precise
+  perturbation an evasion attack depends on, without materially degrading legitimate input.
+
+  Where a decision has a security or safety consequence (such as access control, fraud detection, or
+  an OT-adjacent action), require confirmation from a second signal, a different model, or a human
+  reviewer.
+
+  Monitor confidence-score distributions for the unusual patterns that adversarial examples produce
+  near the decision boundary.
+references: >-
+  MITRE ATLAS AML.T0015 (Evade AI Model) and AML.T0043 (Craft Adversarial Data); NIST AI RMF
+  MANAGE 2.3; NIST SP 800-53 SI-10 (Information Input Validation)
+check: 'Is adversarial training or an input-space defense applied to the model, and does every security- or safety-consequential decision require independent confirmation rather than trusting the model''s output alone?'
+detection_logic: >
+  Audit the model's training records for adversarial-training coverage against known perturbation
+  techniques. Additionally, review the input-preprocessing configuration for randomized smoothing or
+  transformation defenses, and confirm that high-consequence decisions driven by this model require
+  independent confirmation. Finally, monitor confidence-score distributions for anomaly patterns
+  near the decision boundary.
+risk_assessment: >
+  Critical for any model whose decision gates a security or safety consequence, with no adversarial
+  training, input-space defense, or independent confirmation step in place.
+false_positives: >
+  This rule fires on every in-scope ai-model-serving asset by design, so no tag suppresses it. LLM
+  endpoints are excluded, since evasion of an LLM is prompt injection and jailbreak, which the
+  prompt-injection categories cover. Instead, dispose of a confirmed-compliant asset through
+  risk_tracking, logging it as mitigated once adversarial training or input-space defenses, and
+  independent confirmation for high-consequence decisions, are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-model-serving}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Adversarial Evasion Against Model Decision Boundary</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Likelihood: possible baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(possible, {tech_asset})"
+
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

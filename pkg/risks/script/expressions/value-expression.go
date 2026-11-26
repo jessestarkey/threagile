@@ -265,11 +265,14 @@ func (what *ValueExpression) evalStringReference(scope *common.Scope, ref *commo
 	value := what.resolveStringValues(scope, varRe, ref)
 	if regexp.MustCompile(`^` + varRe + `$`).MatchString(value.StringValue()) {
 		returnValue, ok := scope.Get(value.StringValue()[1 : len(value.StringValue())-1])
-		if ok {
+		if ok && returnValue != nil {
 			return returnValue, "", nil
 		}
 
-		return returnValue, "", nil
+		// An unresolved reference (such as a field dropped by omitempty, or a missing map key)
+		// evaluates to an empty value, never a nil Value, since a nil Value in a variable made the
+		// next read of it panic.
+		return common.NilValue(), "", nil
 		//		return common.SomeStringValue(value.StringValue()[1:len(value.StringValue())-1], nil), "", nil
 	}
 
@@ -293,7 +296,7 @@ func (what *ValueExpression) resolveStringValues(scope *common.Scope, reString s
 	text := regexp.MustCompile(reString).ReplaceAllStringFunc(value.StringValue(), func(name string) string {
 		cleanName := name[1 : len(name)-1]
 		item, ok := scope.Get(strings.ToLower(cleanName))
-		if !ok {
+		if !ok || item == nil {
 			return name
 		}
 

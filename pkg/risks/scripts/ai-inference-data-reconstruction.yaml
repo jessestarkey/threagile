@@ -1,0 +1,241 @@
+id: ai-inference-data-reconstruction
+title: "Inference and Training-Data Reconstruction"
+function: architecture
+stride: information-disclosure
+finding_class: weakness-shown
+cwe: 200
+description: >
+  A model's inference API answers requests from outside its trust boundary. Systematic querying can
+  then reveal what the model learned, through (1) membership inference, (2) model inversion that
+  recovers training examples, and (3) model extraction that trains a functional copy.
+impact: >
+  If this risk remains unmitigated, an outside party can confirm or recover sensitive training
+  records, which can itself be a data breach, and can replicate the model's capability from its
+  outputs.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Limit what the inference API reveals and how fast it can be queried, and train sensitive models with privacy protections that resist reconstruction.'
+mitigation: >-
+  Authenticate and rate-limit every inference caller with per-identity query budgets, and alert on
+  the systematic or high-volume querying patterns that are typical of extraction and membership
+  inference.
+
+  Return only what the use case needs, which means no logits or full probability vectors, and at
+  most rounded or top-k confidence scores.
+
+  Train or fine-tune models on sensitive data with privacy-preserving techniques (differential
+  privacy, deduplication, or removal of rare records), and test them for memorization before
+  release.
+
+  Watermark outputs where model extraction is a concern.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI18 (Inference and Data Reconstruction); MITRE ATLAS
+  AML.T0024 (Exfiltration via AI Inference API, covering Infer Training Data Membership, Invert AI
+  Model, and Extract AI Model); MAESTRO layers 1, 2, and 5; CWE-200; CWE-327; NIST SP 800-53 AC-3,
+  SI-4, and RA-3; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Are inference callers authenticated and rate-limited with per-identity budgets and extraction monitoring, are outputs limited to what the use case needs, and were sensitive models trained with privacy protections and memorization testing?'
+detection_logic: >
+  Review the inference API's authentication and rate limits, and what each response returns. Then,
+  run membership-inference and extraction tests against a staging copy. Finally, monitor the query
+  logs for high-volume, systematic, or boundary-probing patterns from a single identity.
+risk_assessment: >
+  High when the model was trained or fine-tuned on confidential data, and its API is reachable from
+  outside the boundary without per-identity budgets. Otherwise, the finding is Medium.
+false_positives: >
+  This rule fires on an in-scope ai-llm-endpoint or ai-model-serving asset that is internet-facing,
+  or that has an incoming link from an outside caller. An outside caller is an external entity, an
+  internet-facing or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF, load
+  balancer, or client) in a different network boundary. As in Threagile's own rules,
+  execution-environment boundaries are looked through to the enclosing network boundary. Thus, a
+  model reached only through internal services (for example, an agent orchestrator) does not fire.
+  Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  authenticated, budgeted access, minimal outputs, and privacy-preserving training are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - exposed: "receives_from_outside({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-model-serving}"
+            - true: "{exposed}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Inference and Training-Data Reconstruction</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when the asset is internet-facing, or an incoming link comes from an outside caller
+    # (see is_outside_caller).
+    receives_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - if:
+            true: "{tech_asset.internet}"
+            then:
+              - return: true
+        - assign:
+            - own_boundary: "network_boundary({tech_asset.id})"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - outside: "is_outside_caller({link.source_id}, {own_boundary})"
+              - if:
+                  true: "{outside}"
+                  then:
+                    - return: true
+        - return: false
+
+    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
+    # Network boundary of an asset, following the network-only semantics of Threagile's own
+    # built-in rules: its directly containing trust boundary, or, when that is an
+    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
+    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
+    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
+    network_boundary:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - return: "{boundary}"
+
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    is_frontend_asset:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when a caller brings outside requests or content in: it is external, or it is a
+    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
+    # boundary from the given one.
+    is_outside_caller:
+      parameters:
+        - caller_id
+        - own_boundary
+      do:
+        - assign:
+            - external: "is_external({caller_id})"
+        - if:
+            true: "{external}"
+            then:
+              - return: true
+        - assign:
+            - frontend: "is_frontend_asset({caller_id})"
+            - caller_boundary: "network_boundary({caller_id})"
+        - if:
+            and:
+              - true: "{frontend}"
+              - not-equal:
+                  first: "{caller_boundary}"
+                  second: "{own_boundary}"
+            then:
+              - return: true
+        - return: false
+
+    # Likelihood: very-likely baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(very-likely, {tech_asset})"
+
+    # Impact: low baseline plus the CIA step on C (STRIDE information-disclosure).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(low, {tech_asset.confidentiality})"

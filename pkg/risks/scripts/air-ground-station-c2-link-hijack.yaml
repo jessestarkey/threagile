@@ -2,46 +2,46 @@ id: air-ground-station-c2-link-hijack
 title: "Air Ground Station Command-Link Hijack and Unencrypted Telemetry/Video Downlink"
 function: operations
 stride: spoofing
+finding_class: control-not-evidenced
 cwe: 306
 description: >
-  An air vehicle command-and-control link is commonly line-of-sight RF, attackable with far less
-  sophisticated equipment than a satellite uplink would require. An unauthenticated command
-  link lets an adversary take direct control of the air vehicle, and an unencrypted sensor or
-  video downlink -- the documented real-world case of intercepted unencrypted drone video
-  feeds -- discloses everything the vehicle observes to anyone within radio range.
+  An air vehicle's command link is commonly line-of-sight RF, which far simpler equipment can attack
+  than a satellite uplink. An unauthenticated command link lets an adversary take control of the
+  vehicle, and an unencrypted downlink discloses its sensor and video feed to anyone in radio range.
 impact: >
-  If this risk remains unmitigated, an adversary within radio range can either hijack command
-  of the air vehicle outright or passively intercept its full sensor and video feed, with
-  neither requiring more than commodity RF equipment against an unauthenticated or unencrypted
-  link.
+  If this risk remains unmitigated, an adversary within radio range can hijack the vehicle or
+  intercept its full sensor and video feed, with nothing more than commodity RF equipment.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
-action: "Cryptographically authenticate the command-and-control link and encrypt the telemetry/sensor/video downlink, rather than relying on frequency-hopping or protocol obscurity alone."
-mitigation: >
-  Cryptographically authenticate every command sent over the control link so the air vehicle
-  can distinguish its legitimate ground control station from an impersonator, rather than
-  relying on frequency-hopping, proprietary protocols, or physical proximity as the control.
-  Encrypt the telemetry, sensor, and video downlink end to end -- unencrypted full-motion
-  video has been intercepted by adversaries in real documented incidents, and the same
-  exposure applies to any unencrypted downlink regardless of platform. Define and test a
-  documented lost-link failsafe behavior (e.g. return-to-home, controlled landing) so a
-  jammed or severed link does not itself become the attack. References: CWE-306 (Missing Authentication for Critical
-  Function); CWE-319 (Cleartext Transmission of Sensitive Information); NIST SP 800-53 SC-8
-  (Transmission Confidentiality and Integrity); NIST SP 800-53 IA-3 (Device Identification and
-  Authentication); DoD UAS cybersecurity guidance.
-check: "Is the command-and-control link cryptographically authenticated, is the telemetry/sensor/video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?"
+action: 'Authenticate the command-and-control link cryptographically, and encrypt the telemetry, sensor, and video downlink, rather than relying on frequency-hopping or protocol obscurity alone.'
+mitigation: >-
+  Authenticate every command sent over the control link cryptographically, so that the air vehicle
+  can distinguish its legitimate ground control station from an impersonator, rather than relying on
+  frequency-hopping, proprietary protocols, or physical proximity as the control.
+
+  Encrypt the telemetry, sensor, and video downlink end to end, since adversaries have intercepted
+  unencrypted full-motion video in documented real-world incidents, and the same exposure applies to
+  any unencrypted downlink regardless of platform.
+
+  Define and test a documented lost-link failsafe behavior (for example, return to home or a
+  controlled landing), so that a jammed or severed link does not itself become the attack.
+references: >-
+  CWE-306 (Missing Authentication for Critical Function); CWE-319 (Cleartext Transmission of
+  Sensitive Information); NIST SP 800-53 SC-8 (Transmission Confidentiality and Integrity) and
+  IA-3 (Device Identification and Authentication); DoD UAS cybersecurity guidance
+check: 'Is the command-and-control link cryptographically authenticated, is the telemetry, sensor, and video downlink encrypted end to end, and is a documented lost-link failsafe behavior defined and tested?'
 detection_logic: >
-  Audit the command-link protocol for cryptographic authentication versus reliance on
-  frequency-hopping or obscurity alone. Confirm the telemetry/sensor/video downlink is
-  encrypted end to end. Review lost-link failsafe behavior documentation and test records.
+  Audit the command-link protocol for cryptographic authentication, as opposed to reliance on
+  frequency-hopping or obscurity alone. Additionally, confirm that the telemetry, sensor, and video
+  downlink is encrypted end to end. Finally, review the documentation and test records for the
+  lost-link failsafe behavior.
 risk_assessment: >
-  Critical for any air ground station whose command link is not cryptographically
-  authenticated, or whose sensor/video downlink is unencrypted.
+  Critical for any air ground station whose command link is not cryptographically authenticated, or
+  whose sensor or video downlink is unencrypted.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope air-ground-
-  station asset, by design). Dispose of a confirmed-compliant asset through
-  risk_tracking instead: log it as mitigated once command-link authentication and downlink
-  encryption are confirmed.
+  This rule fires on every in-scope air ground station asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once command-link authentication and downlink encryption are confirmed.
 
 risk:
   id:
@@ -72,58 +72,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "likely" (a mid tier, not an edge), so all 3 outcomes (possible/likely/
-    # very-likely) are reachable via the RAA delta.
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-            else:
-              - if:
-                  equal-or-greater:
-                    first: "{tech_asset.raa}"
-                    second: 40
-                  then:
-                    - return: very-likely
-                  else:
-                    - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
-    # STRIDE is Spoofing -> Integrity. Baseline is "very-high" (the ceiling), so only the
-    # downward (Integrity low) delta is reachable -- a hijacked command link is a total
-    # loss-of-control failure regardless of this asset's own rating.
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on I (STRIDE spoofing).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - integrity_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: important
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  integrity_low: false
-        - if:
-            true: "{integrity_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

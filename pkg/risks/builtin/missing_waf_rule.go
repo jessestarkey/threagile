@@ -22,19 +22,16 @@ func (*MissingWafRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Virtual_Patching_Cheat_Sheet.html",
 		Action: "Route all traffic to this web application or API through a WAF running the OWASP Core Rule Set or provider " +
 			"managed rules in prevention mode, and lock the origin to accept traffic only from the WAF.",
-		Mitigation: "Place a web application firewall in front of this asset (Azure Application Gateway WAF or Front Door WAF, AWS " +
-			"WAF, or ModSecurity or Coraza with the OWASP Core Rule Set on the reverse proxy) and make it the only network " +
-			"path to the application by restricting the origin to the WAF (private endpoint, access restriction to the " +
-			"gateway subnet, or an origin-verification header). Start in detection mode to tune false positives, then " +
-			"switch to prevention mode with a documented paranoia level and exclusion list. Enable rate-based rules, bot " +
-			"management, IP reputation filtering as appropriate, and request body size limits. Use the WAF for virtual " +
-			"patching of newly disclosed vulnerabilities while code fixes ship. Forward WAF logs to the SIEM and alert on " +
-			"spikes in blocked requests and on rule hits against sensitive endpoints. Treat the WAF as defense in depth " +
-			"only; it does not replace input validation and output encoding in the application. References: CWE-693; MITRE " +
-			"ATT&CK T1190, T1595.002 (Vulnerability Scanning); NIST SP 800-53 SC-7, SI-4.",
+		Mitigation: "Make the WAF the only network path to the application by restricting the origin to it (a private endpoint, a gateway-subnet access restriction, or an origin-verification header).\n" +
+			"Start in detection mode to tune false positives, then switch to prevention mode with a documented paranoia level and exclusion list.\n" +
+			"Enable rate-based rules, bot management, IP reputation filtering, and request body size limits as appropriate.\n" +
+			"Use the WAF to virtually patch newly disclosed vulnerabilities while code fixes ship.\n" +
+			"Forward WAF logs to the SIEM, and alert on spikes in blocked requests and on rule hits against sensitive endpoints.\n" +
+			"Treat the WAF as defense in depth only, since it does not replace input validation and output encoding in the application.",
 		Check:          "GetAttribute a Web Application Firewall (WAF) in place?",
 		Function:       types.Operations,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope web-services and/or web-applications accessed across a network trust boundary not having a Web Application Firewall (WAF) in front of them.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Targets only accessible via WAFs or reverse proxies containing a WAF component (like ModSecurity) can be considered " +
@@ -72,17 +69,10 @@ func (r *MissingWafRule) GenerateRisks(input *types.Model) ([]*types.Risk, error
 
 func (r *MissingWafRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Missing Web Application Firewall (WAF)</b> risk at <b>" + technicalAsset.Title + "</b>"
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Integrity (this category's own STRIDE value): a missing WAF removes a general
-	// filtering layer against "standard attack pattern tests," not a dimension-specific one --
-	// it's as relevant to a confidentiality- or availability-driven attack as a tampering one.
-	impact := types.LowImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		input.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.MediumImpact
-	}
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset)
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the data
+	// the asset processes.
+	impact := processedImpact(input, types.LowImpact, r.Category().STRIDE, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

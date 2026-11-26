@@ -15,6 +15,7 @@ type TechnicalAsset struct {
 	Technologies            []string                     `yaml:"technologies,omitempty" json:"technologies,omitempty"`
 	Tags                    []string                     `yaml:"tags,omitempty" json:"tags,omitempty"`
 	Internet                bool                         `yaml:"internet,omitempty" json:"internet,omitempty"`
+	InternetReachable       bool                         `yaml:"internet_reachable,omitempty" json:"internet_reachable,omitempty"`
 	Machine                 string                       `yaml:"machine,omitempty" json:"machine,omitempty"`
 	Encryption              string                       `yaml:"encryption,omitempty" json:"encryption,omitempty"`
 	Owner                   string                       `yaml:"owner,omitempty" json:"owner,omitempty"`
@@ -78,6 +79,10 @@ func (what *TechnicalAsset) Merge(other TechnicalAsset) error {
 
 	if !what.Internet {
 		what.Internet = other.Internet
+	}
+
+	if !what.InternetReachable {
+		what.InternetReachable = other.InternetReachable
 	}
 
 	what.Machine, mergeError = new(Strings).MergeSingleton(what.Machine, other.Machine)

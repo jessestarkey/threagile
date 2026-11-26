@@ -1,0 +1,259 @@
+id: ai-training-data-model-poisoning
+title: "Training and Fine-Tuning Data and Model Poisoning"
+function: architecture
+stride: tampering
+finding_class: control-not-evidenced
+cwe: 345
+description: >
+  Training data, curated features, training configuration, and the evaluation that gates promotion
+  decide how a model behaves. Thus, anyone who can write to them (an outside source, a compromised
+  account, or an insider) can plant a backdoor or bias, and a poisoned evaluation lets it through.
+impact: >
+  If this risk remains unmitigated, a model can ship with a backdoor or bias that passes its own
+  evaluation, persists until it is retrained from clean inputs, and steers every production
+  decision.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Control and verify everything that feeds training and evaluation, namely the data, features, configuration, and scoring, and compare each training run against an approved baseline.'
+mitigation: >-
+  Restrict write access to training and evaluation data, feature stores, and training configuration
+  to named identities, and record each dataset's source, version, and hash.
+
+  Filter incoming training data for anomalies and known poisoning patterns, and quarantine outside
+  data until it is reviewed.
+
+  Version the training configuration and hyperparameters, and compare every run against the approved
+  baseline before its output is used.
+
+  Keep evaluation data and scoring code separate from training and access-controlled, and add
+  held-out canary tests for backdoor triggers.
+
+  Keep lineage from each model to its exact inputs, so that a poisoned model can be traced and
+  rebuilt.
+references: >-
+  OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning); OWASP GenAI Data Security 2026 DSGAI04
+  (Data, Model and Artifact Poisoning), DSGAI05 (Data Integrity and Validation Failures), and
+  DSGAI21 (Disinformation via Data Poisoning); MITRE ATLAS AML.T0020 (Poison Training Data),
+  AML.T0018.000 (Poison AI Model), and AML.T0043.004 (Insert Backdoor Trigger); MAESTRO layers 1,
+  2, and 5; CWE-345; CWE-346; CWE-20; NIST SP 800-53 SI-7, SR-3, and CM-3; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is write access to training and evaluation data, features, and configuration restricted and logged, with provenance recorded, outside data quarantined, every run compared against an approved baseline, and evaluation kept separate from training?'
+detection_logic: >
+  Review who can write to the training data, feature stores, training configuration, and evaluation
+  assets. Then, confirm that provenance records and baseline comparisons exist for recent training
+  runs. Finally, test the evaluation for backdoor canaries, and look for training inputs that have
+  no recorded source.
+risk_assessment: >
+  High for a model that gates important decisions, whose training or evaluation inputs accept writes
+  from outside its trust boundary without provenance and validation. However, the finding is Medium
+  for curated internal inputs.
+false_positives: >
+  This rule fires on every in-scope ai-training-pipeline, ai-dataset-store, ai-feature-store, and
+  ai-eval-pipeline asset, because poisoning by an insider or a compromised account needs nothing
+  that the model records. However, likelihood steps up one level when an outside caller writes
+  into the asset through an incoming link that is not readonly, unless the asset is
+  internet-exposed and already takes the internet step. An outside caller is an external entity,
+  an internet-facing or out-of-scope asset, or a frontend (a web application, reverse proxy, WAF,
+  load balancer, or client) in a different network boundary, and as in Threagile's own rules,
+  execution-environment boundaries are looked through to the enclosing network boundary. Dispose
+  of a confirmed-compliant asset through risk_tracking, logging it as mitigated once restricted
+  write access, provenance, validation, baseline comparison, and a separate evaluation are
+  confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-training-pipeline}"
+                  - true: "{.attributes.ai-dataset-store}"
+                  - true: "{.attributes.ai-feature-store}"
+                  - true: "{.attributes.ai-eval-pipeline}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Training and Fine-Tuning Data and Model Poisoning</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when an outside caller (see is_outside_caller) writes into this asset: an incoming link
+    # that is not readonly.
+    written_from_outside:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - own_boundary: "network_boundary({tech_asset.id})"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - assign:
+                  - outside: "is_outside_caller({link.source_id}, {own_boundary})"
+              - if:
+                  and:
+                    - false: "{link.readonly}"
+                    - true: "{outside}"
+                  then:
+                    - return: true
+        - return: false
+
+    # --- Exposure helpers (shared text; the DSL has no cross-file helpers) ---
+    # Network boundary of an asset, following the network-only semantics of Threagile's own
+    # built-in rules: its directly containing trust boundary, or, when that is an
+    # execution-environment boundary, the nearest enclosing boundary that is not (up to three
+    # levels). Empty when the asset is in no boundary. network-on-prem is the zero value of the
+    # boundary type and is dropped on re-serialization, so "not execution-environment" is tested.
+    network_boundary:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - if:
+            not-equal:
+              first: "{$model.trust_boundaries.{boundary}.type}"
+              second: execution-environment
+            then:
+              - return: "{boundary}"
+        - assign:
+            - boundary: "parent_boundary({boundary})"
+        - return: "{boundary}"
+
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+
+    # True for an asset outside the organization's own systems: internet-facing, out of scope,
+    # or an external entity (the zero value of type, dropped on re-serialization, so "neither
+    # process nor datastore" is tested).
+    is_external:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            or:
+              - true: "{$model.technical_assets.{asset_id}.internet}"
+              - true: "{$model.technical_assets.{asset_id}.out_of_scope}"
+              - and:
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: process
+                  - not-equal:
+                      first: "{$model.technical_assets.{asset_id}.type}"
+                      second: datastore
+            then:
+              - return: true
+        - return: false
+
+    is_frontend_asset:
+      parameters:
+        - asset_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{asset_id}.technologies}"
+              true: "{.attributes.frontend_related}"
+            then:
+              - return: true
+        - return: false
+
+    # True when a caller brings outside requests or content in: it is external, or it is a
+    # frontend (web application, reverse proxy, WAF, client, ...) in a different network
+    # boundary from the given one.
+    is_outside_caller:
+      parameters:
+        - caller_id
+        - own_boundary
+      do:
+        - assign:
+            - external: "is_external({caller_id})"
+        - if:
+            true: "{external}"
+            then:
+              - return: true
+        - assign:
+            - frontend: "is_frontend_asset({caller_id})"
+            - caller_boundary: "network_boundary({caller_id})"
+        - if:
+            and:
+              - true: "{frontend}"
+              - not-equal:
+                  first: "{caller_boundary}"
+                  second: "{own_boundary}"
+            then:
+              - return: true
+        - return: false
+
+    # Likelihood: unlikely baseline plus the RAA and internet steps, one level higher when written
+    # from outside the boundary. An internet-exposed asset already takes the internet step for that
+    # outside reach, so the writer step applies only to an asset that is not exposed.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - step: 0
+            - outside: "written_from_outside({tech_asset})"
+        - if:
+            and:
+              - true: "{outside}"
+              - false: "{tech_asset.internet}"
+              - false: "{tech_asset.internet_reachable}"
+            then:
+              - assign:
+                  step: 1
+        - return: "adjust_likelihood(unlikely, {tech_asset}, {step})"
+
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

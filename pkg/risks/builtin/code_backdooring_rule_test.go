@@ -55,7 +55,7 @@ func TestCodeBackdooringRuleGenerateRisksTechAssetFromInternetRisksCreated(t *te
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Code Backdooring</b> risk at <b>GitLab CI/CD</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestCodeBackdooringRuleGenerateRisksTechAssetProcessConfidentialityRisksCreated(t *testing.T) {
@@ -127,7 +127,7 @@ func TestCodeBackdoogingRuleGenerateRisksTechAssetNotInternetButNotComingThrough
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Code Backdooring</b> risk at <b>GitLab CI/CD</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestCodeBackdooringRuleGenerateRisksTechAssetNotInternetButComingThroughVPNNoInternetRisksNotCreated(t *testing.T) {
@@ -259,7 +259,7 @@ func TestCodeBackdooringRuleGenerateRisksNotImportantDataAssetNoAddingTargetRisk
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Code Backdooring</b> risk at <b>GitLab CI/CD</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, []string{"git-lab-ci-cd"}, risks[0].DataBreachTechnicalAssetIDs)
 }
 
@@ -316,7 +316,7 @@ func TestCodeBackdooringRuleGenerateRisksNotDevOpsDataAssetNoAddingTargetRisksCr
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Code Backdooring</b> risk at <b>GitLab CI/CD</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, []string{"git-lab-ci-cd"}, risks[0].DataBreachTechnicalAssetIDs)
 }
 
@@ -373,7 +373,7 @@ func TestCodeBackdoogingRuleGenerateRisksDevOpsImportantDataAssetNoAddingTargetR
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Code Backdooring</b> risk at <b>GitLab CI/CD</b>", risks[0].Title)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	orderedDataBreachTechnicalAssetIDs := risks[0].DataBreachTechnicalAssetIDs
 	sort.Strings(orderedDataBreachTechnicalAssetIDs)
 	assert.Equal(t, []string{"deployment-target", "git-lab-ci-cd"}, orderedDataBreachTechnicalAssetIDs)

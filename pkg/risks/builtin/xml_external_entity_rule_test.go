@@ -60,7 +60,7 @@ func TestXmlExternalEntityRuleSendDataAssetRisksCreated(t *testing.T) {
 			integrity:       types.Critical,
 			availability:    types.Critical,
 			riskCreated:     true,
-			expImpact:       types.MediumImpact,
+			expImpact:       types.HighImpact,
 		},
 		"strictly confidential": {
 			acceptedFormat:  types.XML,
@@ -80,7 +80,7 @@ func TestXmlExternalEntityRuleSendDataAssetRisksCreated(t *testing.T) {
 			integrity:       types.MissionCritical,
 			availability:    types.Critical,
 			riskCreated:     true,
-			expImpact:       types.MediumImpact,
+			expImpact:       types.HighImpact,
 		},
 		"mission critical availability no longer bumps impact": {
 			acceptedFormat:  types.XML,
@@ -88,7 +88,7 @@ func TestXmlExternalEntityRuleSendDataAssetRisksCreated(t *testing.T) {
 			integrity:       types.Critical,
 			availability:    types.MissionCritical,
 			riskCreated:     true,
-			expImpact:       types.MediumImpact,
+			expImpact:       types.HighImpact,
 		},
 	}
 	for name, testCase := range testCases {
@@ -186,7 +186,7 @@ func TestXmlExternalEntityRuleAssetWithXmlButNoDataProcessedOrStoredCreatesMediu
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestXmlExternalEntityRuleAllThreeSensitivityConditionsTrueCreatesHighImpactRisk(t *testing.T) {
@@ -203,7 +203,7 @@ func TestXmlExternalEntityRuleAllThreeSensitivityConditionsTrueCreatesHighImpact
 		},
 		DataAssets: map[string]*types.DataAsset{
 			"sensitive-data": {
-				Id:             "sensitive-data",
+				Id:              "sensitive-data",
 				Confidentiality: types.StrictlyConfidential,
 				Integrity:       types.MissionCritical,
 				Availability:    types.MissionCritical,

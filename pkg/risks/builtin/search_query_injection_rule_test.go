@@ -176,7 +176,7 @@ func TestSearchQueryInjectionRuleGenerateRisksRiskCreated(t *testing.T) {
 			integrity:          types.Critical,
 			protocol:           types.HTTP,
 			usage:              types.Business,
-			expectedImpact:     types.MediumImpact,
+			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 		"strictly confidential medium impact": {
@@ -191,7 +191,7 @@ func TestSearchQueryInjectionRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality:    types.Confidential,
 			integrity:          types.Critical,
 			protocol:           types.HTTP,
-			expectedImpact:     types.MediumImpact,
+			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 		"low impact": {
@@ -207,7 +207,7 @@ func TestSearchQueryInjectionRuleGenerateRisksRiskCreated(t *testing.T) {
 			integrity:          types.Critical,
 			protocol:           types.HTTPS,
 			usage:              types.Business,
-			expectedImpact:     types.MediumImpact,
+			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 		"Binary protocol": {
@@ -215,7 +215,7 @@ func TestSearchQueryInjectionRuleGenerateRisksRiskCreated(t *testing.T) {
 			integrity:          types.Critical,
 			protocol:           types.BINARY,
 			usage:              types.Business,
-			expectedImpact:     types.MediumImpact,
+			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 		"Binary encrypted protocol": {
@@ -223,7 +223,7 @@ func TestSearchQueryInjectionRuleGenerateRisksRiskCreated(t *testing.T) {
 			integrity:          types.Critical,
 			protocol:           types.BinaryEncrypted,
 			usage:              types.Business,
-			expectedImpact:     types.MediumImpact,
+			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 		"devops usage": {
@@ -231,7 +231,7 @@ func TestSearchQueryInjectionRuleGenerateRisksRiskCreated(t *testing.T) {
 			integrity:          types.Critical,
 			protocol:           types.BinaryEncrypted,
 			usage:              types.DevOps,
-			expectedImpact:     types.MediumImpact,
+			expectedImpact:     types.HighImpact,
 			expectedLikelihood: types.VeryLikely,
 		},
 	}

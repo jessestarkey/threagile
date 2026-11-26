@@ -1,33 +1,36 @@
 id: missing-endpoint-security-agents
 title: Missing Endpoint Security Agents
 function: operations
-stride: information-disclosure
+stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
-  The virtual machine lacks mandatory endpoint security agents such as EDR or a centralized log
+  The virtual machine lacks mandatory endpoint security agents, such as EDR or a centralized log
   forwarder.
 impact: >
-  If this risk remains unmitigated, an attacker can establish persistence and move laterally
-  from this host without triggering any host-level SOC alert.
+  If this risk remains unmitigated, an attacker can establish persistence and move laterally from
+  this host without triggering any host-level SOC alert.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
-action: "Deploy EDR and centralized logging agents."
-mitigation: >
-  Ensure platform policy enforces the automated deployment of an EDR agent and a centralized log
-  forwarder (e.g., Microsoft Defender for Endpoint and Azure Monitor Agent, or the equivalent for
-  the hosting platform) on all VMs. References: CWE-778 (Insufficient Logging); NIST SP 800-53
-  SI-4 (System Monitoring); NIST SP 800-53 SI-3 (Malicious Code Protection); MITRE ATT&CK
-  TA0005 (Defense Evasion); DoD Zero Trust Reference Architecture (Device pillar).
-check: "Are EDR and centralized logging agents deployed and reporting on this host?"
+action: 'Deploy EDR and centralized logging agents.'
+mitigation: >-
+  Ensure that platform policy enforces the automated deployment of an EDR agent and a centralized
+  log forwarder on every VM (for example, Microsoft Defender for Endpoint and the Azure Monitor
+  Agent, or the equivalent for the hosting platform).
+references: >-
+  CWE-778 (Insufficient Logging); NIST SP 800-53 SI-4 (System Monitoring) and SI-3 (Malicious Code
+  Protection); MITRE ATT&CK TA0005 (Defense Evasion); DoD Zero Trust Reference Architecture (the
+  Device pillar)
+check: 'Are EDR and centralized logging agents deployed and reporting on this host?'
 detection_logic: >
   Query the cloud platform's resource inventory for missing endpoint-security VM extensions, or
   check the EDR console for an active host heartbeat.
 risk_assessment: >
-  High risk of undetected post-exploitation activity.
+  High, since the gap carries a high risk of undetected post-exploitation activity.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope virtual-machine
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once EDR and log-forwarding agents are confirmed deployed with an active heartbeat.
+  This rule fires on every in-scope virtual machine asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once EDR and log-forwarding agents are confirmed to be deployed, with an active heartbeat.
 
 risk:
   id:
@@ -58,63 +61,17 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # Likelihood: likely baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-        - return: likely
+        - return: "adjust_likelihood(likely, {tech_asset})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality.
-    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
-    # Business Criticality bump that used to apply here was removed (see git history / the
-    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
-    # already-peripheral assets rather than protecting genuinely under-rated ones).
+    # Impact: low baseline plus the CIA step on I (STRIDE repudiation: a detection gap lets an
+    # attacker act without a trace, so the integrity of the asset is what goes unprotected).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+        - return: "adjust_impact(low, {tech_asset.integrity})"

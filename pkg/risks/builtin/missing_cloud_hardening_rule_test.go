@@ -119,7 +119,7 @@ func TestMissingCloudHardeningRuleGenerateRisksTrustBoundaryWithoutCloudHardenin
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Test Trust Boundary</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -189,7 +189,7 @@ func TestMissingCloudHardeningRuleGenerateRisksTrustBoundaryWithoutCloudHardenin
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Test Trust Boundary</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -259,7 +259,7 @@ func TestMissingCloudHardeningRuleGenerateRisksTrustBoundaryWithoutCloudHardenin
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Test Trust Boundary</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -326,7 +326,7 @@ func TestMissingCloudHardeningRuleGenerateRisksSharedRuntimeWithoutCloudHardenin
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Test Shared Runtime</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -394,7 +394,7 @@ func TestMissingCloudHardeningRuleGenerateRisksSharedRuntimeWithoutCloudHardenin
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Test Shared Runtime</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -462,7 +462,7 @@ func TestMissingCloudHardeningRuleGenerateRisksSharedRuntimeWithoutCloudHardenin
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Test Shared Runtime</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -509,7 +509,7 @@ func TestMissingCloudHardeningRuleGenerateRisksTechnicalAssetWithoutCloudHardeni
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Technical Asset Without Cloud Hardening</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -564,7 +564,7 @@ func TestMissingCloudHardeningRuleGenerateRisksTechnicalAssetWithoutCloudHardeni
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Technical Asset Without Cloud Hardening</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -619,7 +619,7 @@ func TestMissingCloudHardeningRuleGenerateRisksTechnicalAssetWithoutCloudHardeni
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
-			assert.Equal(t, types.VeryHighImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Technical Asset Without Cloud Hardening</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[0].Title)
@@ -656,10 +656,10 @@ func TestMissingCloudHardeningRuleGenerateRisksTechnicalAssetSpecificWithoutClou
 
 			assert.Nil(t, err)
 			assert.Len(t, risks, 2)
-			assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 			assert.Equal(t, "<b>Missing Cloud Hardening (AWS)</b> risk at <b>Technical Asset Without Cloud Hardening</b>: <u>CIS Benchmark for AWS</u>", risks[0].Title)
 
-			assert.Equal(t, types.MediumImpact, risks[1].ExploitationImpact)
+			assert.Equal(t, types.LowImpact, risks[1].ExploitationImpact)
 			expTitle := fmt.Sprintf("<b>Missing Cloud Hardening%s</b> risk at <b>Technical Asset Without Cloud Hardening</b>%s", testCase.expectedTitleSuffix, testCase.expectedMessageSuffix)
 			assert.Equal(t, expTitle, risks[1].Title)
 		})
@@ -697,6 +697,6 @@ func TestMissingCloudHardeningRuleGenerateRisksSpecificTagsCloudHardeningRiskCre
 
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 	assert.Equal(t, "<b>Missing Cloud Hardening (AWS)</b> risk at <b>Test Trust Boundary</b>: <u>CIS Benchmark for AWS</u>", risks[0].Title)
 }

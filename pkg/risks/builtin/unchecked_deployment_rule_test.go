@@ -82,7 +82,7 @@ func TestUncheckedDeploymentRuleGenerateRisks(t *testing.T) {
 			targetAssetIntegrity:       types.Important,
 			targetAssetAvailability:    types.Important,
 			usage:                      types.DevOps,
-			expectedImpact:             types.MediumImpact,
+			expectedImpact:             types.LowImpact,
 		},
 		"important data asset sent to critical integrity asset": {
 			dataAssetIntegrity:         types.Important,
@@ -98,7 +98,7 @@ func TestUncheckedDeploymentRuleGenerateRisks(t *testing.T) {
 			targetAssetIntegrity:       types.Important,
 			targetAssetAvailability:    types.Critical,
 			usage:                      types.DevOps,
-			expectedImpact:             types.MediumImpact,
+			expectedImpact:             types.LowImpact,
 		},
 	}
 
@@ -299,7 +299,7 @@ func TestUncheckedDeploymentRuleGenerateRisksSecondDataAssetWithImportantIntegri
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	// The second data asset has Important integrity, so deployment target is detected and MediumImpact applies
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestUncheckedDeploymentRuleGenerateRisksDevOpsLinkWithCriticalIntegrityDataDetectedAsCode(t *testing.T) {
@@ -343,7 +343,7 @@ func TestUncheckedDeploymentRuleGenerateRisksDevOpsLinkWithCriticalIntegrityData
 	assert.Nil(t, err)
 	assert.Len(t, risks, 1)
 	// Critical integrity >= Important, so code deployment is detected; Confidential target -> MediumImpact
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestUncheckedDeploymentRuleGenerateRisksNonDevOpsLinkWithImportantIntegrityDataNoDeploymentTarget(t *testing.T) {

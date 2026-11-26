@@ -24,32 +24,25 @@ func (*UnguardedAccessFromInternetRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Remove direct internet reachability from this asset and route all inbound traffic through a reverse proxy, " +
 			"API gateway, or WAF in a DMZ, with administrative access only through a bastion or VPN.",
-		Mitigation: "Remove public IP addresses and public endpoints from this asset and place it in a private subnet. Expose only " +
-			"the application paths that must be public through an internet-facing guarding component (Azure Application " +
-			"Gateway or Front Door with WAF, AWS ALB with WAF, an API gateway, or a hardened reverse proxy) that " +
-			"terminates TLS, normalizes and filters requests, enforces authentication where possible, and rate-limits. " +
-			"Restrict the asset's inbound rules to accept traffic only from that component's subnet. Route administrative " +
-			"access (SSH, RDP, management consoles) through Azure Bastion, AWS Systems Manager Session Manager, a bastion " +
-			"host, or a zero-trust access broker with MFA and session logging, never through a public port. For file " +
-			"exchange, use a store-and-forward transfer host in the DMZ instead of exposing internal file servers. " +
-			"Enumerate the external attack surface regularly (external port scans, cloud asset inventory, attack surface " +
-			"management tooling) to confirm nothing else is exposed. For DoD systems, follow the DISA SCCA boundary " +
-			"architecture for internet-facing traffic. References: CWE-668; MITRE ATT&CK T1190 (Exploit Public-Facing " +
-			"Application), T1133 (External Remote Services); NIST SP 800-53 SC-7, SC-7(5), AC-17.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Remove public IP addresses and endpoints from this asset, and place it in a private subnet.\n" +
+			"Expose only the paths that must be public through a guarding component (an application gateway or load balancer with WAF, an API gateway, or a hardened reverse proxy) that terminates TLS, filters requests, and rate-limits.\n" +
+			"Restrict the asset's inbound rules to that component's subnet.\n" +
+			"Route administrative access (SSH, RDP, and management consoles) through a bastion or zero-trust access broker with MFA and session logging, never through a public port.\n" +
+			"For file exchange, use a store-and-forward transfer host in the DMZ instead of exposing internal file servers.\n" +
+			"Scan the external attack surface regularly to confirm nothing else is exposed, and for DoD systems, follow the DISA SCCA boundary architecture.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (excluding " + types.LoadBalancer + ") with confidentiality rating " +
 			"of " + types.Confidential.String() + " (or higher) or with integrity rating of " + types.Critical.String() + " (or higher) when " +
-			"accessed directly from the internet. All " +
+			"accessed directly from the internet, meaning by an internet-facing external entity or out-of-scope asset " +
+			"(an in-scope internet-facing component such as a gateway or firewall calling inward is the guarded path, not internet access). All " +
 			types.WebServer + ", " + types.WebApplication + ", " + types.ReverseProxy + ", " + types.WAF + ", and " + types.Gateway + " assets are exempted from this risk when " +
 			"they do not consist of custom developed code and " +
 			"the data-flow only consists of HTTP or FTP protocols. Access from " + types.Monitoring + " systems " +
 			"as well as VPN-protected connections are exempted.",
-		RiskAssessment: "The matching technical assets are at " + types.LowSeverity.String() + " risk. When either the " +
-			"confidentiality rating is " + types.StrictlyConfidential.String() + " or the integrity rating " +
-			"is " + types.MissionCritical.String() + ", the risk-rating is considered " + types.MediumSeverity.String() + ". " +
-			"For assets with RAA values higher than 40 % the risk-rating increases.",
+		RiskAssessment:             "Likelihood starts at Likely. Impact starts at Low and steps on the highest of the asset's own confidentiality, integrity and availability ratings. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When other means of filtering client requests are applied equivalent of " + types.ReverseProxy + ", " + types.WAF + ", or " + types.Gateway + " components.",
 		ModelFailurePossibleReason: false,
 		CWE:                        501,
@@ -86,32 +79,35 @@ func (r *UnguardedAccessFromInternetRule) GenerateRisks(input *types.Model) ([]*
 			if technicalAsset.Confidentiality < types.Confidential && technicalAsset.Integrity < types.Critical {
 				continue
 			}
-			if !input.TechnicalAssets[incomingAccess.SourceId].Internet {
+			// The caller must be on the internet side: an internet-facing external entity or
+			// out-of-scope asset. An in-scope internet-facing component (an application gateway, a
+			// firewall) calling inward is the guarded path, and its log forwarding or egress traffic
+			// is not internet access to the target.
+			source := input.TechnicalAssets[incomingAccess.SourceId]
+			if !source.Internet || (!source.OutOfScope && source.Type != types.ExternalEntity) {
 				continue
 			}
 
-			highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential || technicalAsset.Integrity == types.MissionCritical
-			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, input.TechnicalAssets[incomingAccess.SourceId], highRisk))
+			risks = append(risks, r.createRisk(technicalAsset, incomingAccess, source))
 		}
 	}
 	return risks, nil
 }
 
 func (r *UnguardedAccessFromInternetRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink,
-	clientFromInternet *types.TechnicalAsset, moreRisky bool) *types.Risk {
-	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
-	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
-	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+	clientFromInternet *types.TechnicalAsset) *types.Risk {
+	// RAA affects how likely exploitation is, not how severe it is, so it enters through
+	// computeLikelihood(), and Impact follows the asset's own CIA rating.
+	//
+	// The checks in GenerateRisks() decide whether the risk applies at all, from the caller's
+	// side. computeLikelihood() reads the data store's own exposure, which can differ.
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, dataStore)
 	// The GenerateRisks() check that the caller (clientFromInternet) itself carries
 	// Internet: true is kept as-is -- that's the detection-logic question of whether this risk
 	// applies at all (is this genuinely internet-originated traffic), separate from the
 	// Likelihood/Impact scoring below. computeLikelihood() separately checks dataStore's own
 	// reachability signals, which can differ from the caller's.
-	likelihood := computeLikelihood(types.VeryLikely, dataStore)
+	likelihood := computeLikelihood(types.Likely, dataStore)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

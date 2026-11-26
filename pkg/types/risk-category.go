@@ -19,6 +19,26 @@ type RiskCategory struct {
 	FalsePositives             string       `json:"false_positives,omitempty" yaml:"false_positives,omitempty"`
 	ModelFailurePossibleReason bool         `json:"model_failure_possible_reason,omitempty" yaml:"model_failure_possible_reason,omitempty"`
 	CWE                        int          `json:"cwe,omitempty" yaml:"cwe,omitempty"`
+	// FindingClass says what a finding in this category shows: a weakness the model's own facts
+	// show, or a control the model cannot evidence (see FindingClassWeaknessShown).
+	FindingClass string `json:"finding_class,omitempty" yaml:"finding_class,omitempty"`
+	// References lists the standards behind the mitigation, separated by "; ". Only the script rules
+	// set it, since central-security-repo's library 10 holds the references for the built-in rules.
+	References string `json:"references,omitempty" yaml:"references,omitempty"`
+}
+
+const (
+	// FindingClassWeaknessShown: the model's own facts show the weakness (a plain-HTTP link, a
+	// static secret on a link, an unauthenticated agent-to-agent hop).
+	FindingClassWeaknessShown = "weakness-shown"
+	// FindingClassControlNotEvidenced: the rule fires because an interface or capability exists,
+	// and the model cannot show whether the control is in place. A reviewer confirms it.
+	FindingClassControlNotEvidenced = "control-not-evidenced"
+)
+
+// IsValidFindingClass reports whether value is one of the two finding classes.
+func IsValidFindingClass(value string) bool {
+	return value == FindingClassWeaknessShown || value == FindingClassControlNotEvidenced
 }
 
 type RiskCategories []*RiskCategory

@@ -20,26 +20,19 @@ func (*UnguardedDirectDatastoreAccessRule) Category() *types.RiskCategory {
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Remove direct cross-boundary access to this datastore by placing an application service or API in front of " +
 			"it, and restrict the datastore's network rules to that service alone.",
-		Mitigation: "Route every cross-boundary data access through an application tier or data-access API that authenticates the " +
-			"caller, authorizes each operation against the caller's entitlements, validates input, and exposes only the " +
-			"queries the business function needs, so no external component holds raw database credentials or a database " +
-			"network path. Restrict the datastore's firewall or network security group to the application tier's subnet or " +
-			"private endpoint, and disable public network access. For reporting and analytics consumers, provide a " +
-			"read-only replica, a curated view, or an export pipeline instead of direct access to the primary store. Where " +
-			"direct access is operationally unavoidable (DBA administration), require a bastion or just-in-time privileged " +
-			"access path with MFA and session recording. Send database connection and privileged-statement audit logs to " +
-			"the SIEM. References: CWE-668, CWE-284; MITRE ATT&CK T1213 (Data from Information Repositories), T1078 (Valid " +
-			"Accounts); NIST SP 800-53 AC-3, AC-4, SC-7.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Route every cross-boundary data access through an application tier or API that authenticates the caller, authorizes each operation, validates input, and exposes only the queries the business needs, so no external component holds database credentials or a network path.\n" +
+			"Restrict the datastore's firewall to the application tier's subnet or private endpoint, and disable public network access.\n" +
+			"Give reporting and analytics consumers a read-only replica, a curated view, or an export pipeline instead of the primary store.\n" +
+			"Where direct access is unavoidable (DBA administration), require a bastion or just-in-time access path with MFA and session recording.\n" +
+			"Send connection and privileged-statement audit logs to the SIEM.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets of type " + types.Datastore.String() + " (except " + types.IdentityStoreLDAP + " when accessed from " + types.IdentityProvider + " and " + types.FileServer + " when accessed via file transfer protocols) with confidentiality rating " +
 			"of " + types.Confidential.String() + " (or higher) or with integrity rating of " + types.Critical.String() + " (or higher) " +
 			"which have incoming data-flows from assets outside across a network trust-boundary. DevOps config and deployment access is excluded from this risk.", // TODO new rule "missing bastion host"?
-		RiskAssessment: "The matching technical assets are at " + types.LowSeverity.String() + " risk. When either the " +
-			"confidentiality rating is " + types.StrictlyConfidential.String() + " or the integrity rating " +
-			"is " + types.MissionCritical.String() + ", the risk-rating is considered " + types.MediumSeverity.String() + ". " +
-			"For assets with RAA values higher than 40 % the risk-rating increases.",
+		RiskAssessment:             "Likelihood starts at Possible. Impact starts at Low and steps on the highest of the data store's own confidentiality, integrity and availability ratings. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When the caller is considered fully trusted as if it was part of the datastore itself.",
 		ModelFailurePossibleReason: false,
 		CWE:                        501,
@@ -75,10 +68,8 @@ func (r *UnguardedDirectDatastoreAccessRule) GenerateRisks(input *types.Model) (
 				continue
 			}
 
-			highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-				technicalAsset.Integrity == types.MissionCritical
 			risks = append(risks, r.createRisk(technicalAsset, incomingAccess,
-				input.TechnicalAssets[incomingAccess.SourceId], highRisk))
+				input.TechnicalAssets[incomingAccess.SourceId]))
 		}
 	}
 	return risks, nil
@@ -115,18 +106,16 @@ func fileServerAccessViaFTP(technicalAsset *types.TechnicalAsset, incomingAccess
 		(incomingAccess.Protocol == types.FTP || incomingAccess.Protocol == types.FTPS || incomingAccess.Protocol == types.SFTP)
 }
 
-func (r *UnguardedDirectDatastoreAccessRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink, clientOutsideTrustBoundary *types.TechnicalAsset, moreRisky bool) *types.Risk {
-	// RAA moved off Impact and onto the Likelihood delta below (via computeLikelihood()), to
-	// match every other rule's scoring shape -- RAA affects how likely exploitation is, not how
-	// severe it is, once it occurs. Impact now stays keyed off the asset's own CIA rating alone.
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
+func (r *UnguardedDirectDatastoreAccessRule) createRisk(dataStore *types.TechnicalAsset, dataFlow *types.CommunicationLink, clientOutsideTrustBoundary *types.TechnicalAsset) *types.Risk {
+	// RAA affects how likely exploitation is, not how severe it is, so it enters through
+	// computeLikelihood(), and Impact follows the asset's own CIA rating. The checks in
+	// GenerateRisks() (boundary crossing, the DevOps exclusion, and the FTP and identity
+	// exemptions) decide whether the risk applies at all.
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, dataStore)
 	// The GenerateRisks() checks above (trust-boundary crossing, DevOps exclusion, FTP/identity
 	// exemptions) are kept as-is -- that's the detection-logic question of whether this risk
 	// applies at all, separate from the Likelihood/Impact scoring below.
-	likelihood := computeLikelihood(types.Likely, dataStore)
+	likelihood := computeLikelihood(types.PossibleLikelihood, dataStore)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

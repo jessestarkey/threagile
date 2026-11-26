@@ -23,20 +23,15 @@ func (*CodeBackdooringRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
 		Action: "Restrict source repository and build pipeline access to managed devices over private networks, enforce signed " +
 			"commits with mandatory independent review, and sign and verify every build artifact.",
-		Mitigation: "Do not expose source repository or build pipeline push and administrative interfaces directly to the " +
-			"internet; require access through a VPN or zero-trust gateway from managed, hardened developer endpoints only. " +
-			"Enforce branch protection on release branches: pull request review by at least one person other than the " +
-			"author, required status checks, signed commits (GPG, SSH, or Sigstore gitsign), and no direct or force " +
-			"pushes, including by administrators. Run builds on ephemeral, isolated runners destroyed after each job, and " +
-			"pin third-party CI actions, plugins, and dependencies by immutable digest or commit hash instead of mutable " +
-			"tags. Generate signed build provenance (SLSA Build Level 3 or higher, in-toto attestations) and sign every " +
-			"artifact (Sigstore cosign or Notation); configure deployment targets to verify signature and provenance " +
-			"before accepting an artifact. Restrict who can modify pipeline definitions, and protect pipeline secrets with " +
-			"environment-scoped approvals. References: CWE-506, CWE-494; CAPEC-444 (Development Alteration); MITRE ATT&CK " +
-			"T1195.002 (Compromise Software Supply Chain); NIST SP 800-218 (SSDF) PS.1, PS.2; NIST SP 800-53 SR-11, CM-14.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.Tampering,
+		Mitigation: "Keep repository and pipeline push and administrative interfaces off the internet, reachable only through a VPN or zero-trust gateway from managed developer endpoints.\n" +
+			"Protect release branches with review by someone other than the author, required status checks, signed commits, and no direct or force pushes, including by administrators.\n" +
+			"Build on ephemeral runners destroyed after each job, and pin third-party CI actions, plugins, and dependencies by digest or commit hash instead of mutable tags.\n" +
+			"Generate signed build provenance (SLSA Build Level 3 or higher) and sign every artifact (Sigstore cosign or Notation), and have deployment targets verify both before accepting an artifact.\n" +
+			"Restrict who can modify pipeline definitions, and protect pipeline secrets with environment-scoped approvals.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope development relevant technical assets which are either accessed by out-of-scope unmanaged " +
 			"developer clients and/or are directly accessed by any kind of internet-located (non-VPN) component or are themselves directly located " +
 			"on the internet.",
@@ -81,17 +76,10 @@ func (r *CodeBackdooringRule) GenerateRisks(parsedModel *types.Model) ([]*types.
 
 func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Code Backdooring</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Integrity (this category's own STRIDE value): backdoored code shipped
-	// into production can just as easily exfiltrate data as corrupt it, so a deployment target
-	// with high Confidentiality data deserves the same bump as one with high Integrity data.
-	impact := types.LowImpact
-	if !technicalAsset.Technologies.GetAttribute(types.CodeInspectionPlatform) {
-		impact = types.MediumImpact
-		if input.HighestProcessedConfidentiality(technicalAsset) >= types.Confidential || input.HighestProcessedIntegrity(technicalAsset) >= types.Critical {
-			impact = types.HighImpact
-		}
-	}
+	// Impact: baseline plus the CIA step on the higher of the processed confidentiality and integrity
+	// (readAndAlterImpact): backdoored code both reads and alters data.
+	impact := types.ClampImpact(int(readAndAlterImpact(input, types.MediumImpact, technicalAsset)) +
+		stepIf(technicalAsset.Technologies.GetAttribute(types.CodeInspectionPlatform), -1))
 	// data breach at all deployment targets
 	uniqueDataBreachTechnicalAssetIDs := make(map[string]interface{})
 	uniqueDataBreachTechnicalAssetIDs[technicalAsset.Id] = true
@@ -113,7 +101,7 @@ func (r *CodeBackdooringRule) createRisk(input *types.Model, technicalAsset *typ
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
-	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

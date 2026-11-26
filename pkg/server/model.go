@@ -59,13 +59,13 @@ author:
   name: ""
   homepage: ""
 date:
-business_overview:
+threat_landscape:
   description: ""
   images: []
 technical_overview:
   description: ""
   images: []
-business_criticality: ""
+mission_criticality: ""
 management_summary_comment: ""
 questions: {}
 abuse_cases: {}
@@ -235,8 +235,10 @@ func (s *server) getCover(ginContext *gin.Context) {
 
 type payloadOverview struct {
 	ManagementSummaryComment string         `yaml:"management_summary_comment" json:"management_summary_comment"`
-	BusinessCriticality      string         `yaml:"business_criticality" json:"business_criticality"`
-	BusinessOverview         input.Overview `yaml:"business_overview" json:"business_overview"`
+	MissionCriticality       string         `yaml:"mission_criticality" json:"mission_criticality"`
+	BusinessCriticality      string         `yaml:"business_criticality" json:"business_criticality"` // older name, still accepted
+	ThreatLandscape          input.Overview `yaml:"threat_landscape" json:"threat_landscape"`
+	BusinessOverview         input.Overview `yaml:"business_overview" json:"business_overview"` // older name, still accepted
 	TechnicalOverview        input.Overview `yaml:"technical_overview" json:"technical_overview"`
 }
 
@@ -258,15 +260,25 @@ func (s *server) setOverview(ginContext *gin.Context) {
 			})
 			return
 		}
-		criticality, err := types.ParseCriticality(payload.BusinessCriticality)
+		requested := payload.MissionCriticality
+		if requested == "" {
+			requested = payload.BusinessCriticality
+		}
+		criticality, _, err := types.ParseMissionCriticality(requested)
 		if err != nil {
 			handleErrorInServiceCall(err, ginContext)
 			return
 		}
 		modelInput.ManagementSummaryComment = payload.ManagementSummaryComment
-		modelInput.BusinessCriticality = criticality.String()
-		modelInput.BusinessOverview.Description = payload.BusinessOverview.Description
-		modelInput.BusinessOverview.Images = payload.BusinessOverview.Images
+		modelInput.MissionCriticality = criticality.String()
+		modelInput.BusinessCriticality = ""
+		landscape := payload.ThreatLandscape
+		if landscape.Description == "" && len(landscape.Images) == 0 {
+			landscape = payload.BusinessOverview
+		}
+		modelInput.ThreatLandscape.Description = landscape.Description
+		modelInput.ThreatLandscape.Images = landscape.Images
+		modelInput.BusinessOverview = input.Overview{}
 		modelInput.TechnicalOverview.Description = payload.TechnicalOverview.Description
 		modelInput.TechnicalOverview.Images = payload.TechnicalOverview.Images
 		ok = s.writeModel(ginContext, key, folderNameOfKey, &modelInput, "Overview Update")
@@ -289,8 +301,8 @@ func (s *server) getOverview(ginContext *gin.Context) {
 	if ok {
 		ginContext.JSON(http.StatusOK, gin.H{
 			"management_summary_comment": aModel.ManagementSummaryComment,
-			"business_criticality":       aModel.BusinessCriticality,
-			"business_overview":          aModel.BusinessOverview,
+			"mission_criticality":        aModel.MissionCriticality,
+			"threat_landscape":           aModel.ThreatLandscape,
 			"technical_overview":         aModel.TechnicalOverview,
 		})
 	}

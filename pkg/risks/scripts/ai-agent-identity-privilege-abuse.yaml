@@ -1,0 +1,243 @@
+id: ai-agent-identity-privilege-abuse
+title: "Agent Identity and Privilege Abuse"
+function: architecture
+stride: elevation-of-privilege
+finding_class: weakness-shown
+cwe: 441
+description: >
+  An AI agent, tool server, or AI gateway calls another asset under its own service identity rather
+  than the identity of the user it acts for. The target then authorizes the agent, so anything that
+  steers the agent gets all of the agent's permissions, for every user.
+impact: >
+  If this risk remains unmitigated, a prompt injection, a poisoned tool, or a compromised agent can
+  reach any data or action the agent's identity allows, including other users' data. A stolen agent
+  credential gives an attacker the same reach directly.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Propagate the end user''s identity through the agent to every downstream call where the target supports it, and scope each agent credential to the minimum that the agent''s task needs.'
+mitigation: >-
+  Where the target supports it, pass the end user's identity through the agent (OAuth token
+  exchange, on-behalf-of flows, or workload identity federation), so that each call is authorized as
+  the user.
+
+  Where a service identity is unavoidable, give each agent and tool its own identity scoped to the
+  resources it serves, rather than one shared, broad identity.
+
+  Keep those credentials in a vault, and rotate each one individually.
+
+  Enforce per-user authorization in the agent before it calls a tool on a user's behalf.
+
+  Log every downstream call with both the agent identity and the originating user.
+references: >-
+  OWASP Top 10 for Agentic Applications 2026 ASI03 (Identity and Privilege Abuse); OWASP GenAI
+  Data Security 2026 DSGAI02 (Agent Identity and Credential Exposure); MITRE ATLAS AML.T0012
+  (Valid Accounts); MAESTRO layers 6 and 7; CWE-441; CWE-250; CWE-522; NIST SP 800-53 AC-3, AC-6,
+  IA-2, and IA-9; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Does every downstream call this agent makes carry the end user''s identity, or, where it cannot, an agent-specific identity scoped to the minimum resources and operations, with per-user authorization enforced before the call?'
+detection_logic: >
+  List every identity that the agent, its tools, and any AI gateway authenticate with, along with
+  the permissions each one holds on its targets, and flag shared identities and permissions beyond
+  the task. Then, test whether a user can reach another user's data through the agent. Finally,
+  audit the downstream logs for calls that are attributable only to the agent identity, with no
+  originating user.
+risk_assessment: >
+  Critical when a shared or broad agent identity reaches assets that hold restricted-or-higher data,
+  or that have important-or-higher integrity or availability, especially across users or tenants.
+  However, the finding is High when every reachable asset is low-value.
+false_positives: >
+  This rule fires on any in-scope asset with the ai-agent-orchestrator, ai-tool-server, ai-gateway,
+  or ai-multi-agent-gateway technology that has an authenticated outgoing link whose authorization
+  is not end-user-identity-propagation (that is, technical-user or none). It ignores links from
+  agents and tool servers to model or operational infrastructure (an LLM endpoint, model serving, an
+  AI gateway, a guardrail, observability, or monitoring), since reaching the model as itself grants
+  nothing. However, an ai-gateway's links to its model backends do count, because holding those
+  credentials is the gateway's concentration risk. Model a link that passes the user's identity
+  through with authorization: end-user-identity-propagation, and such a link does not fire.
+  Additionally, a link with authentication: none is a missing-authentication problem, so this rule
+  ignores it. A credentials or client-certificate link also fires
+  hardcoded-credentials-secrets-sprawl, since that rule concerns where the secret is stored, whereas
+  this one concerns the privilege the agent acts with. Dispose of a confirmed-compliant asset
+  through risk_tracking, logging it as mitigated once every remaining service identity is confirmed
+  to be agent-specific, minimally scoped, vaulted, and preceded by per-user authorization.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_agent: false
+          - acts_as_itself: "has_service_identity_link({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            or:
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-tool-server}"
+              - true: "{.attributes.ai-gateway}"
+              - true: "{.attributes.ai-multi-agent-gateway}"
+          then:
+            - assign:
+                is_agent: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{is_agent}"
+            - true: "{acts_as_itself}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Agent Identity and Privilege Abuse</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True for a target that is model or operational infrastructure rather than a tool or data
+    # asset: an LLM endpoint, model serving, AI gateway, guardrail, AI observability stack, or
+    # monitoring. Calls to these are not tool actions and are ignored.
+    is_infra_target:
+      parameters:
+        - target_id
+      do:
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-llm-endpoint}"
+                - true: "{.attributes.ai-model-serving}"
+                - true: "{.attributes.ai-gateway}"
+                - true: "{.attributes.ai-guardrails}"
+                - true: "{.attributes.ai-observability-stack}"
+                - true: "{.attributes.monitoring}"
+            then:
+              - return: true
+        - return: false
+
+    # True when the link is authenticated (any non-zero authentication value; none is dropped on
+    # re-serialization and never matches) and does not propagate the end user's identity.
+    is_service_identity_link:
+      parameters:
+        - link
+      do:
+        - if:
+            and:
+              - or:
+                  - equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - equal:
+                      first: "{link.authentication}"
+                      second: externalized
+              - not-equal:
+                  first: "{link.authorization}"
+                  second: end-user-identity-propagation
+            then:
+              - return: true
+        - return: false
+
+    has_service_identity_link:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - is_gateway: false
+        - if:
+            any:
+              in: "{tech_asset.technologies}"
+              true: "{.attributes.ai-gateway}"
+            then:
+              - assign:
+                  is_gateway: true
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - service_identity: "is_service_identity_link({link})"
+                  - infra: "is_infra_target({link.target_id})"
+              - if:
+                  and:
+                    - true: "{service_identity}"
+                    - or:
+                        - false: "{infra}"
+                        - true: "{is_gateway}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Likelihood: likely baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(likely, {tech_asset})"
+
+    # Impact baseline: medium.
+    # Impact: baseline plus the CIA step for the highest rank across the agent and every
+    # target it reaches under its own service identity (max of C, I, A).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - is_gateway: false
+        - if:
+            any:
+              in: "{tech_asset.technologies}"
+              true: "{.attributes.ai-gateway}"
+            then:
+              - assign:
+                  is_gateway: true
+        - assign:
+            - best: "cia_rank({tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - service_identity: "is_service_identity_link({link})"
+                  - infra: "is_infra_target({link.target_id})"
+              - if:
+                  and:
+                    - true: "{service_identity}"
+                    - or:
+                        - false: "{infra}"
+                        - true: "{is_gateway}"
+                  then:
+                    - assign:
+                        - target_confidentiality: "{$model.technical_assets.{link.target_id}.confidentiality}"
+                        - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
+                        - target_availability: "{$model.technical_assets.{link.target_id}.availability}"
+                    - assign:
+                        - target_rank: "cia_rank({target_confidentiality}, {target_integrity}, {target_availability})"
+                    - if:
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

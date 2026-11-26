@@ -22,23 +22,20 @@ func (*MissingVaultIsolationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Isolate the secrets vault and its storage backend in a dedicated network segment reachable only through " +
 			"private endpoints by the workloads that need it.",
-		Mitigation: "Disable public network access on the vault and expose it only through private endpoints or VPC endpoints in a " +
-			"dedicated subnet with a default-deny network policy admitting only the specific workload subnets and " +
-			"management paths that need it. Do not co-host a self-managed vault (for example HashiCorp Vault) or its " +
-			"storage backend (Raft, Consul, a database) on the same servers, node pool, or database instance as " +
-			"application workloads. Restrict vault administration to privileged access workstations with just-in-time " +
-			"elevation, separate vault administrator roles from secret-consumer roles, and require MFA for all human " +
-			"access. Alert on vault policy changes, new access grants, bulk secret reads, and access from unexpected " +
-			"network sources. References: CWE-653; MITRE ATT&CK T1555 (Credentials from Password Stores), T1552 (Unsecured " +
-			"Credentials); NIST SP 800-53 SC-7, SC-12, AC-6.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Disable public network access on the vault and expose it only through private endpoints or VPC endpoints in a dedicated subnet with a default-deny network policy admitting only the specific workload subnets and management paths that need it.\n" +
+			"Do not co-host a self-managed vault (for example HashiCorp Vault) or its storage backend (Raft, Consul, a database) on the same servers, node pool, or database instance as application workloads.\n" +
+			"Restrict vault administration to privileged access workstations with just-in-time elevation, separate vault administrator roles from secret-consumer roles, and require MFA for all human access.\n" +
+			"Alert on vault policy changes, new access grants, bulk secret reads, and access from unexpected network sources.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope vault assets " +
 			"when surrounded by other (not vault-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-vault related assets are within the same execution environment (i.e. same database or same application server).",
-		RiskAssessment: "Default is " + types.MediumImpact.String() + " impact. The impact is increased to " + types.HighImpact.String() + " when the asset missing the " +
-			"trust-boundary protection is rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + ".",
+		RiskAssessment: "Likelihood starts at " + types.Unlikely.String() + ", one level higher when another asset shares the vault's execution " +
+			"environment. Impact starts at " + types.MediumImpact.String() + ", " + "one level higher for an asset rated " + types.Confidential.String() + "/" + types.Critical.String() + " or above, one level lower " +
+			"for " + types.Internal.String() + "/" + types.Operational.String() + " or below.",
 		FalsePositives: "When all assets within the network segmentation trust-boundary are hardened and protected to the same extend as if all were " +
 			"vaults with data of highest sensitivity.",
 		ModelFailurePossibleReason: false,
@@ -56,9 +53,6 @@ func (r *MissingVaultIsolationRule) GenerateRisks(input *types.Model) ([]*types.
 		if technicalAsset.OutOfScope || !technicalAsset.Technologies.GetAttribute(types.Vault) {
 			continue
 		}
-		moreImpact := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-			technicalAsset.Integrity == types.MissionCritical ||
-			technicalAsset.Availability == types.MissionCritical
 		sameExecutionEnv := false
 		createRiskEntry := false
 		// now check for any other same-network assets of non-vault-related types
@@ -79,7 +73,7 @@ func (r *MissingVaultIsolationRule) GenerateRisks(input *types.Model) ([]*types.
 			}
 		}
 		if createRiskEntry {
-			risks = append(risks, r.createRisk(technicalAsset, moreImpact, sameExecutionEnv))
+			risks = append(risks, r.createRisk(technicalAsset, sameExecutionEnv))
 		}
 	}
 	return risks, nil
@@ -89,18 +83,14 @@ func isVaultStorage(parsedModel *types.Model, vault *types.TechnicalAsset, stora
 	return storage.Type == types.Datastore && parsedModel.HasDirectConnection(vault, storage.Id)
 }
 
-func (r *MissingVaultIsolationRule) createRisk(techAsset *types.TechnicalAsset, moreImpact bool, sameExecutionEnv bool) *types.Risk {
-	impact := types.MediumImpact
-	baselineLikelihood := types.Unlikely
+func (r *MissingVaultIsolationRule) createRisk(techAsset *types.TechnicalAsset, sameExecutionEnv bool) *types.Risk {
+	impact := computeImpact(types.MediumImpact, r.Category().STRIDE, techAsset)
 	others := "<b>in the same network segment</b>"
-	if moreImpact {
-		impact = types.HighImpact
-	}
 	if sameExecutionEnv {
-		baselineLikelihood = types.Likely
 		others = "<b>in the same execution environment</b>"
 	}
-	likelihood := computeLikelihood(baselineLikelihood, techAsset)
+	// One level more likely when sharing an execution environment rather than only a network segment.
+	likelihood := computeLikelihood(types.Unlikely, techAsset, stepIf(sameExecutionEnv, 1))
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),

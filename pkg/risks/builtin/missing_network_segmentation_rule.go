@@ -27,26 +27,22 @@ func (*MissingNetworkSegmentationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Place this high-value asset in its own network segment with default-deny rules that admit only its documented " +
 			"callers and ports.",
-		Mitigation: "Separate this asset from lower-trust components such as web servers, CMSs, client systems, build tooling, and " +
-			"monitoring hosts by placing it in a dedicated subnet, VNet/VPC, or Kubernetes namespace with default-deny " +
-			"ingress and egress. Use network security groups, cloud firewall rules, or Kubernetes NetworkPolicies (Calico, " +
-			"Cilium) to admit only the documented source assets on the documented ports, and deny lateral traffic inside " +
-			"shared segments. Prefer private endpoints for PaaS data services so they have no public or shared-subnet " +
-			"exposure. Where workloads must share a cluster, add identity-aware service-mesh authorization (mTLS with " +
-			"per-service policies). Enable flow logging (NSG flow logs, VPC Flow Logs) to baseline and alert on traffic " +
-			"into the segment, and keep the segmentation reflected in the boundary diagram and the ports, protocols, and " +
-			"services list. References: CWE-653; MITRE ATT&CK TA0008 (Lateral Movement), T1210 (Exploitation of Remote " +
-			"Services); NIST SP 800-53 SC-7, SC-7(5), AC-4; NIST SP 800-207.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Separate this asset from lower-trust components (web servers, CMSs, clients, build tooling, and monitoring hosts) in a dedicated subnet, VNet or VPC, or namespace with default-deny ingress and egress.\n" +
+			"Admit only the documented sources and ports through security groups, firewall rules, or Kubernetes NetworkPolicies, and deny lateral traffic inside shared segments.\n" +
+			"Prefer private endpoints for PaaS data services.\n" +
+			"Where workloads share a cluster, add service-mesh authorization with mTLS and per-service policies.\n" +
+			"Enable flow logging to baseline and alert on traffic into the segment, and keep the segmentation reflected in the boundary diagram and the ports, protocols, and services list.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets with high sensitivity and RAA values as well as data stores " +
 			"when surrounded by assets (without a network trust-boundary in-between) which are of type " + types.ClientSystem + ", " +
 			types.WebServer + ", " + types.WebApplication + ", " + types.CMS + ", " + types.WebServiceREST + ", " + types.WebServiceSOAP + ", " +
 			types.BuildPipeline + ", " + types.SourcecodeRepository + ", " + types.Monitoring + ", or similar and there is no direct connection between these " +
 			"(hence no requirement to be so close to each other).",
-		RiskAssessment: "Default is " + types.LowSeverity.String() + " risk. The risk is increased to " + types.MediumSeverity.String() + " when the asset missing the " +
-			"trust-boundary protection is rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + ".",
+		RiskAssessment: "Impact starts at " + types.LowImpact.String() + ", " + "one level higher for an asset rated " + types.Confidential.String() + "/" + types.Critical.String() + " or above, one level lower " +
+			"for " + types.Internal.String() + "/" + types.Operational.String() + " or below.",
 		FalsePositives: "When all assets within the network segmentation trust-boundary are hardened and protected to the same extend as if all were " +
 			"containing/processing highly sensitive data.",
 		ModelFailurePossibleReason: false,
@@ -73,7 +69,9 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 			continue
 		}
 
-		if !technicalAsset.Technologies.GetAttribute(types.IsNoNetworkSegmentationRequired) {
+		// Skip what needs no segmentation of its own (IDS and IPS, reverse proxies, service
+		// registries, and WAFs).
+		if technicalAsset.Technologies.GetAttribute(types.IsNoNetworkSegmentationRequired) {
 			continue
 		}
 
@@ -99,9 +97,7 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 				isSameTrustBoundaryNetworkOnly(input, technicalAsset, sparringAssetCandidateId) &&
 				!input.HasDirectConnection(technicalAsset, sparringAssetCandidateId) &&
 				!sparringAssetCandidate.Technologies.GetAttribute(types.IsCloseToHighValueTargetsTolerated) {
-				highRisk := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-					technicalAsset.Integrity == types.MissionCritical || technicalAsset.Availability == types.MissionCritical
-				risks = append(risks, r.createRisk(technicalAsset, highRisk))
+				risks = append(risks, r.createRisk(technicalAsset))
 				break
 			}
 		}
@@ -109,17 +105,11 @@ func (r *MissingNetworkSegmentationRule) GenerateRisks(input *types.Model) ([]*t
 	return risks, nil
 }
 
-func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAsset, moreRisky bool) *types.Risk {
-	impact := types.LowImpact
-	if moreRisky {
-		impact = types.MediumImpact
-	}
-	// RAA already decides whether this risk fires at all (see GenerateRisks's raaLimit gate,
-	// 50% -- already at or above raaLikelihoodThreshold's 40%) -- that detection-logic role is
-	// kept as-is. computeLikelihood() is still applied on top of the flat baseline for
-	// consistency with every other rule's scoring: every asset that reaches this point already
-	// earns the RAA Likelihood delta too, so Unlikely becomes Possible here consistently -- the
-	// reachability delta can still vary per asset even though the RAA delta cannot.
+func (r *MissingNetworkSegmentationRule) createRisk(techAsset *types.TechnicalAsset) *types.Risk {
+	impact := computeImpact(types.LowImpact, r.Category().STRIDE, techAsset)
+	// The raaLimit gate (50) decides whether this risk fires, and computeLikelihood() then scores
+	// it like every other rule. The gate is above types.RAALikelihoodThreshold, so every asset here
+	// takes the RAA step, while the internet step still varies per asset.
 	likelihood := computeLikelihood(types.Unlikely, techAsset)
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,

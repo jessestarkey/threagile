@@ -21,21 +21,14 @@ func (*UnencryptedAssetRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
 		Action: "Enable encryption at rest for this asset and all of its backups and snapshots using FIPS 140-validated " +
 			"cryptography, with customer-managed keys held in a separate key vault for sensitive data.",
-		Mitigation: "Turn on storage-level encryption for every volume, database, bucket, backup, and snapshot of this asset " +
-			"(Azure Storage Service Encryption and Transparent Data Encryption; AWS EBS, S3, and RDS encryption; LUKS or " +
-			"BitLocker on self-managed hosts) using FIPS 140-2/140-3 validated modules. For CUI and higher-sensitivity " +
-			"data, use customer-managed keys held in a separate key vault or HSM, restricted to the storage service's " +
-			"identity, rotated on a defined schedule, with key access logged. Where the threat includes privileged " +
-			"insiders or an attacker with filesystem or database access on a running host, add application- or field-level " +
-			"encryption (SQL Always Encrypted, envelope encryption with per-record data keys) for the most sensitive " +
-			"fields, because volume encryption only protects against offline media access. Encrypt temporary files, " +
-			"caches, swap, and logs that may contain sensitive data, and enforce encryption through policy (Azure Policy, " +
-			"AWS Config) so unencrypted resources cannot be created. References: CWE-311, CWE-312; MITRE ATT&CK T1005 " +
-			"(Data from Local System), T1530 (Data from Cloud Storage); OWASP Top 10:2025 A04 (Cryptographic Failures); " +
-			"NIST SP 800-53 SC-28, SC-28(1), SC-12, SC-13.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.InformationDisclosure,
+		Mitigation: "Encrypt every volume, database, bucket, backup, and snapshot of this asset (Azure Storage Service Encryption and TDE, AWS EBS, S3, and RDS encryption, or LUKS or BitLocker on self-managed hosts) with FIPS 140-2 or 140-3 validated modules.\n" +
+			"For CUI and more sensitive data, restrict the customer-managed keys to the storage service's identity, rotate them on a defined schedule, and log key access.\n" +
+			"Where the threat includes privileged insiders or a running-host compromise, add field-level encryption (SQL Always Encrypted or envelope encryption) for the most sensitive fields, since volume encryption protects only against offline media access.\n" +
+			"Encrypt temporary files, caches, swap, and logs that may hold sensitive data, and enforce encryption through policy (Azure Policy or AWS Config) so unencrypted resources cannot be created.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.InformationDisclosure,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope unencrypted technical assets (excluding " + types.ReverseProxy +
 			", " + types.LoadBalancer + ", " + types.WAF + ", " + types.IDS +
 			", " + types.IPS + " and embedded components like " + types.Library + ") " +
@@ -43,7 +36,7 @@ func (*UnencryptedAssetRule) Category() *types.RiskCategory {
 			"For technical assets storing data assets rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + " the " +
 			"encryption must be of type " + types.DataWithEndUserIndividualKey.String() + ".",
 		// NOTE: the risk assessment does not only consider the CIs of the *stored* data-assets
-		RiskAssessment:             "Depending on the confidentiality rating of the stored data-assets either medium or high risk.",
+		RiskAssessment:             "Likelihood starts at Unlikely. Impact starts at Low and steps on the confidentiality of the data the asset stores. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives:             "When all sensitive data stored within the asset is already fully encrypted on document or data level.",
 		ModelFailurePossibleReason: false,
 		CWE:                        311,
@@ -74,16 +67,15 @@ func (r *UnencryptedAssetRule) GenerateRisks(input *types.Model) ([]*types.Risk,
 
 		verySensitive := highestStoredConfidentiality == types.StrictlyConfidential || highestStoredIntegrity == types.MissionCritical
 		requiresEndUserKey := verySensitive && technicalAsset.Technologies.GetAttribute(types.IsUsuallyStoringEndUserData)
+		// Encryption at rest protects what the asset stores, so the CIA step reads the stored data.
+		storedImpact := impactForRatings(types.LowImpact, r.Category().STRIDE, highestStoredConfidentiality,
+			highestStoredIntegrity, input.HighestStoredAvailability(technicalAsset))
 		if technicalAsset.Encryption == types.NoneEncryption {
-			impact := types.MediumImpact
-			if verySensitive {
-				impact = types.HighImpact
-			}
-			risks = append(risks, r.createRisk(technicalAsset, impact, requiresEndUserKey))
+			risks = append(risks, r.createRisk(technicalAsset, storedImpact, requiresEndUserKey))
 			continue
 		}
 		if requiresEndUserKey && technicalAsset.Encryption != types.DataWithEndUserIndividualKey {
-			risks = append(risks, r.createRisk(technicalAsset, types.MediumImpact, requiresEndUserKey))
+			risks = append(risks, r.createRisk(technicalAsset, storedImpact, requiresEndUserKey))
 			continue
 		}
 	}
@@ -102,10 +94,8 @@ func (r *UnencryptedAssetRule) createRisk(technicalAsset *types.TechnicalAsset, 
 	if requiresEndUserKey {
 		title += " missing end user individual encryption with " + types.DataWithEndUserIndividualKey.String()
 	}
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
-	// own detection/assessment logic already deliberately considers both (see the "NOTE" comment
-	// above in GenerateRisks), not just the stored data's confidentiality.
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens
+	// (confidentiality), for the data the asset stores.
 	likelihood := computeLikelihood(types.Unlikely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

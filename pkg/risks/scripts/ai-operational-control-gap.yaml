@@ -1,0 +1,132 @@
+id: ai-operational-control-gap
+title: "AI Operational Control Gap"
+function: operations
+stride: tampering
+finding_class: control-not-evidenced
+cwe: 693
+description: >
+  This AI asset's behavior is set by artifacts that change outside code review (prompts, model
+  versions, adapters, and skill and tool definitions), and it can drift or be hijacked at runtime.
+  Without change control, behavioral monitoring, and a kill switch, a bad change or a rogue agent
+  keeps acting until a full redeployment.
+impact: >
+  If this risk remains unmitigated, an unreviewed prompt edit, a swapped model, an updated skill, or
+  a hijacked agent can widen what the AI does or remove a safety constraint with no runtime signal,
+  and keep acting for a full redeployment cycle.
+asvs: "V1 - Architecture, Design and Threat Modeling"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Version, review, and canary-test every prompt, model, and skill change with a tested rollback. Additionally, monitor the asset''s behavior against its intended scope, and provide a tested kill switch.'
+mitigation: >-
+  Store system prompts, model and adapter versions, and skill and tool definitions as versioned
+  artifacts with the same review as code, and pin production to a reviewed version, with no
+  auto-updating skills or floating model tags.
+
+  Keep system instructions separate from user and tool content in every prompt version.
+
+  Run a versioned suite of canary prompts, including guardrail checks, before promotion and on a
+  schedule against production, and alert on any deviation.
+
+  Keep the previous validated version ready to serve, and test the rollback.
+
+  Send the asset's actions, tool calls, and outputs to AI-aware monitoring, and alert on behavior
+  outside its declared scope.
+
+  Provide a kill switch that is independent of the deployment pipeline, has automated and manual
+  triggers and a defined safe mode, and revokes the asset's credentials. Drill it, and record the
+  time to halt.
+references: >-
+  OWASP Agentic Skills Top 10 2026 AST07 (Update Drift); OWASP Top 10 for Agentic Applications
+  2026 ASI10 (Rogue Agents); OWASP LLM Top 10 2026 LLM05 (Data and Model Poisoning, covering
+  fine-tuning subversion) and LLM08 (Hidden Context Exposure); MITRE ATLAS AML.T0053 and
+  AML.T0054; MAESTRO layers 1, 4, 5, and 6; CWE-693; CWE-284; NIST SP 800-53 CM-3, SI-4, SI-6,
+  IR-4, and CP-10; NIST AI RMF GOVERN 1.5, MEASURE 2.4, MANAGE 2.4, and MANAGE 4.1; Mappings from
+  the OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Are prompts, models, and skills version-controlled, reviewed, pinned, canary-gated, and rollback-tested, is the asset''s behavior monitored against its intended scope, and is there a tested, independent kill switch?'
+detection_logic: >
+  Trace the production prompt, model, and skill versions back to approved reviews, and review the
+  canary run history and a rollback drill record. Then, confirm that the asset's actions reach an
+  AI-aware monitoring stack with out-of-scope alerting. Finally, request evidence of a kill-switch
+  drill with a recorded time to halt.
+risk_assessment: >
+  High for a production agent with write-capable tools, or a model that serves consequential output,
+  whose prompts, models, or skills can change without review, canary testing, or rollback, and that
+  has neither behavioral monitoring nor an independent kill switch.
+false_positives: >
+  This rule fires on every in-scope asset with the ai-llm-endpoint, ai-model-serving,
+  ai-rag-pipeline, or ai-agent-orchestrator technology, because change control and kill switches are
+  not something the model can record. However, likelihood steps down one level when the asset has an
+  outgoing link to an ai-observability-stack asset, since its behavior is then monitored. Dispose of
+  a confirmed-compliant asset through risk_tracking, logging it as mitigated once change control
+  with canary gating and a tested rollback, behavioral monitoring, and a tested independent kill
+  switch are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-model-serving}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>AI Operational Control Gap</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    has_observability_link:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - if:
+                  any:
+                    in: "{$model.technical_assets.{link.target_id}.technologies}"
+                    true: "{.attributes.ai-observability-stack}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps, one level lower with a link to monitoring or an AI observability stack.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - step: 0
+            - monitored: "has_observability_link({tech_asset})"
+        - if:
+            true: "{monitored}"
+            then:
+              - assign:
+                  step: -1
+        - return: "adjust_likelihood(possible, {tech_asset}, {step})"
+
+    # Impact: low baseline plus the CIA step on I (STRIDE tampering).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(low, {tech_asset.integrity})"

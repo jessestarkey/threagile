@@ -77,7 +77,7 @@ func TestContainerPlatformEscapeRuleGenerateRisksTechAssetContainerPlatformRisks
 	assert.Nil(t, err)
 	assert.NotEmpty(t, risks)
 	assert.Equal(t, "<b>Container Platform Escape</b> risk at <b>Docker</b>", risks[0].Title)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 	assert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)
 	assert.Equal(t, "ta1", risks[0].DataBreachTechnicalAssetIDs[0])
 }

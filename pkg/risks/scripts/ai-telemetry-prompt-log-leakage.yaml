@@ -1,0 +1,274 @@
+id: ai-telemetry-prompt-log-leakage
+title: "AI Telemetry and Prompt-Log Leakage"
+function: operations
+stride: information-disclosure
+finding_class: control-not-evidenced
+cwe: 532
+description: >
+  AI tracing captures full prompts, retrieved documents, tool calls, and responses, often by
+  default. When this telemetry carries confidential-or-higher data to a monitoring or observability
+  stack, it becomes a second copy of that data with weaker access control, longer retention, and a
+  wider audience.
+impact: >
+  If this risk remains unmitigated, sensitive prompts and responses accumulate where operators,
+  vendors, and integrations can read them without a need to know, and one compromise exposes them
+  all. For CUI or classified data, the copy is itself a spill.
+asvs: "V16 - Security Logging and Error Handling"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+action: 'Redact or exclude sensitive content from AI telemetry before it leaves the asset, and protect and retain the observability stack at the classification of what it still holds.'
+mitigation: >-
+  Record metadata (the model, latency, token counts, tool names, and outcomes) rather than full
+  prompt and response bodies by default, and redact sensitive fields before telemetry leaves the
+  asset.
+
+  Where full content must be kept, send it to a store accredited for its classification, restrict it
+  to named roles, and enforce short retention.
+
+  Review third-party observability vendors' data handling before sending them AI telemetry.
+
+  Alert on access to, and bulk export of, stored prompts.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI14 (Excessive Telemetry and Monitoring Leakage); MITRE ATLAS
+  AML.T0024, AML.T0025, and AML.T0036; MAESTRO layers 2, 5, and 6; CWE-532; CWE-312; CWE-200; NIST
+  SP 800-53 AU-9, AU-11, AC-3, and SI-12; Mappings from the OWASP GenAI Security Crosswalk 2026-Q3
+  (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is sensitive content redacted or excluded from AI telemetry before it leaves the asset, and is any retained full content held in a store accredited for its classification, with restricted access and enforced retention?'
+detection_logic: >
+  Inspect a sample of the traces and logs in the monitoring or observability stack for prompt,
+  document, and response content. Then, review the tracing configuration for full-body capture
+  defaults, redaction coverage, retention settings, and who can read stored traces.
+risk_assessment: >
+  Critical when strictly confidential data reaches telemetry that is stored outside an environment
+  accredited for it. However, the finding is High for confidential data.
+false_positives: >
+  This rule fires on any in-scope asset that sees prompts and responses (an ai-llm-endpoint,
+  ai-model-serving, ai-agent-orchestrator, ai-rag-pipeline, ai-gateway, ai-multi-agent-gateway, or
+  ai-guardrails asset) or that stores them (an ai-observability-stack), and that stores or processes
+  a data asset rated confidential or higher, or sends one over a telemetry link. Since AI tracing
+  captures full prompts and responses by default, the telemetry link does not have to be drawn for
+  the risk to exist. Tool servers, vector stores, and data pipelines handle data but not prompts, so
+  they do not fire. Note that Threagile adds every data asset that an asset sends to its processed
+  list, so the data on a modeled telemetry link counts as processed too. Dispose of a
+  confirmed-compliant asset through risk_tracking, logging it as mitigated once redaction, and
+  accredited, restricted, retention-limited storage, are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_ai: false
+          - sends_sensitive: "sends_sensitive_telemetry({tech_asset})"
+          - holds_sensitive: "holds_confidential({tech_asset})"
+      # Only assets that see prompts and responses: the ones AI tracing actually captures
+      # content from, plus the observability stack that stores it. Tool servers, vector stores and
+      # pipelines handle data but not prompts, so a finding there would repeat this one.
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            or:
+              - true: "{.attributes.ai-llm-endpoint}"
+              - true: "{.attributes.ai-model-serving}"
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-rag-pipeline}"
+              - true: "{.attributes.ai-gateway}"
+              - true: "{.attributes.ai-multi-agent-gateway}"
+              - true: "{.attributes.ai-guardrails}"
+              - true: "{.attributes.ai-observability-stack}"
+          then:
+            - assign:
+                is_ai: true
+      # AI tracing captures full prompts and responses by default, so a prompt-handling asset with
+      # confidential data is in scope whether or not its telemetry link is drawn.
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{is_ai}"
+            - or:
+                - true: "{holds_sensitive}"
+                - true: "{sends_sensitive}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>AI Telemetry and Prompt-Log Leakage</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Returns "strict" / "confidential" / "" for a data asset id.
+    data_level:
+      parameters:
+        - data_id
+      do:
+        - if:
+            equal:
+              first: "{$model.data_assets.{data_id}.confidentiality}"
+              second: strictly-confidential
+            then:
+              - return: strict
+        - if:
+            equal:
+              first: "{$model.data_assets.{data_id}.confidentiality}"
+              second: confidential
+            then:
+              - return: confidential
+        - return: none
+
+    # Highest level ("strict" / "confidential" / "none") of data sent on any outgoing link to a
+    # monitoring or AI observability asset.
+    telemetry_level:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: none
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - if:
+                  any:
+                    in: "{$model.technical_assets.{link.target_id}.technologies}"
+                    or:
+                      - true: "{.attributes.monitoring}"
+                      - true: "{.attributes.ai-observability-stack}"
+                  then:
+                    - loop:
+                        in: "{link.data_assets_sent}"
+                        item: data_id
+                        do:
+                          - assign:
+                              - level: "data_level({data_id})"
+                          - if:
+                              equal:
+                                first: "{level}"
+                                second: strict
+                              then:
+                                - assign:
+                                    best: strict
+                          - if:
+                              and:
+                                - equal:
+                                    first: "{level}"
+                                    second: confidential
+                                - equal:
+                                    first: "{best}"
+                                    second: none
+                              then:
+                                - assign:
+                                    best: confidential
+        - return: "{best}"
+
+    sends_sensitive_telemetry:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - level: "telemetry_level({tech_asset})"
+        - if:
+            equal:
+              first: "{level}"
+              second: none
+            then:
+              - return: false
+        - return: true
+
+    # Highest level of data the asset itself stores or processes.
+    held_level:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: none
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - level: "data_level({data_id})"
+              - if:
+                  equal:
+                    first: "{level}"
+                    second: strict
+                  then:
+                    - assign:
+                        best: strict
+              - if:
+                  and:
+                    - equal:
+                        first: "{level}"
+                        second: confidential
+                    - equal:
+                        first: "{best}"
+                        second: none
+                  then:
+                    - assign:
+                        best: confidential
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - assign:
+                  - level: "data_level({data_id})"
+              - if:
+                  equal:
+                    first: "{level}"
+                    second: strict
+                  then:
+                    - assign:
+                        best: strict
+              - if:
+                  and:
+                    - equal:
+                        first: "{level}"
+                        second: confidential
+                    - equal:
+                        first: "{best}"
+                        second: none
+                  then:
+                    - assign:
+                        best: confidential
+        - return: "{best}"
+
+    holds_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - level: "held_level({tech_asset})"
+        - if:
+            equal:
+              first: "{level}"
+              second: none
+            then:
+              - return: false
+        - return: true
+
+    # Likelihood: likely baseline plus the RAA and internet steps.
+    # No step for a modeled telemetry link: the baseline already sits at the cap for a
+    # control-not-evidenced finding (see docs/risk-methodology.md, Risk calibration).
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(likely, {tech_asset})"
+
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step. The rule fires only when confidential
+    # or higher data is involved, so that data sets the floor for the step.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(medium, {tech_asset.confidentiality}, confidential)"

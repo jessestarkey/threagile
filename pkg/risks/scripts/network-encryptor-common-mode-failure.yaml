@@ -2,45 +2,46 @@ id: network-encryptor-common-mode-failure
 title: "CSfC Network Encryptor Common-Mode Failure"
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 653
 description: >
-  A CSfC-approved network encryption architecture requires two independent encryption layers
-  built from diverse components so that a flaw in one layer alone cannot expose plaintext
-  (red) traffic to the untrusted (black) side. A collapsed single layer, or two layers sharing
-  a vendor, codebase, or vulnerability, defeats that independence requirement without any
-  outward sign of failure.
+  A CSfC network encryption architecture needs two independent layers from diverse components, so a
+  flaw in one cannot expose red traffic to the black side. A collapsed single layer, or two layers
+  sharing a vendor, codebase, or flaw, defeats that independence with no outward sign.
 impact: >
-  If this risk remains unmitigated, a single flaw common to both encryption layers -- or a
-  deployment that silently runs only one layer -- lets classified or CUI plaintext cross the
-  red/black boundary with the same apparent assurance as a properly layered deployment.
+  If this risk remains unmitigated, one flaw common to both layers, or a deployment silently running
+  one layer, lets classified or CUI plaintext cross the red/black boundary with the same apparent
+  assurance.
 asvs: "V9 - Communications"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
-action: "Confirm the two required encryption layers are built from diverse, independently-sourced components with no shared vendor, codebase, or known common vulnerability."
-mitigation: >
-  Verify both encryption layers required by the CSfC Capability Package are actually present
-  and independently keyed -- not a single layer misconfigured to appear as two, and not two
-  layers sourced from the same vendor or sharing underlying code that a single vulnerability
-  could defeat both at once. Periodically re-verify this independence, since a hardware
-  replacement, firmware update, or configuration change after initial accreditation could
-  silently collapse the two layers into one without any functional symptom. Maintain
-  documented key management and rotation for each layer separately. References: NSA
-  Commercial Solutions for Classified (CSfC) Customer Handbook; NIST SP 800-53 SC-8
-  (Transmission Confidentiality and Integrity); NIST SP 800-53 SC-13 (Cryptographic
-  Protection).
-check: "Are the two required CSfC encryption layers independently sourced and keyed with no shared vendor, codebase, or known common vulnerability, and is that independence periodically re-verified?"
+action: 'Confirm that the two required encryption layers are built from diverse, independently sourced components, with no shared vendor, codebase, or known common vulnerability.'
+mitigation: >-
+  Verify that both encryption layers required by the CSfC Capability Package are actually present
+  and independently keyed. In other words, they must not be a single layer misconfigured to appear
+  as two, nor two layers from the same vendor, or sharing underlying code, that a single
+  vulnerability could defeat at once.
+
+  Re-verify this independence periodically, since a hardware replacement, a firmware update, or a
+  configuration change after the initial accreditation could silently collapse the two layers into
+  one without any functional symptom.
+
+  Maintain documented key management and rotation for each layer separately.
+references: >-
+  NSA Commercial Solutions for Classified (CSfC) Customer Handbook; NIST SP 800-53 SC-8
+  (Transmission Confidentiality and Integrity) and SC-13 (Cryptographic Protection)
+check: 'Are the two required CSfC encryption layers independently sourced and keyed, with no shared vendor, codebase, or known common vulnerability, and is that independence re-verified periodically?'
 detection_logic: >
-  Audit the encryption architecture's documentation and configuration for evidence both
+  Audit the encryption architecture's documentation and configuration for evidence that both
   required layers are present, independently keyed, and sourced from diverse components.
-  Confirm a recurring re-verification process exists, distinct from one-time initial
-  accreditation.
+  Additionally, confirm that a recurring re-verification process exists, distinct from the one-time
+  initial accreditation.
 risk_assessment: >
-  Critical for any CSfC-architected transport whose two-layer independence has not been
-  verified since initial accreditation, or where both layers share a vendor or codebase.
+  Critical for any CSfC-architected transport whose two-layer independence has not been verified
+  since the initial accreditation, or where both layers share a vendor or codebase.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope network-encryptor
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log
-  it as mitigated once two-layer independence is confirmed and a recurring re-verification
-  process is in place.
+  This rule fires on every in-scope network encryptor asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once the two-layer independence is confirmed and a recurring re-verification process is in place.
 
 risk:
   id:
@@ -71,53 +72,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "unlikely" (the floor) -- a properly accredited CSfC deployment is assumed
-    # correct absent a specific reason to doubt it, so only the upward (RAA >= 40) delta is
-    # reachable.
+    # Likelihood: unlikely baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: possible
-            else:
-              - return: unlikely
+        - return: "adjust_likelihood(unlikely, {tech_asset})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "very-high" (the
-    # ceiling), so only the downward (Confidentiality low) delta is reachable -- a collapsed
-    # boundary exposes everything the encryptor was relied upon to protect, regardless of this
-    # asset's own rating.
-    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
-    # Business Criticality bump that used to apply here was removed (see git history / the
-    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
-    # already-peripheral assets rather than protecting genuinely under-rated ones).
+    # Impact: high baseline plus the CIA step on C (STRIDE information-disclosure).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - confidentiality_low: true
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: restricted
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - assign:
-                  confidentiality_low: false
-        - if:
-            true: "{confidentiality_low}"
-            then:
-              - return: high
-            else:
-              - return: very-high
+        - return: "adjust_impact(high, {tech_asset.confidentiality})"

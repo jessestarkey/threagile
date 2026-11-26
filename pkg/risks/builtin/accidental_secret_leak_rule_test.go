@@ -129,7 +129,7 @@ func TestAccidentalSecretLeakRuleGenerateRisksTechAssetProcessStrictlyConfidenti
 
 	assert.Nil(t, err)
 	assert.Equal(t, len(risks), 1)
-	assert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
 }
 
 func TestAccidentalSecretLeakRuleGenerateRisksAssetWithMultipleTagsIncludingGitCreatesGitPrefixRisk(t *testing.T) {
@@ -234,7 +234,7 @@ func TestAccidentalSecretLeakRuleGenerateRisksAssetWithCriticalIntegrityDataCrea
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(risks))
-	assert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)
+	assert.Equal(t, types.LowImpact, risks[0].ExploitationImpact)
 }
 
 func TestAccidentalSecretLeakRuleGenerateRisksAssetWithMayContainSecretsTrueButNoDataCreatesLowImpactRisk(t *testing.T) {

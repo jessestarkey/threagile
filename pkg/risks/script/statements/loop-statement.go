@@ -150,6 +150,11 @@ func (what *LoopStatement) run(scope *common.Scope, value common.Value) (string,
 	case common.Value:
 		return what.run(scope, common.SomeValue(castValue.Value(), value.Event()))
 
+	case nil:
+		// An absent field is an empty list, not an error: the model is re-serialized with
+		// omitempty before scripts see it, so an asset with no communication_links (or no
+		// data_assets_processed, tags, ...) has no such key at all. Loop zero times.
+
 	default:
 		return what.Literal(), fmt.Errorf("failed to run loop-statement: expected iterable type, got %T", value)
 	}

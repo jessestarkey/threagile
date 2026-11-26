@@ -2,39 +2,44 @@ id: broken-object-property-level-authorization
 title: Broken Object Property Level Authorization (Mass Assignment)
 function: architecture
 stride: tampering
+finding_class: control-not-evidenced
 cwe: 915
 description: >
-  The backend API binds client request bodies directly to internal models without an explicit
-  per-field allow-list, allowing a client to set privileged fields the UI never exposes, or
-  receives fields in a response that were never meant to be exposed.
+  The backend API binds request bodies directly to internal models without a per-field allow-list.
+  Thus, a client can set privileged fields that the UI never exposes, or receive fields that were
+  never meant to be returned.
 impact: >
-  If this risk remains unmitigated, a client can escalate privilege by setting a field the
-  application's own framework silently accepted despite the UI never exposing it, or harvest
-  sensitive fields an endpoint returns without ever intending to.
+  If this risk remains unmitigated, a client can escalate privilege by setting a field that the
+  framework silently accepts, or harvest sensitive fields that an endpoint returns unintentionally.
 asvs: "V4 - Access Control"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html"
-action: "Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request/response bodies directly to internal models."
-mitigation: >
-  Use explicit request/response DTOs scoped per-endpoint rather than binding client input
-  directly to internal domain/ORM models. Maintain an explicit allow-list of which properties a
-  given role may write and which properties a response may include, enforced server-side
-  regardless of what the client sends. Include automated test cases that attempt to set
-  privileged/internal fields via the API and verify they are rejected. References: OWASP API
-  Security Top 10 API3:2023; NIST SP 800-53 AC-3 (Access Enforcement); CWE-915.
-check: "Does every API endpoint use explicit per-endpoint DTOs with a server-enforced allow-list of client-writable/readable properties?"
+action: 'Enforce an explicit allow-list of client-writable and client-readable properties on every API endpoint, rather than binding request and response bodies directly to internal models.'
+mitigation: >-
+  Use explicit request and response DTOs scoped to each endpoint, rather than binding client input
+  directly to internal domain or ORM models.
+
+  Maintain an explicit allow-list of which properties a given role may write, and which properties a
+  response may include, enforced on the server regardless of what the client sends.
+
+  Include automated test cases that attempt to set privileged or internal fields through the API,
+  and verify that they are rejected.
+references: >-
+  OWASP API Security Top 10 API3:2023; NIST SP 800-53 AC-3 (Access Enforcement); CWE-915
+check: 'Does every API endpoint use explicit, per-endpoint DTOs, with a server-enforced allow-list of the properties a client may write and read?'
 detection_logic: >
-  Include automated API test cases that submit requests containing internal/privileged field
-  names not exposed in the documented request schema, and verify the server ignores or rejects
-  them. Diff each endpoint's actual JSON response against its documented response schema in CI.
+  Include automated API test cases that submit requests containing internal or privileged field
+  names that are not in the documented request schema, and verify that the server ignores or rejects
+  them. Additionally, compare each endpoint's actual JSON response against its documented response
+  schema in CI.
 risk_assessment: >
   High for any API that binds request bodies directly to internal models without an explicit
-  per-field allow-list. Escalates to Critical if a privilege-bearing field is client-writable
-  without server-side filtering.
+  per-field allow-list. However, the finding rises to Critical if a privilege-bearing field is
+  client-writable without server-side filtering.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope request-serving API
-  asset, by design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it
-  as mitigated once every endpoint is confirmed to use explicit per-endpoint request/response
-  DTOs with a documented, server-enforced allow-list.
+  This rule fires on every in-scope request-serving API asset by design, so no tag suppresses it.
+  Instead, dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated
+  once every endpoint is confirmed to use explicit, per-endpoint request and response DTOs with a
+  documented, server-enforced allow-list.
 
 risk:
   id:
@@ -65,63 +70,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-        - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
-    # STRIDE is Tampering -> Integrity. Baseline is "high".
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: medium baseline plus the CIA step on I (STRIDE tampering).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.integrity}"
-              second: important
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: very-high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: high
-        - return: medium
+        - return: "adjust_impact(medium, {tech_asset.integrity})"

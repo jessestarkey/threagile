@@ -23,23 +23,20 @@ func (*UnencryptedCommunicationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html",
 		Action: "Encrypt this link with TLS 1.2 or higher (TLS 1.3 preferred) using FIPS-approved cipher suites and full " +
 			"certificate validation, or mutual TLS between services.",
-		Mitigation: "Replace the plaintext protocol on this link with its TLS-protected equivalent (HTTPS, LDAPS, SMTPS, AMQPS, " +
-			"Kafka SSL, or database TLS such as SQL Server Encrypt=Strict, PostgreSQL sslmode=verify-full, MySQL REQUIRE " +
-			"X509). Configure TLS 1.2 minimum and TLS 1.3 preferred, restricted to FIPS-approved cipher suites with " +
-			"forward secrecy per NIST SP 800-52 Rev. 2, and disable SSL, TLS 1.0, and TLS 1.1. Clients must validate the " +
-			"server certificate chain and hostname; never disable verification in code or configuration. For " +
-			"service-to-service traffic inside a cluster or VNet, use mutual TLS through a service mesh or application " +
-			"configuration so both ends authenticate. Enable HSTS on browser-facing endpoints. Manage certificates " +
-			"centrally with automated renewal from an internal CA, or DoD PKI for DoD systems. Where a legacy protocol " +
-			"cannot be upgraded, tunnel it through IPsec or a TLS wrapper. References: CWE-319; CAPEC-94 (Adversary in the " +
-			"Middle); MITRE ATT&CK T1040 (Network Sniffing), T1557 (Adversary-in-the-Middle); OWASP Top 10:2025 A04 " +
-			"(Cryptographic Failures); NIST SP 800-53 SC-8, SC-8(1), SC-13.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.InformationDisclosure,
+		Mitigation: "Replace the plaintext protocol with its TLS equivalent (HTTPS, LDAPS, AMQPS, or database TLS such as PostgreSQL sslmode=verify-full).\n" +
+			"Restrict TLS to FIPS-approved cipher suites with forward secrecy (NIST SP 800-52 Rev. 2), and disable SSL, TLS 1.0, and TLS 1.1.\n" +
+			"Validate the server certificate chain and hostname in every client, and never disable verification in code or configuration.\n" +
+			"Use mutual TLS for service-to-service traffic inside a cluster or VNet, through a service mesh or application configuration.\n" +
+			"Enable HSTS on browser-facing endpoints.\n" +
+			"Manage certificates centrally with automated renewal from an internal CA, or DoD PKI for DoD systems.\n" +
+			"Where a legacy protocol cannot be upgraded, tunnel it through IPsec or a TLS wrapper.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.InformationDisclosure,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Unencrypted technical communication links of in-scope technical assets (excluding " + types.Monitoring + " traffic as well as " + types.LocalFileAccess.String() + ", " + types.InProcessLibraryCall.String() + " and " + types.InterProcessCommunication.String() + ") " +
 			"transferring sensitive data.", // TODO more detailed text required here
-		RiskAssessment: "Depending on the confidentiality rating of the transferred data-assets either medium or high risk.",
+		RiskAssessment: "Likelihood starts at Possible, one level higher across a network trust boundary. Impact starts at Medium and steps on the higher of the confidentiality and integrity of the data on the link; authentication data in cleartext counts as confidential. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "When all sensitive data sent over the communication link is already fully encrypted on document or data level. " +
 			"Also intra-container/pod communication can be considered false positive when container orchestration platform handles encryption.",
 		ModelFailurePossibleReason: false,
@@ -76,11 +73,11 @@ func (r *UnencryptedCommunicationRule) GenerateRisks(input *types.Model) ([]*typ
 			for _, sentDataAsset := range dataAssetIds {
 				dataAsset := input.DataAssets[sentDataAsset]
 				if isHighSensitivity(dataAsset) || transferringAuthData {
-					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, true, transferringAuthData))
+					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, transferringAuthData))
 					break
 				}
 				if !dataFlow.VPN && isMediumSensitivity(dataAsset) {
-					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, false, transferringAuthData))
+					risks = append(risks, r.createRisk(input, technicalAsset, dataFlow, transferringAuthData))
 					break
 				}
 			}
@@ -89,11 +86,15 @@ func (r *UnencryptedCommunicationRule) GenerateRisks(input *types.Model) ([]*typ
 	return risks, nil
 }
 
-func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, highRisk bool, transferringAuthData bool) *types.Risk {
-	impact := types.MediumImpact
-	if highRisk {
-		impact = types.HighImpact
+func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, dataFlow *types.CommunicationLink, transferringAuthData bool) *types.Risk {
+	// Medium baseline plus the CIA step on the higher of the link data's confidentiality and
+	// integrity: cleartext can be read and altered in transit, and the rule fires on either.
+	// Authentication data in cleartext counts as confidential whatever the data assets say.
+	rank := max(int(input.HighestCommunicationLinkConfidentiality(dataFlow)), int(input.HighestCommunicationLinkIntegrity(dataFlow)))
+	if transferringAuthData {
+		rank = max(rank, int(types.Confidential))
 	}
+	impact := types.AdjustImpactForRank(types.MediumImpact, rank)
 	target := input.TechnicalAssets[dataFlow.TargetId]
 	title := "<b>Unencrypted Communication</b> named <b>" + dataFlow.Title + "</b> between <b>" + technicalAsset.Title + "</b> and <b>" + target.Title + "</b>"
 	if transferringAuthData {
@@ -103,15 +104,8 @@ func (r *UnencryptedCommunicationRule) createRisk(input *types.Model, technicalA
 		title += " (even VPN-protected connections need to encrypt their data in-transit when confidentiality is " +
 			"rated " + types.StrictlyConfidential.String() + " or integrity is rated " + types.MissionCritical.String() + ")"
 	}
-	// Impact intentionally stays keyed off both Confidentiality and Integrity rather than
-	// narrowing to just Confidentiality (this category's own STRIDE value) -- this category's
-	// own Description already explicitly says "confidentiality and/or integrity rating," not
-	// just the former.
-	likelihood := types.Unlikely
-	if isAcrossTrustBoundaryNetworkOnly(input, dataFlow) {
-		likelihood = types.Likely
-	}
-	likelihood = computeLikelihood(likelihood, technicalAsset)
+	// Impact: as in createRisk, the higher of the link data's confidentiality and integrity.
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset, stepIf(isAcrossTrustBoundaryNetworkOnly(input, dataFlow), 1))
 	risk := &types.Risk{
 		CategoryId:                      r.Category().ID,
 		Severity:                        types.CalculateSeverity(likelihood, impact),

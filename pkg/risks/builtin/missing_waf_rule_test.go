@@ -262,7 +262,7 @@ func TestMissingWafSegmentationRuleGenerateRisksRiskCreated(t *testing.T) {
 			confidentiality: types.Confidential,
 			integrity:       types.Critical,
 			availability:    types.Critical,
-			expectedImpact:  types.LowImpact,
+			expectedImpact:  types.MediumImpact,
 		},
 		// "strictly confidential medium impact": {
 		// 	confidentiality: types.StrictlyConfidential,

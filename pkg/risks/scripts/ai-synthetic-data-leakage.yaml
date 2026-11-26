@@ -1,0 +1,115 @@
+id: ai-synthetic-data-leakage
+title: "Synthetic Data and Anonymization Pitfalls"
+function: architecture
+stride: information-disclosure
+finding_class: weakness-shown
+cwe: 359
+description: >
+  A synthetic-data pipeline generates data from real confidential-or-higher source data. A generator
+  can reproduce fragments of its source, and synthetic records can often be re-identified by linking
+  them with other data, while the output is shared far beyond the source's boundary.
+impact: >
+  If this risk remains unmitigated, real confidential records, or enough to re-identify people,
+  leave their boundary inside a dataset everyone believes is safe, and reach every consumer of the
+  synthetic set undetected.
+asvs: "V14 - Data Protection"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Before release, measure whether each synthetic or anonymized dataset leaks or re-identifies its source, and handle it at the source''s classification until it passes.'
+mitigation: >-
+  Test every synthetic or anonymized dataset before release. Specifically, check for verbatim and
+  near-duplicate source records, run membership-inference and linkage (re-identification) tests
+  against the available auxiliary data, and record the results with the dataset.
+
+  Where the source is sensitive, use generation methods with formal privacy guarantees (differential
+  privacy), and remove the rare or outlier records that are easiest to re-identify.
+
+  Until a dataset passes, label and handle it at the classification of its source, rather than as
+  unrestricted.
+
+  Keep lineage from each synthetic set back to its source, so that a leak can be scoped.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI10 (Synthetic Data and Anonymization Pitfalls); MITRE ATLAS
+  AML.T0024.000 (Infer Training Data Membership) and AML.T0025; MAESTRO layers 1 and 2; CWE-359;
+  CWE-330; NIST SP 800-53 SI-4, RA-5, and CA-7; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is every synthetic or anonymized dataset tested for source leakage and re-identification before release, generated with privacy guarantees where the source is sensitive, and handled at the source''s classification until it passes?'
+detection_logic: >
+  Review the release records for leakage and re-identification test results. Then, compare a sample
+  of synthetic records against the source for verbatim or near-duplicate matches. Finally, check how
+  synthetic datasets are labeled and where they are shared.
+risk_assessment: >
+  High for any synthetic or anonymized dataset that is generated from confidential-or-higher data
+  and released without leakage and re-identification testing.
+false_positives: >
+  This rule fires on an in-scope ai-synthetic-data-pipeline asset that processes a data asset rated
+  confidential or higher. A pipeline that generates only from lower-sensitivity data does not fire.
+  Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  pre-release leakage and re-identification testing, and source-level handling, are confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - from_sensitive: "processes_confidential({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                true: "{.attributes.ai-synthetic-data-pipeline}"
+            - true: "{from_sensitive}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Synthetic Data and Anonymization Pitfalls</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    processes_confidential:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - if:
+                  or:
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: confidential
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: strictly-confidential
+                  then:
+                    - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(possible, {tech_asset})"
+
+    # Impact baseline: low.
+    # Impact: baseline plus the confidentiality step. The rule fires only when confidential
+    # or higher data is involved, so that data sets the floor for the step.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(low, {tech_asset.confidentiality}, confidential)"

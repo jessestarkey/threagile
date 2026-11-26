@@ -18,23 +18,17 @@ func (*MissingFileValidationRule) Category() *types.RiskCategory {
 		Impact:      "If this risk is unmitigated, attackers might be able to provide malicious files to the application.",
 		ASVS:        "V12 - File and Resources Verification Requirements",
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
-		Action: "Validate every uploaded file server-side by allowlisted type, content signature, and size; rename it; " +
-			"malware-scan it; and store it outside the web root.",
-		Mitigation: "Accept only an explicit allowlist of file extensions required by the business function, and confirm the real " +
-			"content type server-side from the file's magic bytes (Apache Tika, libmagic), never from the client-supplied " +
-			"Content-Type header or filename. Discard the client filename and store the file under a server-generated " +
-			"random identifier, keeping the original name only as escaped metadata. Enforce a maximum file size at both " +
-			"the reverse proxy and the application, plus limits on archive decompression ratio, entry count, and nesting " +
-			"depth to stop zip bombs, and reject archive entries with absolute paths or parent-directory segments (Zip " +
-			"Slip). Scan every file with an anti-malware engine (ClamAV, Defender for Storage malware scanning, or a " +
-			"commercial engine) before it becomes retrievable, and rescan on retrieval when files can be served long after " +
-			"upload. Store uploads outside the web root or in object storage with no execute permission, and serve them " +
-			"with Content-Disposition attachment and X-Content-Type-Options nosniff from a separate origin. Consider " +
-			"content disarm and reconstruction for Office and PDF files that users will open. References: CWE-434, " +
-			"CWE-409; CAPEC-17 (Using Malicious Files); OWASP Top 10:2025 A06 (Insecure Design).",
+		Action:      "Validate every uploaded file server-side by allowlisted type, content signature, and size, then rename it, scan it for malware, and store it outside the web root.",
+		Mitigation: "Accept only an allowlist of the file types that the business function needs, and confirm each file's real type server-side from its magic bytes (Apache Tika or libmagic), never from the client's Content-Type or filename.\n" +
+			"Store each file under a server-generated identifier, keeping the original name only as escaped metadata.\n" +
+			"Enforce a maximum file size at the proxy and the application, limit archive decompression ratio, entry count, and nesting depth, and reject archive entries with absolute or parent-directory paths (Zip Slip).\n" +
+			"Scan every file for malware before it becomes retrievable, and rescan on retrieval when files are served long after upload.\n" +
+			"Store uploads outside the web root with no execute permission, and serve them from a separate origin with Content-Disposition attachment and X-Content-Type-Options nosniff.\n" +
+			"Consider content disarm and reconstruction for Office and PDF files that users will open.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Development,
 		STRIDE:         types.Spoofing,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope technical assets with custom-developed code accepting file data formats.",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Fully trusted (i.e. cryptographically signed or similar) files can be considered " +
@@ -70,17 +64,10 @@ func (r *MissingFileValidationRule) skipAsset(technicalAsset *types.TechnicalAss
 
 func (r *MissingFileValidationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Missing File Validation</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Integrity (this category's own STRIDE value): a malicious uploaded file can carry
-	// malware (an availability/integrity threat) or be crafted to exfiltrate data via a
-	// processing vulnerability (a confidentiality threat), not just one.
-	impact := types.MediumImpact
-	if input.HighestProcessedConfidentiality(technicalAsset) == types.StrictlyConfidential ||
-		input.HighestProcessedIntegrity(technicalAsset) == types.MissionCritical ||
-		input.HighestProcessedAvailability(technicalAsset) == types.MissionCritical {
-		impact = types.HighImpact
-	}
-	likelihood := computeLikelihood(types.Likely, technicalAsset)
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the data
+	// the asset processes.
+	impact := processedImpact(input, types.MediumImpact, r.Category().STRIDE, technicalAsset)
+	likelihood := computeLikelihood(types.PossibleLikelihood, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,
 		Severity:                     types.CalculateSeverity(likelihood, impact),

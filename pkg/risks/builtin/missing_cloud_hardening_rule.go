@@ -24,23 +24,16 @@ func (*MissingCloudHardeningRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Assess this cloud component against the provider's DISA STIG or CIS benchmark using continuous posture " +
 			"management, enforce guardrails as policy, and remediate every failed control.",
-		Mitigation: "Enable cloud security posture management across the subscription or account (Microsoft Defender for Cloud " +
-			"with the regulatory compliance dashboard, AWS Security Hub with the CIS AWS Foundations and NIST SP 800-53 " +
-			"standards, or GCP Security Command Center) and remediate every failed control for this component, " +
-			"prioritizing public exposure, identity, and logging findings. Apply guardrails as code (Azure Policy " +
-			"initiatives; AWS Service Control Policies and Config rules) that deny public network access to storage, " +
-			"databases, and key vaults, require private endpoints and customer-managed keys where mandated, and enforce " +
-			"diagnostic logging to the central workspace. Require AWS IMDSv2 with hop limit 1 and block 169.254.169.254 " +
-			"from containers, remove long-lived access keys in favor of managed identities or roles, and enforce MFA and " +
-			"least privilege on all control-plane principals. Enable control-plane audit logging (Azure Activity Log; AWS " +
-			"CloudTrail in all regions with log file validation) and data-plane logging, forwarded to the SIEM. For DoD " +
-			"workloads, deploy only into the authorized impact-level region (Azure Government, AWS GovCloud) and follow " +
-			"the DISA Cloud Computing SRG and SCCA. Run Prowler or ScoutSuite in CI to catch drift before deployment. " +
-			"References: CWE-16; MITRE ATT&CK T1530 (Data from Cloud Storage), T1078.004 (Cloud Accounts), T1552.005 " +
-			"(Cloud Instance Metadata API); OWASP Top 10:2025 A02 (Security Misconfiguration); NIST SP 800-53 CM-6, CM-7.",
+		Mitigation: "Enable cloud security posture management (Microsoft Defender for Cloud or AWS Security Hub) with the CIS and NIST SP 800-53 standards, and remediate every failed control on this component, starting with public exposure, identity, and logging.\n" +
+			"Enforce guardrails as code (Azure Policy or AWS Service Control Policies) that deny public network access to storage, databases, and key vaults, and that require private endpoints, customer-managed keys where mandated, and diagnostic logging.\n" +
+			"Require IMDSv2 with a hop limit of 1, replace long-lived access keys with managed identities or roles, and enforce MFA and least privilege on every control-plane principal.\n" +
+			"Forward control-plane and data-plane audit logs (Azure Activity Log, or CloudTrail in all regions) to the SIEM.\n" +
+			"For DoD workloads, deploy only into the authorized impact-level region, and follow the DISA Cloud Computing SRG and SCCA.\n" +
+			"Run Prowler or ScoutSuite in CI to catch drift before deployment.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Operations,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "In-scope cloud components (either residing in cloud trust boundaries or more specifically tagged with cloud provider types).",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Cloud components not running parts of the target architecture can be considered " +
@@ -359,17 +352,9 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 		fullTitle += ": <u>" + details + "</u>"
 	}
 
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Integrity (this category's own STRIDE value): missing cloud hardening is a broad
-	// misconfiguration risk ("attackers might access cloud components in an unintended way")
-	// that can just as easily expose or disrupt a resource as corrupt it.
-	impact := types.MediumImpact
-	if confidentiality >= types.Confidential || integrity >= types.Critical || availability >= types.Critical {
-		impact = types.HighImpact
-	}
-	if confidentiality == types.StrictlyConfidential || integrity == types.MissionCritical || availability == types.MissionCritical {
-		impact = types.VeryHighImpact
-	}
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the
+	// highest ratings in the asset, shared runtime or trust boundary.
+	impact := impactForRatings(types.LowImpact, r.Category().STRIDE, confidentiality, integrity, availability)
 
 	risk := &types.Risk{
 		CategoryId:                  r.Category().ID,
@@ -381,10 +366,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 		DataBreachTechnicalAssetIDs: relatedAssets,
 		SyntheticId:                 r.Category().ID + "@" + id + suffix,
 	}
-	// Anchor the finding to whichever model element it was actually scoped to -- without
-	// this, every finding from this rule (technical asset, shared runtime, or trust
-	// boundary scoped alike) left all three MostRelevant*Id fields empty, so nothing could
-	// render or group it by affected asset even though the title names one.
+	// Anchor the finding to the model element it is scoped to, so the report can group it by the
+	// affected asset, shared runtime, or trust boundary.
 	switch scope {
 	case "technical_asset":
 		risk.MostRelevantTechnicalAssetId = id
@@ -398,8 +381,8 @@ func (r *MissingCloudHardeningRule) createCloudHardeningRisk(id, title, prefix, 
 
 func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 	input *types.Model, sharedRuntime *types.SharedRuntime, prefix, details string) *types.Risk {
-	// No single technical asset to anchor an RAA/reachability delta on -- a shared runtime is an
-	// aggregate of many assets -- so this stays the flat baseline, unlike createRiskForTechnicalAsset.
+	// A shared runtime aggregates many assets, so there is no single asset for the likelihood
+	// steps, and the baseline stays flat.
 	return r.createCloudHardeningRisk(
 		sharedRuntime.Id,
 		sharedRuntime.Title,
@@ -410,14 +393,14 @@ func (r *MissingCloudHardeningRule) createRiskForSharedRuntime(
 		input.FindSharedRuntimeHighestIntegrity(sharedRuntime),
 		input.FindSharedRuntimeHighestAvailability(sharedRuntime),
 		sharedRuntime.TechnicalAssetsRunning,
-		types.Unlikely,
+		types.PossibleLikelihood,
 	)
 }
 
 func (r *MissingCloudHardeningRule) createRiskForTrustBoundary(
 	input *types.Model, trustBoundary *types.TrustBoundary, prefix, details string) *types.Risk {
-	// No single technical asset to anchor an RAA/reachability delta on -- a trust boundary is an
-	// aggregate of many assets -- so this stays the flat baseline, unlike createRiskForTechnicalAsset.
+	// A trust boundary aggregates many assets, so there is no single asset for the likelihood
+	// steps, and the baseline stays flat.
 	return r.createCloudHardeningRisk(
 		trustBoundary.Id,
 		trustBoundary.Title,
@@ -428,7 +411,7 @@ func (r *MissingCloudHardeningRule) createRiskForTrustBoundary(
 		input.FindTrustBoundaryHighestIntegrity(trustBoundary),
 		input.FindTrustBoundaryHighestAvailability(trustBoundary),
 		input.RecursivelyAllTechnicalAssetIDsInside(trustBoundary),
-		types.Unlikely,
+		types.PossibleLikelihood,
 	)
 }
 
@@ -444,6 +427,6 @@ func (r *MissingCloudHardeningRule) createRiskForTechnicalAsset(
 		input.HighestProcessedIntegrity(technicalAsset),
 		input.HighestProcessedAvailability(technicalAsset),
 		[]string{technicalAsset.Id},
-		computeLikelihood(types.Unlikely, technicalAsset),
+		computeLikelihood(types.PossibleLikelihood, technicalAsset),
 	)
 }

@@ -110,11 +110,10 @@ func TestCompare_NilWithZeroDecimal(t *testing.T) {
 }
 
 func TestCompare_NilWithNil(t *testing.T) {
-	// Compare nil with nil panics due to NewEqualProperty(nil) calling nil.Event()
-	// This documents the current behavior as a known limitation
-	assert.Panics(t, func() {
-		_, _ = Compare(nil, nil, "")
-	})
+	// Used to panic in NewEqualProperty(nil); two nils now compare equal.
+	event, err := Compare(nil, nil, "")
+	assert.NoError(t, err)
+	assert.True(t, IsSame(event.Property))
 }
 
 func TestIsSame_NilProperty(t *testing.T) {
@@ -127,4 +126,21 @@ func TestIsGreater_NilProperty(t *testing.T) {
 
 func TestIsLess_NilProperty(t *testing.T) {
 	assert.False(t, IsLess(nil))
+}
+
+func TestCompare_TwoEmptyValuesAreEqual(t *testing.T) {
+	// Two unresolved references (e.g. two assets outside any trust boundary) used to panic in
+	// NewEqualProperty(nil) instead of comparing equal.
+	event, err := Compare(NilValue(), NilValue(), "")
+	assert.NoError(t, err)
+	assert.True(t, IsSame(event.Property))
+
+	// Either order: an empty value is not equal to a non-empty string.
+	event, err = Compare(NilValue(), SomeStringValue("zone", nil), "")
+	assert.NoError(t, err)
+	assert.False(t, IsSame(event.Property))
+
+	event, err = Compare(SomeStringValue("zone", nil), NilValue(), "")
+	assert.NoError(t, err)
+	assert.False(t, IsSame(event.Property))
 }

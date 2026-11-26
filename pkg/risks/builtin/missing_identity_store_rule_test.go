@@ -1,7 +1,6 @@
 package builtin
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,8 +77,7 @@ type MissingIdentityStoreRuleTest struct {
 	sourceIntegrity       types.Criticality
 	sourceAvailability    types.Criticality
 
-	expectedImpact                 types.RiskExploitationImpact
-	expectedMostRelevantAssetTitle string
+	expectedImpact types.RiskExploitationImpact
 }
 
 func TestMissingIdentityStoreRule(t *testing.T) {
@@ -97,8 +95,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.LowImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"source asset more relevant": {
 			targetConfidentiality: types.Restricted,
@@ -113,8 +110,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.LowImpact,
-			expectedMostRelevantAssetTitle: "Test Sparring Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"medium impact confidential target asset": {
 			targetConfidentiality: types.Confidential,
@@ -129,8 +125,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"medium impact critical integrity target asset": {
 			targetConfidentiality: types.Restricted,
@@ -145,8 +140,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"medium impact critical availability target asset": {
 			targetConfidentiality: types.Restricted,
@@ -161,8 +155,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"medium impact process confidential data asset": {
 			targetConfidentiality: types.Restricted,
@@ -177,8 +170,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"medium impact process critical integrity data asset": {
 			targetConfidentiality: types.Restricted,
@@ -193,8 +185,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 		"medium impact process critical availability data asset": {
 			targetConfidentiality: types.Restricted,
@@ -209,8 +200,7 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			sourceIntegrity:       types.Important,
 			sourceAvailability:    types.Important,
 
-			expectedImpact:                 types.MediumImpact,
-			expectedMostRelevantAssetTitle: "Test Technical Asset",
+			expectedImpact: types.LowImpact,
 		},
 	}
 
@@ -254,8 +244,9 @@ func TestMissingIdentityStoreRule(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Len(t, risks, 1)
 			assert.Equal(t, testCase.expectedImpact, risks[0].ExploitationImpact)
-			expTitle := fmt.Sprintf("<b>Missing Identity Store</b> in the threat model (referencing asset <b>%s</b> as an example)", testCase.expectedMostRelevantAssetTitle)
+			expTitle := "<b>Missing Identity Store</b> in the threat model"
 			assert.Equal(t, expTitle, risks[0].Title)
+			assert.Empty(t, risks[0].MostRelevantTechnicalAssetId, "the system's finding, not an example asset's")
 		})
 	}
 }

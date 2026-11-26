@@ -50,6 +50,7 @@ const (
 	IsAISyntheticDataPipeline                         = "ai-synthetic-data-pipeline"
 	IsAIFeatureStore                                  = "ai-feature-store"
 	IsAIContentProvenanceService                      = "ai-content-provenance-service"
+	IsAIToolServer                                    = "ai-tool-server"
 	IsCDSGuard                                        = "cds-guard"
 	IsCDSDataDiode                                    = "cds-data-diode"
 	IsNetworkEncryptor                                = "network-encryptor"

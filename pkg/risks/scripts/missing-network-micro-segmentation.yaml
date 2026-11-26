@@ -2,35 +2,42 @@ id: missing-network-micro-segmentation
 title: Missing Network Micro-Segmentation
 function: architecture
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 1008
 description: >
-  The workload lacks an explicit, default-deny network policy, allowing unrestricted East-West
-  traffic within the cluster.
+  The workload lacks an explicit, default-deny network policy. As a result, it allows unrestricted
+  east-west traffic within the cluster.
 impact: >
-  If this risk remains unmitigated, compromise of a single pod gives an attacker unrestricted
+  If this risk remains unmitigated, the compromise of a single pod gives an attacker unrestricted
   network reach to every other workload in the cluster.
 asvs: "V1 - Architecture, Design and Threat Modeling"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Microservices_Security_Cheat_Sheet.html"
-action: "Implement strict K8s NetworkPolicies."
-mitigation: >
-  Apply a default-deny NetworkPolicy to the namespace first, then add explicit allow rules scoped
-  to only the specific source/destination pods and ports the workload genuinely requires
-  (label-selector based, not namespace-wide allows). Enforce this via policy-as-code rather than
-  relying on manual application per namespace. References: NIST SP 800-53 SC-7 (Boundary
-  Protection); NIST SP 800-207 (Zero Trust Architecture); CIS Kubernetes Benchmark.
-check: "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?"
+action: 'Implement strict Kubernetes NetworkPolicies.'
+mitigation: >-
+  Apply a default-deny NetworkPolicy to the namespace first.
+
+  Add explicit allow rules scoped to only the specific source and destination pods and ports that
+  the workload genuinely requires, using label selectors rather than namespace-wide allows.
+
+  Enforce this through policy-as-code, rather than relying on manual application to each namespace.
+references: >-
+  NIST SP 800-53 SC-7 (Boundary Protection); NIST SP 800-207 (Zero Trust Architecture); CIS
+  Kubernetes Benchmark
+check: 'Does a default-deny NetworkPolicy govern this workload''s namespace, with explicit allow rules limited to the pods and ports the workload requires, enforced through policy-as-code?'
 detection_logic: >
-  Run kubectl get networkpolicy --all-namespaces and flag any namespace with zero NetworkPolicy
-  objects, or one that lacks a default-deny baseline. Cross-reference against the cluster's
-  policy-as-code bundle for a cluster-wide enforcement policy.
+  Run kubectl get networkpolicy --all-namespaces, and flag any namespace that has no NetworkPolicy
+  objects, or that lacks a default-deny baseline. Then, cross-reference the result against the
+  cluster's policy-as-code bundle for a cluster-wide enforcement policy.
 risk_assessment: >
-  Medium in isolation, but compounds sharply with any single-pod compromise elsewhere in the
-  cluster -- the absence of segmentation is what turns one compromised pod into unrestricted
-  reach across every other workload sharing the cluster.
+  Medium in isolation. However, it compounds sharply with any single-pod compromise elsewhere in the
+  cluster, since the absence of segmentation is what turns one compromised pod into unrestricted
+  reach across every other workload that shares the cluster.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope container asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once a default-deny NetworkPolicy is already enforced at the namespace level.
+  This rule fires on every in-scope container, unless it sits (directly or nested) in a
+  network-policy-namespace-isolation trust boundary, which is how the model shows a namespace-level
+  default-deny policy. Thus, model namespace isolation that way, rather than disposing of each
+  container separately. Otherwise, log a confirmed-compliant asset as mitigated through
+  risk_tracking once a default-deny NetworkPolicy is confirmed to be enforced for its namespace.
 
 risk:
   id:
@@ -40,12 +47,17 @@ risk:
   match:
     parameter: tech_asset
     do:
+      # A container inside a network-policy-namespace-isolation trust boundary is the model showing
+      # the control this rule asks about (a namespace default-deny policy), so it does not fire.
+      - assign:
+          - isolated: "in_isolated_namespace({tech_asset.id})"
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
             - equal:
                 first: "{tech_asset.machine}"
                 second: container
+            - false: "{isolated}"
           then:
             return: true
 
@@ -61,63 +73,55 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # True when the asset sits in a network-policy-namespace-isolation trust boundary, directly or
+    # up to three levels of nesting above it.
+    in_isolated_namespace:
+      parameters:
+        - asset_id
+      do:
+        - assign:
+            - boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{asset_id}.id}"
+        - loop:
+            in: [1, 2, 3, 4]
+            item: level
+            do:
+              - if:
+                  equal:
+                    first: "{$model.trust_boundaries.{boundary}.type}"
+                    second: network-policy-namespace-isolation
+                  then:
+                    - return: true
+              - assign:
+                  - boundary: "parent_boundary({boundary})"
+        - return: false
+    # Id of the trust boundary that nests the given one, or empty.
+    parent_boundary:
+      parameters:
+        - child
+      do:
+        - loop:
+            in: "{$model.trust_boundaries}"
+            item: candidate
+            do:
+              - if:
+                  contains:
+                    item: "{child}"
+                    in: "{candidate.trust_boundaries_nested}"
+                  then:
+                    - return: "{candidate.id}"
+        - return: ""
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-        - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
-    # STRIDE is Information-Disclosure -> Confidentiality.
-    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
-    # Business Criticality bump that used to apply here was removed (see git history / the
-    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
-    # already-peripheral assets rather than protecting genuinely under-rated ones).
+    # Impact: low baseline plus the CIA step on the highest of C, I and A: a flat network lets one
+    # compromised workload reach every other, whatever it threatens there (aligned with the
+    # built-in and custom segmentation rules).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: confidential
-              - equal:
-                  first: "{tech_asset.confidentiality}"
-                  second: strictly-confidential
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+        - return: "adjust_impact(low, {tech_asset.confidentiality}, {tech_asset.integrity}, {tech_asset.availability})"

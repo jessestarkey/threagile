@@ -23,22 +23,18 @@ func (*MissingAuthenticationSecondFactorRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html",
 		Action: "Require phishing-resistant multi-factor authentication (CAC/PIV or FIDO2) for every human session reaching " +
 			"this asset, enforced centrally at the identity provider.",
-		Mitigation: "Enforce MFA at the identity provider through a conditional-access or authentication policy scoped to this " +
-			"application, so it cannot be bypassed through an alternate login path. In DoD environments use CAC/PIV " +
-			"certificate-based authentication; elsewhere use FIDO2/WebAuthn security keys or platform authenticators " +
-			"meeting NIST SP 800-63B AAL3, or at minimum AAL2. Do not accept SMS or voice one-time codes, and do not use " +
-			"push approval without number matching, which is vulnerable to MFA-fatigue attacks. Require step-up " +
-			"re-authentication for privileged or high-impact operations. Disable legacy protocols that cannot carry a " +
-			"second factor (basic authentication, NTLM, legacy mail protocols), and protect break-glass accounts with " +
-			"hardware keys, alerting on every use, and periodic review. References: CWE-308; MITRE ATT&CK T1078 (Valid " +
-			"Accounts), T1110 (Brute Force), T1621 (Multi-Factor Authentication Request Generation); OWASP Top 10:2025 A07 " +
-			"(Authentication Failures); NIST SP 800-53 IA-2(1), IA-2(2); OMB M-22-09.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.BusinessSide,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Enforce MFA at the identity provider through a conditional-access or authentication policy scoped to this application, so it cannot be bypassed through an alternate login path.\n" +
+			"In DoD environments use CAC/PIV certificate-based authentication. Elsewhere use FIDO2/WebAuthn security keys or platform authenticators meeting NIST SP 800-63B AAL3, or at minimum AAL2.\n" +
+			"Do not accept SMS or voice one-time codes, and do not use push approval without number matching, which is vulnerable to MFA-fatigue attacks.\n" +
+			"Require step-up re-authentication for privileged or high-impact operations.\n" +
+			"Disable legacy protocols that cannot carry a second factor (basic authentication, NTLM, legacy mail protocols), and protect break-glass accounts with hardware keys, alerting on every use, and periodic review.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.BusinessSide,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (except " + types.LoadBalancer + ", " + types.ReverseProxy + ", " + types.WAF + ", " + types.IDS + ", and " + types.IPS + ") should authenticate incoming requests via two-factor authentication (2FA) " +
 			"when the asset processes or stores highly sensitive data (in terms of confidentiality, integrity, and availability) and is accessed by a client used by a human user.",
-		RiskAssessment: types.MediumSeverity.String(),
+		RiskAssessment: "Likelihood starts at Likely. Impact starts at Medium and steps on the highest rating of the data on the human-facing link. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "Technical assets which do not process requests regarding functionality or data linked to end-users (customers) " +
 			"can be considered as false positives after individual review.",
 		ModelFailurePossibleReason: false,
@@ -94,7 +90,7 @@ func appendRisk(
 			input.HighestCommunicationLinkIntegrity(callersCommLink) >= types.Critical
 	if moreRisky && callersCommLink.Authentication != types.TwoFactor {
 		likelihood := computeLikelihood(types.Likely, technicalAsset)
-		risks = append(risks, r.missingAuthenticationRule.createRisk(input, technicalAsset, commLink, callersCommLink, title, types.MediumImpact, likelihood, true, r.Category()))
+		risks = append(risks, r.missingAuthenticationRule.createRisk(input, technicalAsset, commLink, callersCommLink, title, r.missingAuthenticationRule.calculateImpact(callersCommLink, input), likelihood, true, r.Category()))
 	}
 
 	return risks

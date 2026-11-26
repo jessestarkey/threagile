@@ -15,7 +15,7 @@ func GetBuiltInRiskRules() types.RiskRules {
 	for _, rule := range []types.RiskRule{
 		builtin.NewAccidentalSecretLeakRule(),
 		builtin.NewCodeBackdooringRule(),
-		builtin.NewContainerBaseImageBackdooringRule(),
+		builtin.NewClusterControlPlaneAuditGapRule(),
 		builtin.NewContainerPlatformEscapeRule(),
 		builtin.NewCrossSiteRequestForgeryRule(),
 		builtin.NewCrossSiteScriptingRule(),

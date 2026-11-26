@@ -25,9 +25,32 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 
 	technologies.PropagateAttributes()
 
-	businessCriticality, err := types.ParseCriticality(modelInput.BusinessCriticality)
+	// mission_criticality is the model-level rating. business_criticality, its older name, is still
+	// accepted, as are the five values it used, mapped onto the four-value scale.
+	missionCriticalityValue := modelInput.MissionCriticality
+	if missionCriticalityValue == "" {
+		missionCriticalityValue = modelInput.BusinessCriticality
+	} else if modelInput.BusinessCriticality != "" {
+		legacy, _, legacyErr := types.ParseMissionCriticality(modelInput.BusinessCriticality)
+		current, _, currentErr := types.ParseMissionCriticality(modelInput.MissionCriticality)
+		if legacyErr != nil || currentErr != nil || legacy != current {
+			return nil, fmt.Errorf("model sets both 'mission_criticality' (%v) and 'business_criticality' (%v) and they disagree: keep only mission_criticality",
+				modelInput.MissionCriticality, modelInput.BusinessCriticality)
+		}
+	}
+	// threat_landscape is the narrative of threat vectors, high-value targets, and core defenses.
+	// business_overview, its older name, is still accepted.
+	threatLandscape := modelInput.ThreatLandscape
+	older := modelInput.BusinessOverview
+	if threatLandscape.Description == "" && len(threatLandscape.Images) == 0 {
+		threatLandscape = older
+	} else if (older.Description != "" || len(older.Images) > 0) && older.Description != threatLandscape.Description {
+		return nil, fmt.Errorf("model sets both 'threat_landscape' and 'business_overview' with different text: keep only threat_landscape")
+	}
+
+	missionCriticality, _, err := types.ParseMissionCriticality(missionCriticalityValue)
 	if err != nil {
-		return nil, fmt.Errorf("unknown 'business_criticality' value of application: %v", modelInput.BusinessCriticality)
+		return nil, fmt.Errorf("unknown 'mission_criticality' value of application: %v", missionCriticalityValue)
 	}
 
 	reportDate := time.Now()
@@ -46,9 +69,9 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 		Contributors:                   convertAuthors(modelInput.Contributors),
 		Date:                           types.Date{Time: reportDate},
 		AppDescription:                 removePathElementsFromImageFiles(modelInput.AppDescription),
-		BusinessOverview:               removePathElementsFromImageFiles(modelInput.BusinessOverview),
+		ThreatLandscape:                removePathElementsFromImageFiles(threatLandscape),
 		TechnicalOverview:              removePathElementsFromImageFiles(modelInput.TechnicalOverview),
-		BusinessCriticality:            businessCriticality,
+		MissionCriticality:             missionCriticality,
 		ManagementSummaryComment:       modelInput.ManagementSummaryComment,
 		SecurityRequirements:           modelInput.SecurityRequirements,
 		Questions:                      modelInput.Questions,
@@ -351,6 +374,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			Tags:                    tags,
 			Machine:                 technicalAssetMachine,
 			Internet:                asset.Internet,
+			InternetReachable:       asset.InternetReachable,
 			Encryption:              encryption,
 			MultiTenant:             asset.MultiTenant,
 			Redundant:               asset.Redundant,
@@ -561,10 +585,16 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 			STRIDE:                     stride,
 			ModelFailurePossibleReason: customRiskCategoryCategory.ModelFailurePossibleReason,
 			CWE:                        customRiskCategoryCategory.CWE,
+			FindingClass:               customRiskCategoryCategory.FindingClass,
 		}
 
 		if cat.Description == "" {
 			cat.Description = customRiskCategoryCategory.Title
+		}
+
+		if cat.FindingClass != "" && !types.IsValidFindingClass(cat.FindingClass) {
+			return nil, fmt.Errorf("unknown 'finding_class' value of individual risk category %q: %v (expected %q or %q)",
+				customRiskCategoryCategory.Title, cat.FindingClass, types.FindingClassWeaknessShown, types.FindingClassControlNotEvidenced)
 		}
 
 		err = checkIdSyntax(customRiskCategoryCategory.ID)
@@ -657,6 +687,7 @@ func ParseModel(config technologyMapConfigReader, modelInput *input.Model, built
 					SyntheticId:                     createSyntheticId(cat.ID, mostRelevantDataAssetId, mostRelevantTechnicalAssetId, mostRelevantCommunicationLinkId, mostRelevantTrustBoundaryId, mostRelevantSharedRuntimeId),
 					Title:                           title,
 					CategoryId:                      cat.ID,
+					FindingClass:                    cat.FindingClass,
 					Severity:                        severity,
 					ExploitationLikelihood:          exploitationLikelihood,
 					ExploitationImpact:              exploitationImpact,

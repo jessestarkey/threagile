@@ -1,38 +1,57 @@
 id: insufficient-audit-logging
-title: "Insufficient Audit Logging (AU-2 Compliance Gap)"
+title: "Insufficient Security Event Logging (AU-2 / AU-6 Gap)"
 function: operations
 stride: repudiation
+finding_class: control-not-evidenced
 cwe: 778
 description: >
-  The asset does not generate audit records for the event types NIST SP 800-53 AU-2 requires,
-  such as authentication attempts, privilege escalation, and administrative actions.
+  The asset does not generate audit records for the NIST SP 800-53 AU-2 event types (authentication
+  failures, authorization denials, validation rejections, privilege escalation, and administrative
+  actions), or does not forward them to the SIEM.
 impact: >
-  If this risk remains unmitigated, the SOC cannot detect or reconstruct an attack after the
-  fact, and the gap independently blocks ATO under DoD RMF.
+  If this risk remains unmitigated, the SOC cannot detect probing, credential stuffing, or
+  authorization-bypass attempts as they build, or reconstruct an attack afterward. The gap also
+  blocks the ATO under the DoD RMF.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Vocabulary_Cheat_Sheet.html"
-action: "Implement structured audit logging for all AU-2 required event types and forward to a centralized, tamper-evident SIEM."
-mitigation: >
-  Implement structured logging (JSON) capturing at minimum timestamp, event type, user identity,
-  source IP, target resource, and outcome for all AU-2 event categories. Forward logs to a
-  centralized SIEM with retention meeting the applicable data retention policy. Ensure
-  application-layer authentication events are logged in addition to infrastructure-layer events.
-  Implement log integrity protection. References: NIST SP 800-53 AU-2 (Event Logging); NIST SP
-  800-53 AU-12 (Audit Record Generation); DoD RMF Process Guide; DISA Application Security STIG.
-check: "Have AU-2 required event types been formally reviewed and confirmed logged with evidence?"
-detection_logic: >
-  Run automated AU-2 coverage checks by querying the SIEM for required event type presence over a
-  rolling 30-day window. Alert on gaps where expected event types show zero occurrences.
-risk_assessment: >
-  Medium (CAT II). Escalates to High if no application-layer security event logging exists at
-  all -- infrastructure logs alone do not satisfy AU-2 for application-level access control
-  events.
-false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once AU-2 event coverage has been formally reviewed and documented with log samples as
-  evidence.
+action: 'Log every AU-2 event type, including each authentication failure, authorization denial, and input-validation rejection, with the calling identity. Then, forward the events to a centralized, tamper-evident SIEM with correlation rules.'
+mitigation: >-
+  Implement structured (JSON) logging that captures, at a minimum, the timestamp, event type, user
+  identity (or the service account, API key, or source IP where the request is unauthenticated),
+  target resource, and outcome for every AU-2 event category, including every authentication
+  failure, authorization denial, and input-validation rejection.
 
+  Forward the events to a centralized SIEM with retention that meets the applicable data retention
+  policy, and build correlation rules that flag a single identity or source crossing a threshold of
+  failures within a rolling window.
+
+  Ensure that application-layer authentication events are logged in addition to infrastructure-layer
+  events.
+
+  Protect the integrity of the logs.
+references: >-
+  NIST SP 800-53 AU-2 (Event Logging), AU-6 (Audit Record Review, Analysis, and Reporting), AU-12
+  (Audit Record Generation), and SI-4 (System Monitoring); DoD RMF Process Guide; DISA Application
+  Security STIG
+check: 'Have the AU-2 required event types, including authentication failures, authorization denials, and input-validation rejections, been confirmed, with evidence, as logged and forwarded to the SIEM with active correlation rules?'
+detection_logic: >
+  Run automated AU-2 coverage checks by querying the SIEM for the presence of each required event
+  type over a rolling 30-day window, and alert on gaps where an expected event type shows zero
+  occurrences, since the absence of expected security-event volume is itself the signal of a broken
+  forwarding pipeline. Additionally, alert when a single identity or source crosses a defined
+  threshold of authentication failures, authorization denials, or input-validation rejections within
+  a rolling window.
+risk_assessment: >
+  Medium, which corresponds to a CAT II finding. However, the finding rises to High if no
+  application-layer security event logging exists at all, or if security events are logged but never
+  forwarded to the SIEM, since infrastructure logs alone do not satisfy AU-2 for application-level
+  access control events.
+false_positives: >
+  This rule fires on every in-scope app-tier asset (a frontend, backend, or application logic) by
+  design, since the model cannot show whether logging is in place. It also covers the forwarding
+  half of the same control. Dispose of a confirmed-compliant asset through risk_tracking, logging it
+  as mitigated once AU-2 event coverage, and SIEM forwarding with correlation rules, are confirmed
+  with log samples as evidence.
 risk:
   id:
     parameter: tech_asset
@@ -59,7 +78,7 @@ risk:
 
   data:
     parameter: tech_asset
-    title: "<b>Insufficient Audit Logging (AU-2 Compliance Gap)</b> risk at <b>{tech_asset.title}</b>"
+    title: "<b>Insufficient Security Event Logging (AU-2 / AU-6 Gap)</b> risk at <b>{tech_asset.title}</b>"
     severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
     exploitation_likelihood: "get_likelihood({tech_asset})"
     exploitation_impact: "get_impact({tech_asset})"
@@ -69,65 +88,16 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
+    # Likelihood: possible baseline plus the RAA and internet steps.
     get_likelihood:
       parameters:
         - tech_asset
       do:
-        - if:
-            equal-or-greater:
-              first: "{tech_asset.raa}"
-              second: 40
-            then:
-              - return: very-likely
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: possible
-        - return: likely
+        - return: "adjust_likelihood(possible, {tech_asset})"
 
-    # STRIDE is Repudiation -> Integrity (per inject_risks.py's own STRIDE_TO_CIA_DIMENSION
-    # convention: a missing or tamperable audit trail is an integrity failure of the evidence
-    # itself, not a confidentiality one). Baseline is "medium".
-    # Impact is purely a function of this asset's own Integrity rank -- the model-wide Business
-    # Criticality bump that used to apply here was removed (see git history / the sibling
-    # Python engine's compute_impact() for the rationale: it mostly inflated already-peripheral
-    # assets rather than protecting genuinely under-rated ones).
+    # Impact: low baseline plus the CIA step on I (STRIDE repudiation).
     get_impact:
       parameters:
         - tech_asset
       do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.integrity}"
-              second: important
-            then:
-              - assign:
-                  cia_rank: mid
-        - if:
-            or:
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: critical
-              - equal:
-                  first: "{tech_asset.integrity}"
-                  second: mission-critical
-            then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+        - return: "adjust_impact(low, {tech_asset.integrity})"

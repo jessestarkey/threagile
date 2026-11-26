@@ -53,8 +53,10 @@ func ToStringValue(value Value) (*StringValue, error) {
 	castValue, ok := value.Value().(string)
 
 	var conversionError error
-	if !ok {
-		conversionError = fmt.Errorf("expected value-expression to eval to a string instead of %T", value.Value)
+	// An empty value converts to "", matching compare(), which already treats an empty value
+	// as equal to an empty string when it is the first operand.
+	if !ok && value.Value() != nil {
+		conversionError = fmt.Errorf("expected value-expression to eval to a string instead of %T", value.Value())
 	}
 
 	return &StringValue{

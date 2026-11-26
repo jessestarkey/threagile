@@ -20,24 +20,18 @@ func (*MissingAuthenticationRule) Category() *types.RiskCategory {
 		CheatSheet:  "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
 		Action: "Require every request to this asset to carry a verified identity: enterprise identity provider authentication " +
 			"for users, and mutual TLS or short-lived workload identity tokens for services.",
-		Mitigation: "Authenticate every interface of this asset rather than relying on network location. For human users, " +
-			"integrate with the enterprise identity provider over OIDC or SAML using DoD CAC/PIV or another " +
-			"phishing-resistant authenticator. For service-to-service calls, use mutual TLS with certificates from an " +
-			"internal CA or service mesh, or short-lived workload identity tokens (managed identity, IAM roles for service " +
-			"accounts, SPIFFE/SPIRE) validated on every request for signature, issuer, audience, and expiry; avoid " +
-			"long-lived shared API keys. Enforce authentication with a default-deny filter at the framework or gateway so " +
-			"new endpoints are protected unless explicitly marked public, and review every public exception. Disable or " +
-			"authenticate management, metrics, and debug endpoints that ship unauthenticated by default (Spring Boot " +
-			"Actuator, Elasticsearch, Redis, etcd, database admin consoles). References: CWE-306, CWE-287; MITRE ATT&CK " +
-			"T1190 (Exploit Public-Facing Application); OWASP Top 10:2025 A07 (Authentication Failures); OWASP API " +
-			"Security Top 10:2023 API2 (Broken Authentication); NIST SP 800-53 IA-2, IA-9.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Authenticate every interface of this asset rather than relying on network location.\n" +
+			"For users, integrate with the enterprise identity provider over OIDC or SAML, with DoD CAC/PIV or another phishing-resistant authenticator.\n" +
+			"For services, use mutual TLS or short-lived workload identity tokens (such as managed identities or SPIFFE), validated on every request for signature, issuer, audience, and expiry, rather than long-lived shared API keys.\n" +
+			"Enforce authentication with a default-deny filter at the framework or gateway, so new endpoints are protected unless explicitly marked public, and review every public exception.\n" +
+			"Disable or authenticate management, metrics, and debug endpoints that ship unauthenticated (such as Spring Boot Actuator or database admin consoles).",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope technical assets (except " + types.LoadBalancer + ", " + types.ReverseProxy + ", " + types.ServiceRegistry + ", " + types.WAF + ", " + types.IDS + ", and " + types.IPS + " and in-process calls) should authenticate incoming requests when the asset processes " +
 			"sensitive data. This is especially the case for all multi-tenant assets (there even non-sensitive ones).",
-		RiskAssessment: "The risk rating (medium or high) " +
-			"depends on the sensitivity of the data sent across the communication link. Monitoring callers are exempted from this risk.",
+		RiskAssessment: "Likelihood starts at Likely. Impact starts at Medium and steps on the highest rating of the data on the unauthenticated link, or of the target asset when the link carries no data. Monitoring callers are exempted. Each step is one level: impact up for a rating of confidential/critical or above, down for internal/operational or below; likelihood also moves with the asset's attractiveness (RAA) and internet exposure.",
 		FalsePositives: "Technical assets which do not process requests regarding functionality or data linked to end-users (customers) " +
 			"can be considered as false positives after individual review.",
 		ModelFailurePossibleReason: false,
@@ -81,18 +75,16 @@ func (r *MissingAuthenticationRule) GenerateRisks(input *types.Model) ([]*types.
 	return risks, nil
 }
 
-// Already effectively keyed off the max of multiple dimensions (this category's STRIDE value,
-// ElevationOfPrivilege, is exactly the case computeImpact() itself falls back to max(C,I,A) for),
-// scoped to the comm link's own ratings rather than the target asset's -- not reused via the
-// shared computeImpact() helper, which operates on the asset's own CIA fields, not a link's.
+// The highest of C, I, and A (this category is elevation of privilege), on the link's data rather
+// than the target asset's ratings, so computeImpact() does not fit here.
 func (r *MissingAuthenticationRule) calculateImpact(commLink *types.CommunicationLink, input *types.Model) types.RiskExploitationImpact {
-	if input.HighestCommunicationLinkConfidentiality(commLink) == types.StrictlyConfidential || input.HighestCommunicationLinkIntegrity(commLink) == types.MissionCritical {
-		return types.HighImpact
+	rank := linkRank(input, r.Category().STRIDE, commLink)
+	if len(commLink.DataAssetsSent) == 0 && len(commLink.DataAssetsReceived) == 0 {
+		// No data modeled on the link: the unauthenticated caller still reaches the target, so
+		// rate on what the target holds rather than on an empty link (rank 0).
+		rank = processedRank(input, r.Category().STRIDE, input.TechnicalAssets[commLink.TargetId])
 	}
-	if input.HighestCommunicationLinkConfidentiality(commLink) <= types.Internal && input.HighestCommunicationLinkIntegrity(commLink) == types.Operational {
-		return types.LowImpact
-	}
-	return types.MediumImpact
+	return types.AdjustImpactForRank(types.MediumImpact, rank)
 }
 
 func (r *MissingAuthenticationRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset, incomingAccess, incomingAccessOrigin *types.CommunicationLink, hopBetween string,

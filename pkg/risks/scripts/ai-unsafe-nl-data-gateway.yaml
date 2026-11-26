@@ -1,0 +1,176 @@
+id: ai-unsafe-nl-data-gateway
+title: "Unsafe Natural-Language Data Gateway"
+function: architecture
+stride: information-disclosure
+finding_class: weakness-shown
+cwe: 89
+description: >
+  An AI asset turns natural-language requests into queries against a datastore it connects to
+  directly, so the model rather than the application decides what is asked. A prompt injection or a
+  misreading can then return far more than the user may see, sidestep row-level rules, or carry
+  injected SQL.
+impact: >
+  If this risk remains unmitigated, users and anyone who steers the model can read data they are not
+  authorized for, often the whole database the connection reaches, and change or delete data where
+  the connection allows it.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html"
+action: 'Run every model-generated query under the requesting user''s own permissions, through a constrained, parameterized query layer rather than a broad service connection.'
+mitigation: >-
+  Connect the model to data through a query layer that exposes only approved, parameterized queries
+  or views, and let the model choose among them and fill in parameters rather than write free-form
+  SQL.
+
+  Run every query under the requesting user's identity, so that row- and field-level security
+  applies, and give the AI's own connection read-only access to the minimum views it needs.
+
+  Validate generated queries against an allow-list of tables, columns, and operations, cap result
+  sizes, and block DDL, DML, and multi-statement queries unless they are required.
+
+  Log every generated query with the user and prompt that produced it.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI12 (Unsafe Natural Language Data Gateways); MITRE ATLAS
+  AML.T0049, AML.T0036 (Data from Information Repositories), and AML.T0024; MAESTRO layers 2, 3,
+  and 6; CWE-89; CWE-20; CWE-284; NIST SP 800-53 AC-3, AC-6, and AU-2; Mappings from the OWASP
+  GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Does the AI asset reach data only through a parameterized, allow-listed query layer that executes under the requesting user''s identity, with a read-only, minimum-scope connection, result caps, and query logging?'
+detection_logic: >
+  Review how the AI asset connects to each datastore, and which identity its queries run under.
+  Then, as a low-privilege user, ask for data outside that user's access, and try SQL-injection and
+  prompt-injection payloads through the natural-language interface. Finally, review the
+  generated-query logs.
+risk_assessment: >
+  Critical when the model writes free-form queries over a broad service connection to a datastore
+  that holds confidential-or-higher data. Otherwise, the finding is High.
+false_positives: >
+  This rule fires on an in-scope ai-agent-orchestrator, ai-tool-server, ai-llm-endpoint, or
+  ai-rag-pipeline, namely the assets that turn requests into queries, that has an outgoing
+  communication link to a datastore-type asset, whether read-only or not. Vector stores are
+  excluded, since ai-vector-store-exposure covers them. Similarly, training, ingest, and
+  observability pipelines are excluded, since they do not compose natural-language queries. On a
+  tool server that queries a database with SQL, Threagile's built-in sql-nosql-injection rule can
+  also fire. However, that rule covers injection through the tool's own input handling, whereas this
+  one covers the model composing the query and bypassing per-user authorization. Dispose of a
+  confirmed-compliant asset through risk_tracking, logging it as mitigated once a parameterized,
+  allow-listed query layer that runs under the requesting user's identity is confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_ai: false
+          - queries_data: "links_to_datastore({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            or:
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-tool-server}"
+              - true: "{.attributes.ai-llm-endpoint}"
+              - true: "{.attributes.ai-rag-pipeline}"
+          then:
+            - assign:
+                is_ai: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{is_ai}"
+            - true: "{queries_data}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unsafe Natural-Language Data Gateway</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True for a datastore-type target that is not a vector store (vector stores are covered by
+    # ai-vector-store-exposure).
+    is_queried_store:
+      parameters:
+        - target_id
+      do:
+        - assign:
+            - vector_store: false
+        - if:
+            any:
+              in: "{$model.technical_assets.{target_id}.technologies}"
+              true: "{.attributes.ai-vector-store}"
+            then:
+              - assign:
+                  vector_store: true
+        - if:
+            and:
+              - equal:
+                  first: "{$model.technical_assets.{target_id}.type}"
+                  second: datastore
+              - false: "{vector_store}"
+            then:
+              - return: true
+        - return: false
+
+    links_to_datastore:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - queried: "is_queried_store({link.target_id})"
+              - if:
+                  true: "{queried}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(possible, {tech_asset})"
+
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step for the most confidential data store
+    # the gateway queries.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: "cia_rank(public)"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - queried: "is_queried_store({link.target_id})"
+              - if:
+                  true: "{queried}"
+                  then:
+                    - assign:
+                        - store_level: "{$model.technical_assets.{link.target_id}.confidentiality}"
+                    - assign:
+                        - target_rank: "cia_rank({store_level})"
+                    - if:
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

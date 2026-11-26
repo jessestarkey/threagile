@@ -2,37 +2,46 @@ id: cui-telemetry-spillage
 title: CUI Telemetry Spillage
 function: operations
 stride: information-disclosure
+finding_class: control-not-evidenced
 cwe: 532
 description: >
-  CUI can be written into application logs, stack traces, or observability telemetry through
-  debug logging, ORM query logging, or auto-instrumentation that captures request headers.
+  CUI can be written into application logs, stack traces, or observability telemetry through debug
+  logging, ORM query logging, or auto-instrumentation that captures request headers.
 impact: >
-  If this risk remains unmitigated, CUI reaching a log or telemetry pipeline constitutes a formal
-  data spill and may expose sensitive data to personnel without need-to-know.
+  If this risk remains unmitigated, CUI that reaches a log or telemetry pipeline constitutes a
+  formal data spill. Furthermore, it may expose sensitive data to personnel without a need to know.
 asvs: "V7 - Error Handling and Logging"
 cheat_sheet: "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
-action: "Audit all log emission points for CUI content and implement pre-emission redaction."
-mitigation: >
-  Disable verbose/debug logging in production via environment-specific configuration. Implement a
-  structured logging wrapper that applies regex or pattern-based redaction to known CUI field
-  patterns before any log emission. Configure ORM and HTTP client libraries to suppress parameter
-  and body logging. Apply the same redaction pipeline to distributed tracing span attributes.
-  Restrict log storage access to personnel with appropriate clearance and need-to-know. References:
-  NIST SP 800-53 AU-3 (Content of Audit Records); NIST SP 800-53 AU-9 (Protection of Audit
-  Information); DoD CUI Registry spillage handling requirements.
-check: "Have all log emission points been audited for CUI content and confirmed to apply pre-emission redaction?"
+action: 'Audit every log emission point for CUI content, and redact it before emission.'
+mitigation: >-
+  Disable verbose and debug logging in production through environment-specific configuration.
+
+  Use a structured logging wrapper that applies regex or pattern-based redaction to known CUI field
+  patterns before any log emission.
+
+  Configure ORM and HTTP client libraries to suppress parameter and body logging, and apply the same
+  redaction pipeline to distributed tracing span attributes.
+
+  Restrict access to log storage to personnel with the appropriate clearance and need to know.
+references: >-
+  NIST SP 800-53 AU-3 (Content of Audit Records) and AU-9 (Protection of Audit Information); DoD
+  CUI Registry's spillage handling requirements
+check: 'Has every log emission point been audited for CUI content and confirmed to redact it before emission?'
 detection_logic: >
-  Run periodic DLP scans against log samples in the SIEM to detect patterns matching CUI field
-  formats. Monitor for environment configuration changes that enable debug or verbose logging in
-  production.
+  Run periodic DLP scans against log samples in the SIEM to detect patterns that match CUI field
+  formats. Additionally, monitor for environment configuration changes that enable debug or verbose
+  logging in production.
 risk_assessment: >
-  High if debug logging is enabled or if request/response body logging is active on any endpoint
-  that processes CUI. Medium with structured logging and redaction controls in place but no
-  periodic DLP validation.
+  High if debug logging is enabled, or if request or response body logging is active on any endpoint
+  that processes CUI. However, the finding is Medium with structured logging and redaction controls
+  in place but no periodic DLP validation.
 false_positives: >
-  Not applicable via tag (this rule fires unconditionally for every in-scope app-tier asset, by
-  design). Dispose of a confirmed-compliant asset through risk_tracking instead: log it as
-  mitigated once all log emission points are confirmed to emit only redacted/non-CUI content.
+  This rule fires on every in-scope app-tier asset that handles confidential or higher data, whether
+  through its own rating or through a data asset it processes or stores, since logs can only spill
+  data that the asset handles. However, AI assets (any technology with the ai attribute) are
+  excluded, since ai-telemetry-prompt-log-leakage covers them instead. Dispose of a
+  confirmed-compliant asset through risk_tracking, logging it as mitigated once every log emission
+  point is confirmed to emit only redacted or non-CUI content.
 
 risk:
   id:
@@ -45,6 +54,16 @@ risk:
   match:
     parameter: tech_asset
     do:
+      - assign:
+          - is_ai: false
+          - sensitive: "handles_confidential({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            true: "{.attributes.ai}"
+          then:
+            - assign:
+                is_ai: true
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
@@ -54,6 +73,12 @@ risk:
                   - true: "{.attributes.frontend_related}"
                   - true: "{.attributes.backend_related}"
                   - true: "{.attributes.application_logic}"
+            # AI assets are covered by ai-telemetry-prompt-log-leakage, which fires on the
+            # telemetry link actually carrying confidential data rather than unconditionally.
+            - false: "{is_ai}"
+            # Logs can only spill data the asset handles: confidential or higher, its own rating
+            # or the data it processes or stores.
+            - true: "{sensitive}"
           then:
             return: true
 
@@ -69,39 +94,13 @@ risk:
     most_relevant_technical_asset: "{tech_asset.id}"
 
   utils:
-    # Baseline is "very-likely" (the ceiling), so only the downward (RAA < 15) delta is
-    # reachable.
-    get_likelihood:
+    # True when the asset is rated confidential or higher, or processes or stores a data asset that
+    # is. Strictly-confidential and confidential are the only names compared, so the dropped zero
+    # value (public) is never a match.
+    handles_confidential:
       parameters:
         - tech_asset
       do:
-        - if:
-            less:
-              first: "{tech_asset.raa}"
-              second: 15
-            then:
-              - return: likely
-            else:
-              - return: very-likely
-
-    # STRIDE is Information-Disclosure -> Confidentiality. Baseline is "medium".
-    # Impact is purely a function of this asset's own Confidentiality rank -- the model-wide
-    # Business Criticality bump that used to apply here was removed (see git history / the
-    # sibling Python engine's compute_impact() for the rationale: it mostly inflated
-    # already-peripheral assets rather than protecting genuinely under-rated ones).
-    get_impact:
-      parameters:
-        - tech_asset
-      do:
-        - assign:
-            - cia_rank: low
-        - if:
-            equal:
-              first: "{tech_asset.confidentiality}"
-              second: restricted
-            then:
-              - assign:
-                  cia_rank: mid
         - if:
             or:
               - equal:
@@ -111,18 +110,46 @@ risk:
                   first: "{tech_asset.confidentiality}"
                   second: strictly-confidential
             then:
-              - assign:
-                  cia_rank: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: high
-            then:
-              - return: high
-        - if:
-            equal:
-              first: "{cia_rank}"
-              second: mid
-            then:
-              - return: medium
-        - return: low
+              - return: true
+        - loop:
+            in: "{tech_asset.data_assets_processed}"
+            item: data_id
+            do:
+              - if:
+                  or:
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: confidential
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: strictly-confidential
+                  then:
+                    - return: true
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - if:
+                  or:
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: confidential
+                    - equal:
+                        first: "{$model.data_assets.{data_id}.confidentiality}"
+                        second: strictly-confidential
+                  then:
+                    - return: true
+        - return: false
+    # Likelihood: likely baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(likely, {tech_asset})"
+
+    # Impact: low baseline plus the CIA step on C (STRIDE information-disclosure).
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_impact(low, {tech_asset.confidentiality})"

@@ -1,0 +1,287 @@
+id: ai-insecure-inter-agent-communication
+title: "Insecure Inter-Agent Communication"
+function: architecture
+stride: spoofing
+finding_class: weakness-shown
+cwe: 287
+description: >
+  An AI agent messages another agent over a link that crosses a trust boundary, carries no
+  authentication, or is unencrypted. Since agents act on each other's messages as instructions,
+  anyone who can read, inject, or replay that traffic, or impersonate an agent, can steer the
+  receiver.
+impact: >
+  If this risk remains unmitigated, an adversary can impersonate a trusted agent, inject or alter
+  delegated tasks, or replay earlier instructions. The receiving agent then acts on them inside the
+  system's own trusted context.
+asvs: "V9 - Communication"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Mutually authenticate every agent-to-agent link with a per-agent identity, encrypt it, and sign or bind messages so that they cannot be altered or replayed.'
+mitigation: >-
+  Give each agent a unique, verifiable identity (a PKI-backed workload identity or an equivalent),
+  and require mutual authentication on every agent-to-agent link, never an unauthenticated or
+  shared-secret channel.
+
+  Encrypt agent traffic end to end in transit, including inside a cluster.
+
+  Sign messages, or bind them to the session with nonces and expiry, so that delegated tasks cannot
+  be altered or replayed.
+
+  Route agents that sit in different trust boundaries through an admission-controlled agent gateway
+  or registry that verifies identity and enforces which agent may delegate what to whom.
+
+  Log every cross-agent message with the sender's and receiver's identities.
+references: >-
+  OWASP Top 10 for Agentic Applications 2026 ASI07 (Insecure Inter-Agent Communications); MAESTRO
+  layer 7 (Agent Ecosystem); MITRE ATLAS AML.T0012 (Valid Accounts); CWE-287; CWE-294; CWE-319;
+  CWE-346; NIST SP 800-53 IA-9, SC-8, and AC-3; Mappings from the OWASP GenAI Security Crosswalk
+  2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Is every agent-to-agent link mutually authenticated with per-agent identities, encrypted in transit, and protected against message alteration and replay, with cross-boundary delegation mediated by an admission-controlled gateway?'
+detection_logic: >
+  Inventory every agent-to-agent channel, and verify its authentication, encryption, and message
+  integrity controls. Then, attempt to send a delegated task from an unregistered or impersonated
+  agent identity, and confirm that it is rejected. Finally, audit the cross-agent logs for identity
+  mismatches.
+risk_assessment: >
+  Critical for an unauthenticated or unencrypted agent-to-agent link that crosses a trust boundary
+  into an agent with important-or-higher integrity. Otherwise, the finding is High.
+false_positives: >
+  This rule fires on an in-scope ai-agent-orchestrator or ai-multi-agent-gateway with an outgoing
+  link to another ai-agent-orchestrator or ai-multi-agent-gateway, where the link meets any of three
+  conditions: (1) it crosses a trust boundary, meaning the two assets' directly containing trust
+  boundaries differ, (2) it has authentication: none, or (3) it uses a protocol that Threagile does
+  not class as encrypted, with an unset protocol counting as unencrypted. This boundary test is
+  simpler than Threagile's built-in, network-only one, since any difference in the directly
+  containing boundary counts. Dispose of a confirmed-compliant asset through risk_tracking, logging
+  it as mitigated once every such link is confirmed to be mutually authenticated, encrypted, and
+  replay-protected.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - is_agent: false
+          - has_insecure_link: "has_insecure_agent_link({tech_asset})"
+      - if:
+          any:
+            in: "{tech_asset.technologies}"
+            or:
+              - true: "{.attributes.ai-agent-orchestrator}"
+              - true: "{.attributes.ai-multi-agent-gateway}"
+          then:
+            - assign:
+                is_agent: true
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{is_agent}"
+            - true: "{has_insecure_link}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Insecure Inter-Agent Communication</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # True when the link targets an agent and crosses a trust boundary, is unauthenticated, or
+    # is unencrypted. Only non-zero enum values are compared positively, so the omitempty
+    # pitfall does not apply: a dropped authentication/protocol simply fails to match the
+    # "authenticated"/"encrypted" lists.
+    is_insecure_agent_link:
+      parameters:
+        - source_id
+        - link
+      do:
+        - assign:
+            - targets_agent: false
+            - authenticated: false
+            - encrypted: false
+            - crosses_boundary: false
+        - if:
+            any:
+              in: "{$model.technical_assets.{link.target_id}.technologies}"
+              or:
+                - true: "{.attributes.ai-agent-orchestrator}"
+                - true: "{.attributes.ai-multi-agent-gateway}"
+            then:
+              - assign:
+                  targets_agent: true
+        - if:
+            false: "{targets_agent}"
+            then:
+              - return: false
+        - if:
+            or:
+              - equal:
+                  first: "{link.authentication}"
+                  second: credentials
+              - equal:
+                  first: "{link.authentication}"
+                  second: session-id
+              - equal:
+                  first: "{link.authentication}"
+                  second: token
+              - equal:
+                  first: "{link.authentication}"
+                  second: client-certificate
+              - equal:
+                  first: "{link.authentication}"
+                  second: two-factor
+              - equal:
+                  first: "{link.authentication}"
+                  second: externalized
+            then:
+              - assign:
+                  authenticated: true
+        - if:
+            or:
+              - equal:
+                  first: "{link.protocol}"
+                  second: https
+              - equal:
+                  first: "{link.protocol}"
+                  second: wss
+              - equal:
+                  first: "{link.protocol}"
+                  second: reverse-proxy-web-protocol-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: jdbc-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: odbc-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: sql-access-protocol-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: nosql-access-protocol-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: binary-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: text-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: ssh
+              - equal:
+                  first: "{link.protocol}"
+                  second: ssh-tunnel
+              - equal:
+                  first: "{link.protocol}"
+                  second: smtp-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: pop3-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: imap-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: ftps
+              - equal:
+                  first: "{link.protocol}"
+                  second: sftp
+              - equal:
+                  first: "{link.protocol}"
+                  second: scp
+              - equal:
+                  first: "{link.protocol}"
+                  second: ldaps
+              - equal:
+                  first: "{link.protocol}"
+                  second: smb-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: iiop-encrypted
+              - equal:
+                  first: "{link.protocol}"
+                  second: jrmp-encrypted
+            then:
+              - assign:
+                  encrypted: true
+        - assign:
+            - source_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{source_id}.id}"
+            - target_boundary: "{$model.direct_containing_trust_boundary_mapped_by_technical_asset_id.{link.target_id}.id}"
+        - if:
+            not-equal:
+              first: "{source_boundary}"
+              second: "{target_boundary}"
+            then:
+              - assign:
+                  crosses_boundary: true
+        - if:
+            or:
+              - true: "{crosses_boundary}"
+              - false: "{authenticated}"
+              - false: "{encrypted}"
+            then:
+              - return: true
+        - return: false
+
+    has_insecure_agent_link:
+      parameters:
+        - tech_asset
+      do:
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - insecure: "is_insecure_agent_link({tech_asset.id}, {link})"
+              - if:
+                  true: "{insecure}"
+                  then:
+                    - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(possible, {tech_asset})"
+
+    # Impact baseline: medium.
+    # Impact: baseline plus the integrity step for the highest rank across the agent and
+    # the agents it reaches over an insecure link.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - best: "cia_rank({tech_asset.integrity})"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - assign:
+                  - insecure: "is_insecure_agent_link({tech_asset.id}, {link})"
+              - if:
+                  true: "{insecure}"
+                  then:
+                    - assign:
+                        - target_integrity: "{$model.technical_assets.{link.target_id}.integrity}"
+                    - assign:
+                        - target_rank: "cia_rank({target_integrity})"
+                    - if:
+                        greater:
+                          first: "{target_rank}"
+                          second: "{best}"
+                        then:
+                          - assign:
+                              best: "{target_rank}"
+        - return: "adjust_impact_rank(medium, {best})"

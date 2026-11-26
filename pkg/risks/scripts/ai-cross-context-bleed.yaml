@@ -1,0 +1,283 @@
+id: ai-cross-context-bleed
+title: "Cross-Context Bleed and Over-Broad Context"
+function: architecture
+stride: information-disclosure
+finding_class: weakness-shown
+cwe: 488
+description: >
+  An LLM endpoint, RAG pipeline, or agent serves more than one tenant or sensitivity level. Thus,
+  whatever enters its context (history, cached sessions, retrieved documents, memory, and tool
+  results) can surface in a response to the wrong user, tenant, or clearance.
+impact: >
+  If this risk remains unmitigated, one user or tenant can receive another's conversation or
+  retrieved data, or a lower-sensitivity request can get higher-sensitivity material, with nothing
+  marking it as out of place.
+asvs: "V8 - Authorization"
+cheat_sheet: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+action: 'Isolate every session, cache, memory store, and retrieval index per tenant and per sensitivity level, and build each context from only what the requesting user is entitled to.'
+mitigation: >-
+  Partition conversation history, caches, agent memory, and retrieval indexes by tenant and by
+  sensitivity level, keyed to the authenticated user, rather than using a shared store filtered
+  after the fact.
+
+  Assemble each request's context from only the documents and history that the requesting user is
+  authorized for, applying authorization at retrieval time rather than relying on the model to
+  withhold content.
+
+  Keep context windows to the minimum the task needs.
+
+  Run separate model instances or deployments for materially different sensitivity levels where data
+  must not mix.
+
+  Test for cross-session and cross-tenant leakage, including under concurrency and cache reuse.
+references: >-
+  OWASP GenAI Data Security 2026 DSGAI11 (Cross-Context Conversation Bleed) and DSGAI15
+  (Over-Broad Context Windows); MITRE ATLAS AML.T0024 (Exfiltration via AI Inference API); MAESTRO
+  layers 2 and 6; CWE-488; CWE-200; CWE-285; NIST SP 800-53 AC-3, AC-4, and SC-4; Mappings from
+  the OWASP GenAI Security Crosswalk 2026-Q3 (https://github.com/GenAI-Security-Project/crosswalk)
+check: 'Are sessions, caches, memory, and retrieval partitioned per tenant and per sensitivity level, with each request''s context built from only what the requesting user is authorized to see?'
+detection_logic: >
+  Review how sessions, caches, memory, and retrieval indexes are keyed and partitioned. Then, run
+  cross-tenant and cross-session leakage tests, including concurrent sessions and cache reuse, and
+  try to retrieve another user's content or content at a higher sensitivity level.
+risk_assessment: >
+  High when the asset mixes tenants or sensitivity levels that include confidential-or-higher data,
+  without per-tenant, per-level isolation. Otherwise, the finding is Medium.
+false_positives: >
+  This rule fires on an in-scope ai-llm-endpoint, ai-rag-pipeline, or ai-agent-orchestrator that is
+  multi_tenant, or whose context mixes sensitivity levels. Specifically, it fires when, among the
+  data the asset stores, the data callers send into it, and the data it retrieves through outgoing
+  links, at least one data asset is rated restricted or higher and another is rated lower. Data that
+  the asset only sends out (for example, telemetry) does not count, because Threagile adds every
+  sent data asset to the sender's processed list, so the rule does not use data_assets_processed.
+  Dispose of a confirmed-compliant asset through risk_tracking, logging it as mitigated once
+  per-tenant, per-sensitivity-level isolation of sessions, caches, memory, and retrieval is
+  confirmed.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - assign:
+          - mixed_levels: "context_mixes_levels({tech_asset})"
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.technologies}"
+                or:
+                  - true: "{.attributes.ai-llm-endpoint}"
+                  - true: "{.attributes.ai-rag-pipeline}"
+                  - true: "{.attributes.ai-agent-orchestrator}"
+            - or:
+                - true: "{tech_asset.multi_tenant}"
+                - true: "{mixed_levels}"
+          then:
+            return: true
+
+  data:
+    parameter: tech_asset
+    title: "<b>Cross-Context Bleed and Over-Broad Context</b> risk at <b>{tech_asset.title}</b>"
+    severity: "calculate_severity(get_likelihood({tech_asset}), get_impact({tech_asset}))"
+    exploitation_likelihood: "get_likelihood({tech_asset})"
+    exploitation_impact: "get_impact({tech_asset})"
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  utils:
+    # Confidentiality rank: public 0, internal 1, restricted 2, confidential 3,
+    # strictly-confidential 4 (public is the zero value and is dropped, so it falls through).
+    confidentiality_rank:
+      parameters:
+        - confidentiality
+      do:
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: strictly-confidential
+            then:
+              - return: 4
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: confidential
+            then:
+              - return: 3
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: restricted
+            then:
+              - return: 2
+        - if:
+            equal:
+              first: "{confidentiality}"
+              second: internal
+            then:
+              - return: 1
+        - return: 0
+
+    # Highest and lowest confidentiality rank among data that enters the context: data stored,
+    # data callers send in (incoming links' data_assets_sent), and data retrieved through
+    # outgoing links (data_assets_received). Returns "highest/lowest" ranks via two methods.
+    context_highest:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - highest: -1
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+              - if:
+                  greater:
+                    first: "{rank}"
+                    second: "{highest}"
+                  then:
+                    - assign:
+                        highest: "{rank}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_sent}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        greater:
+                          first: "{rank}"
+                          second: "{highest}"
+                        then:
+                          - assign:
+                              highest: "{rank}"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_received}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        greater:
+                          first: "{rank}"
+                          second: "{highest}"
+                        then:
+                          - assign:
+                              highest: "{rank}"
+        - return: "{highest}"
+
+    context_lowest:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - lowest: 5
+        - loop:
+            in: "{tech_asset.data_assets_stored}"
+            item: data_id
+            do:
+              - assign:
+                  - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+              - if:
+                  less:
+                    first: "{rank}"
+                    second: "{lowest}"
+                  then:
+                    - assign:
+                        lowest: "{rank}"
+        - loop:
+            in: "{$model.incoming_technical_communication_links_mapped_by_target_id.{tech_asset.id}}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_sent}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        less:
+                          first: "{rank}"
+                          second: "{lowest}"
+                        then:
+                          - assign:
+                              lowest: "{rank}"
+        - loop:
+            in: "{tech_asset.communication_links}"
+            item: link
+            do:
+              - loop:
+                  in: "{link.data_assets_received}"
+                  item: data_id
+                  do:
+                    - assign:
+                        - rank: "confidentiality_rank({$model.data_assets.{data_id}.confidentiality})"
+                    - if:
+                        less:
+                          first: "{rank}"
+                          second: "{lowest}"
+                        then:
+                          - assign:
+                              lowest: "{rank}"
+        - return: "{lowest}"
+
+    # True when the context holds restricted-or-higher data together with something lower.
+    context_mixes_levels:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - highest: "context_highest({tech_asset})"
+            - lowest: "context_lowest({tech_asset})"
+        - if:
+            and:
+              - equal-or-greater:
+                  first: "{highest}"
+                  second: 2
+              - less:
+                  first: "{lowest}"
+                  second: "{highest}"
+            then:
+              - return: true
+        - return: false
+
+    # Likelihood: possible baseline plus the RAA and internet steps.
+    get_likelihood:
+      parameters:
+        - tech_asset
+      do:
+        - return: "adjust_likelihood(possible, {tech_asset})"
+
+    # Impact baseline: medium.
+    # Impact: baseline plus the confidentiality step for the most confidential data in the
+    # asset or any context it mixes.
+    get_impact:
+      parameters:
+        - tech_asset
+      do:
+        - assign:
+            - own: "cia_rank({tech_asset.confidentiality})"
+            - best: "context_highest({tech_asset})"
+        - if:
+            greater:
+              first: "{own}"
+              second: "{best}"
+            then:
+              - assign:
+                  best: "{own}"
+        - return: "adjust_impact_rank(medium, {best})"

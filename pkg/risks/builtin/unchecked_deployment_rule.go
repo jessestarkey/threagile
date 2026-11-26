@@ -24,20 +24,14 @@ func (*UncheckedDeploymentRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html",
 		Action: "Add SAST, software composition analysis, secret scanning, IaC scanning, container image scanning, and DAST as " +
 			"blocking gates that every artifact must pass before it can reach production.",
-		Mitigation: "Integrate automated security testing into every build: static analysis (Semgrep, CodeQL, SonarQube, Fortify) " +
-			"on each pull request; software composition analysis (OWASP Dependency-Check, Dependabot, Grype, Snyk) over " +
-			"the full dependency tree with SBOM generation; secret scanning; infrastructure-as-code scanning (Checkov, " +
-			"tfsec, KICS); container image scanning (Trivy, Anchore); and dynamic testing (OWASP ZAP, Burp Suite " +
-			"Enterprise) against a deployed test environment. Define a written severity policy that blocks promotion on " +
-			"critical and high findings unless a time-bound, documented exception exists, and enforce it in the pipeline " +
-			"rather than by convention. Require the deployment target or admission controller to accept only artifacts " +
-			"carrying a signed attestation that all gates passed. Feed findings into vulnerability management and the " +
-			"POA&M, and track time to remediate. References: CWE-1395, CWE-1104; MITRE ATT&CK T1195.001 (Compromise " +
-			"Software Dependencies and Development Tools); OWASP Top 10:2025 A03 (Software Supply Chain Failures); NIST SP " +
-			"800-218 (SSDF) PW.7, PW.8, RV.1; NIST SP 800-53 SA-11, RA-5.",
+		Mitigation: "Run blocking security tests in every build, namely static analysis (Semgrep or CodeQL) on each pull request, software composition analysis with SBOM generation, secret scanning, infrastructure-as-code scanning (Checkov), container image scanning (Trivy), and dynamic testing (OWASP ZAP) against a test environment.\n" +
+			"Write a severity policy that blocks promotion on critical and high findings unless a time-bound, documented exception exists, and enforce it in the pipeline.\n" +
+			"Have the deployment target or admission controller accept only artifacts with a signed attestation that all gates passed.\n" +
+			"Feed findings into vulnerability management and the POA&M, and track time to remediate.",
 		Check:          "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
 		Function:       types.Architecture,
 		STRIDE:         types.Tampering,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "All development-relevant technical assets.",
 		RiskAssessment: "The risk rating depends on the highest rating of the technical assets and data assets processed by deployment-receiving targets.",
 		FalsePositives: "When the build-pipeline does not build any software components it can be considered a false positive " +
@@ -63,11 +57,9 @@ func (r *UncheckedDeploymentRule) GenerateRisks(input *types.Model) ([]*types.Ri
 
 func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset *types.TechnicalAsset) *types.Risk {
 	title := "<b>Unchecked Deployment</b> risk at <b>" + technicalAsset.Title + "</b>"
-	// Impact intentionally stays keyed off all three CIA dimensions rather than narrowing to
-	// just Integrity (this category's own STRIDE value): an unscanned vulnerability shipped to a
-	// deployment target can threaten any of its CIA dimensions, not just integrity.
-	// impact is depending on highest rating
-	impact := types.LowImpact
+	// Impact: baseline plus the CIA step on the dimension the STRIDE category threatens, for the
+	// deployment targets that receive important-or-higher integrity data.
+	rank := 0
 	// data breach at all deployment targets
 	uniqueDataBreachTechnicalAssetIDs := make(map[string]interface{})
 	uniqueDataBreachTechnicalAssetIDs[technicalAsset.Id] = true
@@ -81,11 +73,7 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 				// here we've got a deployment target which has its data assets at risk via deployment of backdoored code
 				uniqueDataBreachTechnicalAssetIDs[codeDeploymentTargetCommLink.TargetId] = true
 				targetTechAsset := input.TechnicalAssets[codeDeploymentTargetCommLink.TargetId]
-				if input.HighestProcessedConfidentiality(targetTechAsset) >= types.Confidential ||
-					input.HighestProcessedIntegrity(targetTechAsset) >= types.Critical ||
-					input.HighestProcessedAvailability(targetTechAsset) >= types.Critical {
-					impact = types.MediumImpact
-				}
+				rank = max(rank, processedRank(input, r.Category().STRIDE, targetTechAsset))
 				break
 			}
 		}
@@ -95,6 +83,7 @@ func (r *UncheckedDeploymentRule) createRisk(input *types.Model, technicalAsset 
 		dataBreachTechnicalAssetIDs = append(dataBreachTechnicalAssetIDs, key)
 	}
 	// create risk
+	impact := types.AdjustImpactForRank(types.LowImpact, rank)
 	likelihood := computeLikelihood(types.Likely, technicalAsset)
 	risk := &types.Risk{
 		CategoryId:                   r.Category().ID,

@@ -24,19 +24,14 @@ func (*MissingVaultRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
 		Action: "Move every credential, key, and certificate out of configuration files, images, and environment variables " +
 			"into a dedicated secrets vault accessed through workload identity.",
-		Mitigation: "Deploy a dedicated secrets management service (Azure Key Vault, AWS Secrets Manager with KMS, HashiCorp " +
-			"Vault), HSM-backed where required (FIPS 140-2/140-3 Level 2 or higher for DoD), and migrate every database " +
-			"password, API key, client secret, TLS private key, and signing key out of configuration files, container " +
-			"images, Kubernetes manifests, and plain environment variables. Have workloads authenticate to the vault with " +
-			"workload identity (managed identity, IAM roles for service accounts, Kubernetes auth) rather than a bootstrap " +
-			"secret, and retrieve secrets at runtime or through a CSI secrets-store driver. Grant each workload read " +
-			"access to its own secrets only, enable soft-delete and purge protection, and send all vault access logs to " +
-			"the SIEM. Prefer dynamic, short-lived credentials (per-lease database credentials, short-lived certificates) " +
-			"and automate rotation for any static secret that remains. References: CWE-798, CWE-522, CWE-312; MITRE ATT&CK " +
-			"T1552.001 (Credentials In Files), T1552.004 (Private Keys); NIST SP 800-53 IA-5, SC-12, SC-28; NIST SP 800-57.",
+		Mitigation: "Deploy a dedicated secrets service (Azure Key Vault, AWS Secrets Manager, or HashiCorp Vault), HSM-backed where required (FIPS 140 Level 2 or higher for DoD), and migrate every password, API key, client secret, and private key into it.\n" +
+			"Have workloads authenticate to the vault with workload identity rather than a bootstrap secret, and retrieve secrets at runtime or through a CSI secrets-store driver.\n" +
+			"Grant each workload read access to its own secrets only, enable soft-delete and purge protection, and send vault access logs to the SIEM.\n" +
+			"Prefer dynamic, short-lived credentials, and automate rotation for any static secret that remains.",
 		Check:          "GetAttribute a Vault (Secret Storage) in place?",
 		Function:       types.Architecture,
 		STRIDE:         types.InformationDisclosure,
+		FindingClass:   types.FindingClassControlNotEvidenced,
 		DetectionLogic: "Models without a Vault (Secret Storage).",
 		RiskAssessment: "The risk rating depends on the sensitivity of the technical asset itself and of the data assets processed.",
 		FalsePositives: "Models where no technical assets have any kind of sensitive config data to protect " +
@@ -51,56 +46,17 @@ func (*MissingVaultRule) SupportedTags() []string {
 }
 
 func (r *MissingVaultRule) GenerateRisks(input *types.Model) ([]*types.Risk, error) {
-	risks := make([]*types.Risk, 0)
-	hasVault := false
-	var mostRelevantAsset *types.TechnicalAsset
-	impact := types.LowImpact
-	for _, id := range input.SortedTechnicalAssetIDs() { // use the sorted one to always get the same tech asset with the highest sensitivity as example asset
+	highestRank := 0
+	for _, id := range input.SortedTechnicalAssetIDs() {
 		techAsset := input.TechnicalAssets[id]
 		if techAsset.Technologies.GetAttribute(types.Vault) {
-			hasVault = true
-			break
+			return []*types.Risk{}, nil
 		}
-		if input.HighestProcessedConfidentiality(techAsset) >= types.Confidential ||
-			input.HighestProcessedIntegrity(techAsset) >= types.Critical ||
-			input.HighestProcessedAvailability(techAsset) >= types.Critical {
-			impact = types.MediumImpact
-		}
-		if techAsset.Confidentiality >= types.Confidential ||
-			techAsset.Integrity >= types.Critical ||
-			techAsset.Availability >= types.Critical {
-			impact = types.MediumImpact
-		}
-		// just for referencing the most interesting asset
-		if mostRelevantAsset == nil || techAsset.HighestSensitivityScore() > mostRelevantAsset.HighestSensitivityScore() {
-			mostRelevantAsset = techAsset
-		}
+		highestRank = max(highestRank, processedRank(input, r.Category().STRIDE, techAsset))
 	}
-	if !hasVault {
-		risks = append(risks, r.createRisk(mostRelevantAsset, impact))
-	}
-	return risks, nil
-}
-
-func (r *MissingVaultRule) createRisk(technicalAsset *types.TechnicalAsset, impact types.RiskExploitationImpact) *types.Risk {
-	title := "<b>Missing Vault (Secret Storage)</b> in the threat model"
-	id := "no-components"
-	likelihood := types.Unlikely
-	if technicalAsset != nil {
-		title += " (referencing asset <b>" + technicalAsset.Title + "</b> as an example)"
-		id = technicalAsset.Id
-		likelihood = computeLikelihood(types.Unlikely, technicalAsset)
-	}
-	risk := &types.Risk{
-		CategoryId:                   r.Category().ID,
-		Severity:                     types.CalculateSeverity(likelihood, impact),
-		ExploitationLikelihood:       likelihood,
-		ExploitationImpact:           impact,
-		Title:                        title,
-		MostRelevantTechnicalAssetId: id,
-		DataBreachProbability:        types.Improbable,
-		DataBreachTechnicalAssetIDs:  []string{},
-	}
-	risk.SyntheticId = risk.CategoryId + "@" + id
-	return risk
+	// A gap in the whole model, so the finding belongs to the system rather than to an example
+	// asset, and its likelihood stays flat. Impact takes the CIA step for the most sensitive data
+	// that some component must then keep its secrets beside.
+	return []*types.Risk{wholeModelRisk(r.Category().ID, "<b>Missing Vault (Secret Storage)</b> in the threat model",
+		types.AdjustImpactForRank(types.LowImpact, highestRank))}, nil
 }

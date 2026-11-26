@@ -24,19 +24,14 @@ func (*PushInsteadPullDeploymentRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Replace push-based deployment from the build pipeline with a pull-based GitOps agent inside the target " +
 			"environment that fetches and verifies signed artifacts itself.",
-		Mitigation: "Run a deployment agent inside the target environment (Argo CD or Flux for Kubernetes, or an equivalent pull " +
-			"agent for VMs) that watches a Git repository and artifact registry and applies changes itself, so production " +
-			"needs no inbound administrative interface reachable from the pipeline and the pipeline holds no production " +
-			"credentials. The pipeline's job ends at publishing a signed artifact and updating the desired-state " +
-			"repository through a reviewed pull request. Configure the agent to verify artifact signatures and provenance " +
-			"before applying, and scope its own permissions to the namespaces or resources it manages. Where push " +
-			"deployment cannot be eliminated, use short-lived, environment-scoped credentials issued per run through OIDC " +
-			"federation, require manual approval gates for production, and restrict the deployment endpoint to the " +
-			"runner's private network. References: CWE-668; MITRE ATT&CK T1072 (Software Deployment Tools), T1195.002; " +
-			"NIST SP 800-53 CM-5, AC-17; NIST SP 800-204D.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Architecture,
-		STRIDE:   types.Tampering,
+		Mitigation: "Run a deployment agent inside the target environment (Argo CD or Flux, or an equivalent for VMs) that pulls from a Git repository and artifact registry, so production exposes no inbound administrative interface and the pipeline holds no production credentials.\n" +
+			"End the pipeline's job at publishing a signed artifact and updating the desired-state repository through a reviewed pull request.\n" +
+			"Configure the agent to verify artifact signatures and provenance before applying, and scope its permissions to the resources it manages.\n" +
+			"Where push deployment must remain, use short-lived, environment-scoped credentials issued per run through OIDC federation, require approval gates for production, and restrict the deployment endpoint to the runner's private network.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Architecture,
+		STRIDE:       types.Tampering,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "Models with build pipeline components accessing in-scope targets of deployment (in a non-readonly way) which " +
 			"are not build-related components themselves.",
 		RiskAssessment: "The risk rating depends on the highest sensitivity of the deployment targets running custom-developed parts.",
@@ -53,7 +48,6 @@ func (*PushInsteadPullDeploymentRule) SupportedTags() []string {
 
 func (r *PushInsteadPullDeploymentRule) GenerateRisks(input *types.Model) ([]*types.Risk, error) {
 	risks := make([]*types.Risk, 0)
-	impact := types.LowImpact
 	for _, buildPipeline := range input.TechnicalAssets {
 		if !buildPipeline.Technologies.GetAttribute(types.BuildPipeline) {
 			continue
@@ -69,11 +63,7 @@ func (r *PushInsteadPullDeploymentRule) GenerateRisks(input *types.Model) ([]*ty
 			if targetAsset.Technologies.GetAttribute(types.IsDevelopmentRelevant) || targetAsset.Usage == types.DevOps {
 				continue
 			}
-			if input.HighestProcessedConfidentiality(targetAsset) >= types.Confidential ||
-				input.HighestProcessedIntegrity(targetAsset) >= types.Critical ||
-				input.HighestProcessedAvailability(targetAsset) >= types.Critical {
-				impact = types.MediumImpact
-			}
+			impact := processedImpact(input, types.LowImpact, r.Category().STRIDE, targetAsset)
 			risks = append(risks, r.createRisk(buildPipeline, targetAsset, deploymentLink, impact))
 		}
 	}

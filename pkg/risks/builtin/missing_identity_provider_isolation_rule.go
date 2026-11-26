@@ -22,24 +22,20 @@ func (*MissingIdentityProviderIsolationRule) Category() *types.RiskCategory {
 		CheatSheet: "https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html",
 		Action: "Place the identity provider and its identity stores in a dedicated network segment that admits only their " +
 			"required authentication flows, and administer them as Tier-0 assets.",
-		Mitigation: "Move the identity provider and its directory or database into their own subnet or VNet/VPC segment with a " +
-			"default-deny network security group or firewall policy that permits only the authentication protocols and " +
-			"source ranges actually required (for example HTTPS from the ingress tier, and LDAPS from the identity " +
-			"provider to its own store only). Do not co-host the identity provider or its store on the same application " +
-			"server, database instance, node pool, or VM as any non-identity workload; separate execution environments as " +
-			"well as networks. Restrict administration to privileged access workstations through a bastion or just-in-time " +
-			"access path. Treat token-signing keys and the identity database as Tier-0: keep signing keys in an HSM-backed " +
-			"key vault, and alert on any change to federation trusts, signing certificates, or newly added application " +
-			"credentials. References: CWE-653; MITRE ATT&CK T1556 (Modify Authentication Process), T1606.002 (Forge Web " +
-			"Credentials: SAML Tokens), T1003 (OS Credential Dumping); NIST SP 800-53 SC-7, AC-6; NIST SP 800-207.",
-		Check:    "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
-		Function: types.Operations,
-		STRIDE:   types.ElevationOfPrivilege,
+		Mitigation: "Move the identity provider and its store into their own segment with a default-deny policy that admits only the required authentication protocols and sources (such as HTTPS from the ingress tier, and LDAPS from the identity provider to its store).\n" +
+			"Do not co-host the identity provider or its store with any non-identity workload on the same server, database instance, node pool, or VM.\n" +
+			"Restrict administration to privileged access workstations through a bastion or just-in-time access path.\n" +
+			"Treat token-signing keys and the identity database as Tier-0. Keep signing keys in an HSM-backed vault, and alert on any change to federation trusts, signing certificates, or application credentials.",
+		Check:        "Are recommendations from the linked cheat sheet and referenced ASVS chapter applied?",
+		Function:     types.Operations,
+		STRIDE:       types.ElevationOfPrivilege,
+		FindingClass: types.FindingClassWeaknessShown,
 		DetectionLogic: "In-scope identity provider assets and their identity data stores " +
 			"when surrounded by other (not identity-related) assets (without a network trust-boundary in-between). " +
 			"This risk is especially prevalent when other non-identity related assets are within the same execution environment (i.e. same database or same application server).",
-		RiskAssessment: "Default is " + types.HighImpact.String() + " impact. The impact is increased to " + types.VeryHighImpact.String() + " when the asset missing the " +
-			"trust-boundary protection is rated as " + types.StrictlyConfidential.String() + " or " + types.MissionCritical.String() + ".",
+		RiskAssessment: "Likelihood starts at " + types.PossibleLikelihood.String() + ", one level higher when another asset shares the identity asset's execution " +
+			"environment. Impact starts at " + types.MediumImpact.String() + ", " + "one level higher for an asset rated " + types.Confidential.String() + "/" + types.Critical.String() + " or above, one level lower " +
+			"for " + types.Internal.String() + "/" + types.Operational.String() + " or below.",
 		FalsePositives: "When all assets within the network segmentation trust-boundary are hardened and protected to the same extend as if all were " +
 			"identity providers with data of highest sensitivity.",
 		ModelFailurePossibleReason: false,
@@ -58,9 +54,6 @@ func (r *MissingIdentityProviderIsolationRule) GenerateRisks(input *types.Model)
 			continue
 		}
 
-		moreImpact := technicalAsset.Confidentiality == types.StrictlyConfidential ||
-			technicalAsset.Integrity == types.MissionCritical ||
-			technicalAsset.Availability == types.MissionCritical
 		sameExecutionEnv := false
 		createRiskEntry := false
 		// now check for any other same-network assets of non-identity-related types
@@ -82,24 +75,20 @@ func (r *MissingIdentityProviderIsolationRule) GenerateRisks(input *types.Model)
 			}
 		}
 		if createRiskEntry {
-			risks = append(risks, r.createRisk(technicalAsset, moreImpact, sameExecutionEnv))
+			risks = append(risks, r.createRisk(technicalAsset, sameExecutionEnv))
 		}
 	}
 	return risks, nil
 }
 
-func (r *MissingIdentityProviderIsolationRule) createRisk(techAsset *types.TechnicalAsset, moreImpact bool, sameExecutionEnv bool) *types.Risk {
-	impact := types.HighImpact
-	baselineLikelihood := types.Unlikely
+func (r *MissingIdentityProviderIsolationRule) createRisk(techAsset *types.TechnicalAsset, sameExecutionEnv bool) *types.Risk {
+	impact := computeImpact(types.MediumImpact, r.Category().STRIDE, techAsset)
 	others := "<b>in the same network segment</b>"
-	if moreImpact {
-		impact = types.VeryHighImpact
-	}
 	if sameExecutionEnv {
-		baselineLikelihood = types.Likely
 		others = "<b>in the same execution environment</b>"
 	}
-	likelihood := computeLikelihood(baselineLikelihood, techAsset)
+	// One level more likely when sharing an execution environment rather than only a network segment.
+	likelihood := computeLikelihood(types.PossibleLikelihood, techAsset, stepIf(sameExecutionEnv, 1))
 	risk := &types.Risk{
 		CategoryId:             r.Category().ID,
 		Severity:               types.CalculateSeverity(likelihood, impact),
