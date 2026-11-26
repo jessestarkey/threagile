@@ -40,9 +40,11 @@ jobs:
           load: true
 
       - name: Scan image
-        uses: anchore/scan-action@v5
+        uses: anchore/scan-action@v7
         with:
           image: ${{ env.IMAGE }}:${{ github.sha }}
+          # The upload step below reads this path, and the action writes to a temp directory by default
+          output-file: results.sarif
           fail-build: true
           severity-cutoff: high
           only-fixed: true

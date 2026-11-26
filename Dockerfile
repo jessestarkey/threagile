@@ -39,6 +39,9 @@ FROM docker.io/library/alpine:3.24.4@sha256:f59abe656b692d901e184be3445e08478660
 # label used in other scripts to filter
 LABEL type="threagile"
 
+# The pinned base image lags behind Alpine's security fixes, so upgrade the packages it ships
+RUN apk upgrade --no-cache
+
 # add certificates, graphviz, fonts
 RUN apk add --update --no-cache ca-certificates
 RUN apk add --update --no-cache graphviz ttf-freefont
