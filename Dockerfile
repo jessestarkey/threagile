@@ -11,6 +11,8 @@ WORKDIR /app
 
 ARG GOOS=linux
 ENV GO111MODULE=on
+# A static binary needs no C library at runtime, so the final image carries no glibc shim
+ENV CGO_ENABLED=0
 
 # download dependencies
 RUN go mod download
@@ -20,7 +22,6 @@ RUN go version
 RUN go test ./...
 
 # build binaries
-RUN go build -ldflags="-X main.buildTimestamp=$(date '+%Y%m%d%H%M%S')" -o risk_demo_rule cmd/risk_demo/main.go
 RUN go build -ldflags="-X main.buildTimestamp=$(date '+%Y%m%d%H%M%S')" -o threagile cmd/threagile/main.go
 
 # add the -race parameter to go build call in order to instrument with race condition detector: https://blog.golang.org/race-detector
@@ -46,12 +47,6 @@ RUN apk upgrade --no-cache
 RUN apk add --update --no-cache ca-certificates
 RUN apk add --update --no-cache graphviz ttf-freefont
 
-# https://stackoverflow.com/questions/66963068/docker-alpine-executable-binary-not-found-even-if-in-path
-RUN apk add libc6-compat
-
-# https://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker
-# RUN mkdir -p /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
-
 # clean apk cache
 RUN rm -rf /var/cache/apk/*
 
@@ -65,7 +60,6 @@ RUN chown -R threagile:threagile /app /data
 USER threagile
 
 COPY --from=build --chown=threagile:threagile /app/threagile /app/
-COPY --from=build --chown=threagile:threagile /app/risk_demo_rule /app/
 COPY --from=build --chown=threagile:threagile /app/LICENSE.txt /app/
 COPY --from=build --chown=threagile:threagile /app/report/template/background.pdf /app/
 COPY --from=build --chown=threagile:threagile /app/report/threagile-logo.png /app/report/
