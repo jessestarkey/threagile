@@ -182,10 +182,6 @@ func (what *ValueExpression) stringToBool(scope *common.Scope, valueString *comm
 		return common.EmptyBoolValue(), errorLiteral, evalError
 	}
 
-	if value == nil {
-		return common.SomeBoolValue(false, valueString.Event()), "", nil
-	}
-
 	switch castValue := value.Value().(type) {
 	case string: // string literal
 		if len(castValue) == 0 {

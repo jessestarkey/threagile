@@ -2,6 +2,8 @@ module github.com/threagile/threagile
 
 go 1.26.0
 
+toolchain go1.27.4
+
 require (
 	github.com/chzyer/readline v1.5.1
 	github.com/gin-gonic/gin v1.12.0
